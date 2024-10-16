@@ -19,9 +19,9 @@ const Index = cmp(function Index(props: any) {
 
       // TODO: need to be able to resolve fragments from source folder too
       if (!model.test) {
-        Copy({ from: `${__dirname}/../../src/web/header.html`, exclude: true })
-        Copy({ from: `${__dirname}/../../src/web/footer.html`, exclude: true })
-        Copy({ from: `${__dirname}/../../src/web/index.css`, exclude: true })
+        Copy({ from: `${__dirname}/../../src/static/header.html`, exclude: true })
+        Copy({ from: `${__dirname}/../../src/static/footer.html`, exclude: true })
+        Copy({ from: `${__dirname}/../../src/static/index.css`, exclude: true })
       }
     })
 

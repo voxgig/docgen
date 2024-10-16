@@ -11,9 +11,9 @@ const Index = (0, jostraca_1.cmp)(function Index(props) {
         (0, jostraca_1.Folder)({ name: 'src' }, () => {
             // TODO: need to be able to resolve fragments from source folder too
             if (!model.test) {
-                (0, jostraca_1.Copy)({ from: `${__dirname}/../../src/web/header.html`, exclude: true });
-                (0, jostraca_1.Copy)({ from: `${__dirname}/../../src/web/footer.html`, exclude: true });
-                (0, jostraca_1.Copy)({ from: `${__dirname}/../../src/web/index.css`, exclude: true });
+                (0, jostraca_1.Copy)({ from: `${__dirname}/../../src/static/header.html`, exclude: true });
+                (0, jostraca_1.Copy)({ from: `${__dirname}/../../src/static/footer.html`, exclude: true });
+                (0, jostraca_1.Copy)({ from: `${__dirname}/../../src/static/index.css`, exclude: true });
             }
         });
         (0, jostraca_1.Folder)({ name: 'dist' }, () => {
