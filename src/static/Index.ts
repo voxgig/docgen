@@ -13,7 +13,7 @@ const Index = cmp(function Index(props: any) {
   console.log('Index', model.test)
 
 
-  Folder({ name: 'web' }, () => {
+  Folder({ name: 'static' }, () => {
 
     Folder({ name: 'src' }, () => {
 

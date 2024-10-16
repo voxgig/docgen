@@ -6,7 +6,7 @@ const aontu_1 = require("aontu");
 const memfs_1 = require("memfs");
 const jostraca_1 = require("jostraca");
 const __1 = require("../");
-const Index_1 = require("../dist/web/Index");
+const Index_1 = require("../dist/static/Index");
 (0, node_test_1.describe)('docgen', () => {
     (0, node_test_1.test)('happy', async () => {
         (0, code_1.expect)(__1.DocGen).exist();
@@ -26,8 +26,8 @@ const Index_1 = require("../dist/web/Index");
         const voljson = vol.toJSON();
         (0, code_1.expect)(JSON.parse(voljson['/top/.jostraca/jostraca.json.log']).exclude).equal([]);
         (0, code_1.expect)(voljson).equal({
-            '/top/doc/web/src': null,
-            '/top/doc/web/dist/index.html': '\n<html>\n  <head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n    <script src="https://cdn.tailwindcss.com"></script>\n    <style>\n\n    </style>\n  </head>\n  <body>\n   <header>\n     <template shadowrootmode="open">\n\n     </template>\n   </header>\n\n   <main>\n     <template shadowrootmode="open">\n\n\n<h1> undefined SDK Documentation</h1>\n\n     </template>\n   </main>\n\n   <footer>\n     <template shadowrootmode="open">\n\n     </template>\n   </footer>\n  </body>\n</html>\n',
+            '/top/doc/static/src': null,
+            '/top/doc/static/dist/index.html': '\n<html>\n  <head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n    <script src="https://cdn.tailwindcss.com"></script>\n    <style>\n\n    </style>\n  </head>\n  <body>\n   <header>\n     <template shadowrootmode="open">\n\n     </template>\n   </header>\n\n   <main>\n     <template shadowrootmode="open">\n\n\n<h1> undefined SDK Documentation</h1>\n\n     </template>\n   </main>\n\n   <footer>\n     <template shadowrootmode="open">\n\n     </template>\n   </footer>\n  </body>\n</html>\n',
             '/top/.jostraca/jostraca.json.log': voljson['/top/.jostraca/jostraca.json.log'],
         });
     });

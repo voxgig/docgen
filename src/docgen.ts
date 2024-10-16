@@ -5,8 +5,8 @@ import * as Fs from 'node:fs'
 
 import * as JostracaModule from 'jostraca'
 
-import { Index } from './web/Index'
-import { Main } from './web/Main'
+import { Index } from './static/Index'
+import { Main } from './static/Main'
 
 import { PrepareOpenAPI } from './prepare-openapi'
 

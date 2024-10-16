@@ -28,9 +28,9 @@ exports.Jostraca = exports.Main = exports.Index = exports.Inject = exports.Fragm
 exports.DocGen = DocGen;
 const Fs = __importStar(require("node:fs"));
 const JostracaModule = __importStar(require("jostraca"));
-const Index_1 = require("./web/Index");
+const Index_1 = require("./static/Index");
 Object.defineProperty(exports, "Index", { enumerable: true, get: function () { return Index_1.Index; } });
-const Main_1 = require("./web/Main");
+const Main_1 = require("./static/Main");
 Object.defineProperty(exports, "Main", { enumerable: true, get: function () { return Main_1.Main; } });
 const prepare_openapi_1 = require("./prepare-openapi");
 const { Jostraca } = JostracaModule;

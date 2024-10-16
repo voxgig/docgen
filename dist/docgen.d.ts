@@ -1,6 +1,6 @@
 import * as JostracaModule from 'jostraca';
-import { Index } from './web/Index';
-import { Main } from './web/Main';
+import { Index } from './static/Index';
+import { Main } from './static/Main';
 type DocGenOptions = {
     folder: string;
     fs: any;
