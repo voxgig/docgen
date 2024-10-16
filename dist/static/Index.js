@@ -6,7 +6,7 @@ const Main_1 = require("./Main");
 const Index = (0, jostraca_1.cmp)(function Index(props) {
     const { ctx$ } = props;
     const { model } = ctx$;
-    console.log('Index', model.test);
+    // console.log('Index', model.test)
     (0, jostraca_1.Folder)({ name: 'static' }, () => {
         (0, jostraca_1.Folder)({ name: 'src' }, () => {
             // TODO: need to be able to resolve fragments from source folder too
@@ -19,6 +19,7 @@ const Index = (0, jostraca_1.cmp)(function Index(props) {
         (0, jostraca_1.Folder)({ name: 'dist' }, () => {
             (0, jostraca_1.File)({ name: 'index.html' }, () => {
                 (0, jostraca_1.Content)(`
+<!DOCTYPE html>
 <html>
   <head>
     <meta charset="UTF-8">

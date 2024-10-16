@@ -10,7 +10,7 @@ const Index = cmp(function Index(props: any) {
   const { ctx$ } = props
   const { model } = ctx$
 
-  console.log('Index', model.test)
+  // console.log('Index', model.test)
 
 
   Folder({ name: 'static' }, () => {
@@ -31,6 +31,7 @@ const Index = cmp(function Index(props: any) {
       File({ name: 'index.html' }, () => {
 
         Content(`
+<!DOCTYPE html>
 <html>
   <head>
     <meta charset="UTF-8">
