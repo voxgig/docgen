@@ -1,4 +1,5 @@
 import * as JostracaModule from 'jostraca';
+import { Index } from './web/Index';
 import { Main } from './web/Main';
 type DocGenOptions = {
     folder: string;
@@ -40,4 +41,4 @@ export declare const Content: Component;
 export declare const Copy: Component;
 export declare const Fragment: Component;
 export declare const Inject: Component;
-export { Main, Jostraca, DocGen, };
+export { Index, Main, Jostraca, DocGen, };

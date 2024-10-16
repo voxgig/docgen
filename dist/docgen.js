@@ -24,10 +24,12 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Jostraca = exports.Main = exports.Inject = exports.Fragment = exports.Copy = exports.Content = exports.File = exports.Folder = exports.Project = exports.getx = exports.get = exports.vmap = exports.cmap = exports.select = exports.kebabify = exports.camelify = exports.snakify = exports.each = exports.names = exports.cmp = void 0;
+exports.Jostraca = exports.Main = exports.Index = exports.Inject = exports.Fragment = exports.Copy = exports.Content = exports.File = exports.Folder = exports.Project = exports.getx = exports.get = exports.vmap = exports.cmap = exports.select = exports.kebabify = exports.camelify = exports.snakify = exports.each = exports.names = exports.cmp = void 0;
 exports.DocGen = DocGen;
 const Fs = __importStar(require("node:fs"));
 const JostracaModule = __importStar(require("jostraca"));
+const Index_1 = require("./web/Index");
+Object.defineProperty(exports, "Index", { enumerable: true, get: function () { return Index_1.Index; } });
 const Main_1 = require("./web/Main");
 Object.defineProperty(exports, "Main", { enumerable: true, get: function () { return Main_1.Main; } });
 const prepare_openapi_1 = require("./prepare-openapi");
@@ -47,6 +49,7 @@ function DocGen(opts) {
             const rootModule = require(config.root);
             Root = rootModule.Root;
         }
+        // console.log('DOCGEN Root', Root)
         const opts = { fs, folder, meta: { spec } };
         try {
             await jostraca.generate(opts, () => Root({ model }));
@@ -66,9 +69,17 @@ function DocGen(opts) {
 DocGen.makeBuild = async function (opts) {
     // console.log('DocGen.makeBuild', opts)
     const docgen = DocGen(opts);
+    const config = {
+        root: opts.root,
+        def: opts.def,
+        kind: 'openapi-3',
+        model: opts.model ? (opts.model.folder + '/api.jsonic') : undefined,
+        meta: opts.meta || {},
+        entity: opts.model ? opts.model.entity : undefined,
+    };
     return async function build(model, build) {
         // TODO: voxgig model needs to handle errors from here
-        return docgen.generate({ model, build });
+        return docgen.generate({ model, build, config });
     };
 };
 // Adapted from https://github.com/sindresorhus/import-fresh - Thanks!

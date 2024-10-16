@@ -5,6 +5,7 @@ import * as Fs from 'node:fs'
 
 import * as JostracaModule from 'jostraca'
 
+import { Index } from './web/Index'
 import { Main } from './web/Main'
 
 import { PrepareOpenAPI } from './prepare-openapi'
@@ -38,7 +39,6 @@ function DocGen(opts: DocGenOptions) {
   async function generate(spec: any) {
     const { model, config } = spec
 
-
     // console.log('DOCGEN.config', config)
 
     let Root = spec.root
@@ -48,6 +48,8 @@ function DocGen(opts: DocGenOptions) {
       const rootModule = require(config.root)
       Root = rootModule.Root
     }
+
+    // console.log('DOCGEN Root', Root)
 
     const opts = { fs, folder, meta: { spec } }
 
@@ -78,9 +80,18 @@ DocGen.makeBuild = async function(opts: DocGenOptions) {
 
   const docgen = DocGen(opts)
 
+  const config = {
+    root: opts.root,
+    def: opts.def,
+    kind: 'openapi-3',
+    model: opts.model ? (opts.model.folder + '/api.jsonic') : undefined,
+    meta: opts.meta || {},
+    entity: opts.model ? opts.model.entity : undefined,
+  }
+
   return async function build(model: any, build: any) {
     // TODO: voxgig model needs to handle errors from here
-    return docgen.generate({ model, build })
+    return docgen.generate({ model, build, config })
   }
 }
 
@@ -149,6 +160,7 @@ export const Inject: Component = JostracaModule.Inject
 
 
 export {
+  Index,
   Main,
 
   Jostraca,

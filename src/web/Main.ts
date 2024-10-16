@@ -1,30 +1,25 @@
 
-import { cmp, File, Folder, Content } from 'jostraca'
+import { cmp, each, File, Folder, Content, Fragment } from 'jostraca'
 
 import { resolvePath } from '../utility'
 
 
 const Main = cmp(function Main(props: any) {
-  const { build, ctx$ } = props
+  const { ctx$ } = props
   const { model } = ctx$
 
-  Folder({ name: 'web' }, () => {
+  const { entity } = model.main.sdk
 
-    File({ name: 'index.html' }, () => {
-
-      Content(`
-<html>
-<head>
-</head>
-<body>
-<h1>DOC</h1>
-</body>
-</html>
+  Content(`
+<h1> ${model.Name} SDK Documentation</h1>
 `)
 
-    })
-
+  each(entity, (entity: any) => {
+    Content(`
+  <h2>${entity.Name}</h2>
+`)
   })
+
 })
 
 

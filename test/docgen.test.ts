@@ -14,8 +14,8 @@ import {
 
 
 import {
-  Main as MainWeb
-} from '../dist/web/Main'
+  Index
+} from '../dist/web/Index'
 
 
 
@@ -24,7 +24,9 @@ describe('docgen', () => {
   test('happy', async () => {
     expect(DocGen).exist()
 
-    const { fs, vol } = memfs({})
+    const { fs, vol } = memfs({
+
+    })
     const docgen = DocGen({
       fs, folder: '/top', root: ''
     })
@@ -45,8 +47,9 @@ describe('docgen', () => {
     expect(JSON.parse(voljson['/top/.jostraca/jostraca.json.log']).exclude).equal([])
 
     expect(voljson).equal({
-      '/top/doc/web/index.html':
-        '\n<html>\n<head>\n</head>\n<body>\n<h1>DOC</h1>\n</body>\n</html>\n',
+      '/top/doc/web/src': null,
+      '/top/doc/web/dist/index.html':
+        '\n<html>\n  <head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n    <script src="https://cdn.tailwindcss.com"></script>\n    <style>\n\n    </style>\n  </head>\n  <body>\n   <header>\n     <template shadowrootmode="open">\n\n     </template>\n   </header>\n\n   <main>\n     <template shadowrootmode="open">\n\n\n<h1> undefined SDK Documentation</h1>\n\n     </template>\n   </main>\n\n   <footer>\n     <template shadowrootmode="open">\n\n     </template>\n   </footer>\n  </body>\n</html>\n',
       '/top/.jostraca/jostraca.json.log': voljson['/top/.jostraca/jostraca.json.log'],
     })
   })
@@ -54,6 +57,8 @@ describe('docgen', () => {
 
   function makeModel() {
     return Aontu(`
+test: true
+
 name: 'foo'
 
 main: sdk: &: { name: .$KEY }
@@ -73,9 +78,11 @@ main: doc: folder: name: 'doc'
 
   function makeRoot() {
     return cmp(function Root(props: any) {
-      const { model } = props
+      const { model, ctx$ } = props
+      ctx$.model = model
+
       Project({ model, folder: model.main.doc.folder.name }, () => {
-        MainWeb({})
+        Index({})
       })
     })
   }
