@@ -1,3 +1,22 @@
-h1 {
-    color: red;
+:root {
+
+  /* Colors */
+  --c1: #ffffff;
+
+  /* Size */
+  --s0: 0px;
+
+  /* Font Family */
+  --ff1: Roboto, sans-serif;
+}
+
+/* Generic Styles */
+html {
+  box-sizing: border-box;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: inherit;
 }
