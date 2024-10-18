@@ -32,18 +32,11 @@ code {
 <h1> ${model.Name} SDK Documentation</h1>
 
 <div>
-  <nav>
-      <ul>
-          <li><a href="#introduction">Introduction</a></li>
-          <li><a href="#getting-started">Getting Started</a></li>
-          <li><a href="#examples">Examples</a></li>
-      </ul>
-  </nav>
-
   <main>
     <section id="introduction">
       <h2>Introduction</h2>
       <p>Welcome to the ${model.Name} SDK documentation. This guide will help you integrate and use our SDK effectively.</p>
+      <a href="">Template Link</a>
     </section>
     <section id="getting-started">
       <h2>Getting Started</h2>
