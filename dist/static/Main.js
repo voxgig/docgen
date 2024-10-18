@@ -8,32 +8,33 @@ const Main = (0, jostraca_1.cmp)(function Main(props) {
     const { entity } = model.main.sdk;
     (0, jostraca_1.Content)(`
 <style>
-    @import url('https://cdn.tailwindcss.com');
-        /* Additional CSS for syntax highlighting */
-        pre {
-            background-color: #f9f9f9;
-            padding: 1rem;
-            border-radius: 0.5rem;
-            overflow-x: auto;
-        }
-        code {
-            color: #333;
-            font-family: Menlo, Monaco, 'Courier New', monospace;
-        }
-</style>
+ @import url('index.css');
+a {
+  color: var(--c3);
+}
 
+pre {
+  background-color: var(--c1);
+  padding: var(--s1);
+  border-radius: var(--s1);
+  overflow-x: auto;
+}
+
+code {
+  color: var(--c2);
+  font-family: var(--ff1);
+}
+</style>
 <h1> ${model.Name} SDK Documentation</h1>
 
 <div>
-  <aside>
-      <nav>
-          <ul>
-              <li><a href="#introduction">Introduction</a></li>
-              <li><a href="#getting-started">Getting Started</a></li>
-              <li><a href="#examples">Examples</a></li>
-          </ul>
-      </nav>
-  </aside>
+  <nav>
+      <ul>
+          <li><a href="#introduction">Introduction</a></li>
+          <li><a href="#getting-started">Getting Started</a></li>
+          <li><a href="#examples">Examples</a></li>
+      </ul>
+  </nav>
 
   <main>
     <section id="introduction">
@@ -105,7 +106,6 @@ const Main = (0, jostraca_1.cmp)(function Main(props) {
     (0, jostraca_1.Content)(`
     <section id="examples">
         <h2>Examples</h2>
-        <p>Here are some examples on how to use our SDK:</p>
     </section>
   </main>
 </div>

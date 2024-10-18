@@ -45,9 +45,8 @@ const Index = (0, jostraca_1.cmp)(function Index(props) {
      </template>
    </header>
 
-   <main class="bg-white text-black min-h-screen flex flex-col w-full">
+   <main class="flex flex-col">
      <template shadowrootmode="open">
-
 `);
                 (0, Main_1.Main)({});
                 (0, jostraca_1.Content)(`
