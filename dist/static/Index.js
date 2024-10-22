@@ -45,7 +45,7 @@ const Index = (0, jostraca_1.cmp)(function Index(props) {
      </template>
    </header>
 
-   <main>
+   <main class="container mx-auto">
      <template shadowrootmode="open">
 `);
                 (0, Main_1.Main)({});

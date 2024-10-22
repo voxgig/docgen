@@ -61,7 +61,7 @@ const Index = cmp(function Index(props: any) {
      </template>
    </header>
 
-   <main>
+   <main class="container mx-auto">
      <template shadowrootmode="open">
 `)
 
