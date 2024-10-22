@@ -54,55 +54,56 @@ code {
       </section>
     `);
     (0, jostraca_1.each)(entity, (entity) => {
-        (0, jostraca_1.Content)(`
+        (0, jostraca_1.each)(entity.op, (op) => {
+            if (op.name == "list") {
+                (0, jostraca_1.Content)(`
     <section>
-      <h2>Create ${entity.Name}</h2>
+      <h2>${op.Name} ${entity.Name}</h2>
       <h4>JavaScript</h4>
       <pre><code>
-        ${entity.name} = await client.${entity.Name}().create({
-          baa: "foo",
+        ${entity.name} = await client.${entity.Name}().${op.name}()
+      </code></pre>
+               `);
+            }
+            else if (op.name == "create") {
+                (0, jostraca_1.Content)(`
+    <section>
+      <h2>${op.Name} ${entity.Name}</h2>
+      <h4>JavaScript</h4>
+      <pre><code>
+        ${entity.name} = await client.${entity.Name}().${op.name}({
+            baa: "foo",
         })
       </code></pre>
-
-      <h2>Load ${entity.Name}</h2>
+               `);
+            }
+            else if (op.name == "save") {
+                (0, jostraca_1.Content)(`
+    <section>
+      <h2>${op.Name} ${entity.Name}</h2>
       <h4>JavaScript</h4>
       <pre><code>
-        ${entity.name} = await client.${entity.Name}().load({
-          id: 1
+        ${entity.name} = await client.${entity.Name}().${op.name}({
+            id: 1,
+            baa: "foo",
         })
       </code></pre>
-
-      <h2>List ${entity.Name}</h2>
+               `);
+            }
+            else {
+                (0, jostraca_1.Content)(`
+    <section>
+      <h2>${op.Name} ${entity.Name}</h2>
       <h4>JavaScript</h4>
       <pre><code>
-        ${entity.name} = await client.${entity.Name}().List()
-      </code></pre>
-
-      <h2>Update ${entity.Name}</h2>
-      <h4>JavaScript</h4>
-      <pre><code>
-        ${entity.name} = await client.${entity.Name}().save({
-          baa: "foo",
+        ${entity.name} = await client.${entity.Name}().${op.name}({
+            id: 1
         })
       </code></pre>
-
-      <h2>Remove ${entity.Name}</h2>
-      <h4>JavaScript</h4>
-      <pre><code>
-        ${entity.name} = await client.${entity.Name}().remove({
-          id: 1
-        })
-      </code></pre>
-    </section>
-  `);
+               `);
+            }
+        });
     });
-    (0, jostraca_1.Content)(`
-    <section id="examples">
-        <h2>Examples</h2>
-    </section>
-  </main>
-</div>
-        `);
 });
 exports.Main = Main;
 //# sourceMappingURL=Main.js.map
