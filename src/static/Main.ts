@@ -26,6 +26,13 @@ code {
   color: var(--c2);
   font-family: var(--ff1);
 }
+
+ h1 {
+      background: linear-gradient(to right, var(--c1), var(--c3));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+}
 </style>
 <h1> ${model.Name} SDK Documentation</h1>
 

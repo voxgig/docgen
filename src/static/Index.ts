@@ -73,6 +73,13 @@ const Index = cmp(function Index(props: any) {
 
    <footer>
      <template shadowrootmode="open">
+      <style>
+        hr {
+          border: 0;
+          height: var(--s1); /* Adjust the height to your preference */
+          background-image: linear-gradient(to right, var(--c1), var(--c2), var(--c3));
+        }
+      </style>
 `)
 
         if (!model.test) {
