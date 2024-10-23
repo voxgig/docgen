@@ -89,6 +89,27 @@ const Index = cmp(function Index(props: any) {
         Content(`
      </template>
    </footer>
+   <script>
+        document.addEventListener("DOMContentLoaded", () => {
+        const mainShadowRoot = document.querySelector("main").shadowRoot;
+        // const footerShadowRoot = document.querySelector("footer").shadowRoot;
+
+        if (mainShadowRoot) {
+         mainShadowRoot.querySelectorAll(".content-section").forEach((section) => {
+            section.addEventListener("click", function () {
+              const targetID = this.getAttribute("data-target");
+              const targetSection = mainShadowRoot.querySelector(\`#\${targetID}\`);
+              if (targetSection) {
+                targetSection.scrollIntoView({ behavior: "smooth" });
+              }
+            });
+          });
+        }
+
+        // if (footerShadowRoot) {
+        // }
+      });
+   </script>
   </body>
 </html>
 `)

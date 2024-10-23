@@ -69,6 +69,27 @@ const Index = (0, jostraca_1.cmp)(function Index(props) {
                 (0, jostraca_1.Content)(`
      </template>
    </footer>
+   <script>
+        document.addEventListener("DOMContentLoaded", () => {
+        const mainShadowRoot = document.querySelector("main").shadowRoot;
+        // const footerShadowRoot = document.querySelector("footer").shadowRoot;
+
+        if (mainShadowRoot) {
+         mainShadowRoot.querySelectorAll(".content-section").forEach((section) => {
+            section.addEventListener("click", function () {
+              const targetID = this.getAttribute("data-target");
+              const targetSection = mainShadowRoot.querySelector(\`#\${targetID}\`);
+              if (targetSection) {
+                targetSection.scrollIntoView({ behavior: "smooth" });
+              }
+            });
+          });
+        }
+
+        // if (footerShadowRoot) {
+        // }
+      });
+   </script>
   </body>
 </html>
 `);

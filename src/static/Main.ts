@@ -15,15 +15,45 @@ const Main = cmp(function Main(props: any) {
  @import url('index.css');
 
  h1 {
-      background: linear-gradient(to right, var(--c3), var(--c1));
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
+  background: linear-gradient(to right, var(--c3), var(--c1));
+  background-clip: text;
+  color: transparent;
+}
+
+.sidebar {
+  width: 10rem;
+  padding: var(--s4);
+  background-color: var(--c2);
+  color: var(--c1);
+  border-right: 1px solid var(--c3);
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: auto;
+}
+
+.content {
+  flex: 1;
+  padding: var(--s4);
+  overflow-y: auto;
+}
+
+.content-section {
+  display: block;
+  margin-bottom: var(--s2);
+  color: var(--c1);
+}
+
+.content-section:hover {
+  cursor: pointer;
+  color: var(--c3);
 }
 
 pre {
   background-color: var(--c1);
   border-radius: var(--s1);
+  padding: var(--s3);
+  margin-bottom: var(--s4)
 }
 
 code {
@@ -35,6 +65,50 @@ code {
   color: var(--c3);
 }
 </style>
+
+
+<!-- Sidebar -->
+
+<nav class="sidebar">
+  <a class="content-section" data-target="introduction">
+   <h2>Introduction</h2>
+  </a>
+         `)
+
+  each(entity, (entity: any) => {
+    Content(`
+  <h2>${entity.Name}</h2>
+ <a class="content-section" data-target="JavaScript">
+  <h3>JavaScript</h3>
+ </a>
+ <a class="content-section" data-target="JavaScript-GettingStarted">Getting Started</a>
+           `)
+    each(entity.op, (op: any) => {
+      Content(`
+  <a class="content-section" data-target="JavaScript-${op.Name}${entity.Name}">${op.Name} ${entity.Name}</a>
+        `)
+    })
+    Content(`
+ <a class="content-section" data-target="Go">
+  <h3>Go</h3>
+ </a>
+ <a class="content-section" data-target="Go-GettingStarted">Getting Started</a>
+           `)
+    each(entity.op, (op: any) => {
+      Content(`
+  <a class="content-section" data-target="Go-${op.Name}${entity.Name}">${op.Name} ${entity.Name}</a>
+        `)
+    })
+  })
+  Content(`
+</nav>
+
+<!-- End Sidebar -->
+
+
+
+
+<div class="content">
 <h1> ${model.Name} SDK Documentation</h1>
 
   <main>
@@ -47,8 +121,9 @@ code {
 <!-- JavaScript Section -->
 
     <section id="JavaScript">
-      <h1>JavaScript</h1>
+      <h1 id="JavaScript">JavaScript</h1>
 
+      <section id="JavaScript-GettingStarted">
       <h2>Getting Started</h2>
 
       <h3>1. Install SDK</h3>
@@ -68,13 +143,14 @@ code {
   })
   Content(`})
           </code></pre>
+        </section>
     `)
 
   each(entity, (entity: any) => {
     each(entity.op, (op: any) => {
       if (op.name == "list") {
         Content(`
-    <section>
+    <section id="JavaScript-${op.Name}${entity.Name}">
       <h2>${op.Name} ${entity.Name}</h2>
       <pre><code>
           ${entity.name} = await client.${entity.Name}().${op.name}()
@@ -84,7 +160,7 @@ code {
                `)
       } else if (op.name == "create") {
         Content(`
-    <section>
+    <section id="JavaScript-${op.Name}${entity.Name}">
       <h2>${op.Name} ${entity.Name}</h2>
       <pre><code>
         ${entity.name} = await client.${entity.Name}().${op.name}({
@@ -97,7 +173,7 @@ code {
                `)
       } else if (op.name == "save") {
         Content(`
-    <section>
+    <section id="JavaScript-${op.Name}${entity.Name}">
     <h2>${op.Name} ${entity.Name}</h2>
       <pre><code>
         ${entity.name} = await client.${entity.Name}().${op.name}({
@@ -111,7 +187,7 @@ code {
                `)
       } else {
         Content(`
-    <section>
+    <section id="JavaScript-${op.Name}${entity.Name}">
       <h2>${op.Name} ${entity.Name}</h2>
       <pre><code>
         ${entity.name} = await client.${entity.Name}().${op.name}({
@@ -127,12 +203,14 @@ code {
   })
   Content(`
   </section>
+<!-- End JavaScript Section -->
 
 
 <!-- Go Section -->
 
 <section id="Go">
-      <h1>Go</h1>
+      <h1 id="GO">Go</h1>
+      <section id="Go-GettingStarted">
       <h2>Getting Started</h2>
       <h3 class="steps">1. Install SDK</h3>
       <pre><code>
@@ -152,13 +230,14 @@ code {
   Content(`
             }
           </code></pre>
+        </section>
     `)
 
   each(entity, (entity: any) => {
     each(entity.op, (op: any) => {
       if (op.name == "list") {
         Content(`
-    <section>
+    <section id="Go-${op.Name}${entity.Name}">
       <h2>${op.Name} ${entity.Name}</h2>
       <pre><code>
         ${entity.name}, err := client.${entity.Name}().${op.Name}()
@@ -173,7 +252,7 @@ code {
                `)
       } else if (op.name == "create") {
         Content(`
-    <section>
+    <section id="Go-${op.Name}${entity.Name}">
       <h2>${op.Name} ${entity.Name}</h2>
       <pre><code>
         data := ${entity.Name}Data{
@@ -192,7 +271,7 @@ code {
                `)
       } else if (op.name == "save") {
         Content(`
-    <section>
+    <section id="Go-${op.Name}${entity.Name}">
     <h2>${op.Name} ${entity.Name}</h2>
       <pre><code>
         data := ${entity.Name}Data{
@@ -212,7 +291,7 @@ code {
                `)
       } else {
         Content(`
-    <section>
+    <section id="Go-${op.Name}${entity.Name}">
       <h2>${op.Name} ${entity.Name}</h2>
       <pre><code>
         query := Query{
@@ -233,6 +312,10 @@ code {
     })
   })
   Content(`
+  </section>
+<!-- End Go Section -->
+
+  </div>
 </main>
           `)
 })
