@@ -72,10 +72,14 @@ code {
          `);
     (0, jostraca_1.each)(entity, (entity) => {
         (0, jostraca_1.Content)(`
+ <a class="content-section" data-target="${entity.Name}">
   <h2>${entity.Name}</h2>
+  </a>
+
  <a class="content-section" data-target="JavaScript">
   <h3>JavaScript</h3>
  </a>
+
  <a class="content-section" data-target="JavaScript-GettingStarted">Getting Started</a>
            `);
         (0, jostraca_1.each)(entity.op, (op) => {
@@ -112,7 +116,11 @@ code {
       <p>Welcome to the ${model.Name} SDK documentation. This guide will help you integrate and use our SDK effectively.</p>
     </section>
 
-
+         `);
+    (0, jostraca_1.each)(entity, (entity) => {
+        (0, jostraca_1.Content)(`
+  <section id="${entity.Name}">
+    <h2>${entity.Name}</h2>
 <!-- JavaScript Section -->
 
     <section id="JavaScript">
@@ -130,17 +138,16 @@ code {
           <pre><code>
             const client = ${model.Name}SDK.make({
               `);
-    (0, jostraca_1.each)(option, (opt) => {
-        if (opt.kind == "String") {
-            (0, jostraca_1.Content)(`${opt.name}: process.env.${model.NAME}_${opt.name.toUpperCase()},
+        (0, jostraca_1.each)(option, (opt) => {
+            if (opt.kind == "String") {
+                (0, jostraca_1.Content)(`${opt.name}: process.env.${model.NAME}_${opt.name.toUpperCase()},
               `);
-        }
-    });
-    (0, jostraca_1.Content)(`})
+            }
+        });
+        (0, jostraca_1.Content)(`})
           </code></pre>
         </section>
     `);
-    (0, jostraca_1.each)(entity, (entity) => {
         (0, jostraca_1.each)(entity.op, (op) => {
             if (op.name == "list") {
                 (0, jostraca_1.Content)(`
@@ -197,8 +204,7 @@ code {
                `);
             }
         });
-    });
-    (0, jostraca_1.Content)(`
+        (0, jostraca_1.Content)(`
   </section>
 <!-- End JavaScript Section -->
 
@@ -217,19 +223,18 @@ code {
       <h3 class="steps">2. Initialize SDK</h3>
           <pre><code>
             options := ${model.name}sdk.Options{`);
-    (0, jostraca_1.each)(option, (opt) => {
-        if (opt.kind == "String") {
-            const capName = opt.name.charAt(0).toUpperCase() + opt.name.substring(1, opt.name.length);
-            (0, jostraca_1.Content)(`
+        (0, jostraca_1.each)(option, (opt) => {
+            if (opt.kind == "String") {
+                const capName = opt.name.charAt(0).toUpperCase() + opt.name.substring(1, opt.name.length);
+                (0, jostraca_1.Content)(`
             ${capName}: os.Getenv("${model.NAME}_${opt.name.toUpperCase()}"),`);
-        }
-    });
-    (0, jostraca_1.Content)(`
+            }
+        });
+        (0, jostraca_1.Content)(`
             }
           </code></pre>
         </section>
     `);
-    (0, jostraca_1.each)(entity, (entity) => {
         (0, jostraca_1.each)(entity.op, (op) => {
             if (op.name == "list") {
                 (0, jostraca_1.Content)(`
@@ -314,6 +319,7 @@ code {
   </section>
 <!-- End Go Section -->
 
+  </section>
   </div>
 </main>
           `);
