@@ -45,7 +45,7 @@ const Index = (0, jostraca_1.cmp)(function Index(props) {
      </template>
    </header>
 
-   <main class="container mx-auto">
+   <main>
      <template shadowrootmode="open">
 `);
                 (0, Main_1.Main)({});
@@ -83,6 +83,18 @@ const Index = (0, jostraca_1.cmp)(function Index(props) {
                 targetSection.scrollIntoView({ behavior: "smooth" });
               }
             });
+          });
+
+          const toggleButton = mainShadowRoot.querySelector(".toggle-button");
+          toggleButton.addEventListener("click", () => {
+            mainShadowRoot.host.classList.toggle("dark-mode");
+            if (mainShadowRoot.host.classList.contains('dark-mode')) {
+              toggleButton.classList.remove('light-mode');
+              toggleButton.classList.add('dark-mode');
+            } else {
+              toggleButton.classList.remove('dark-mode');
+              toggleButton.classList.add('light-mode');
+            }
           });
         }
 
