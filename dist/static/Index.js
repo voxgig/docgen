@@ -69,24 +69,18 @@ const Index = (0, jostraca_1.cmp)(function Index(props) {
                 (0, jostraca_1.Content)(`
      </template>
    </footer>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
    <script>
         document.addEventListener("DOMContentLoaded", () => {
         const mainShadowRoot = document.querySelector("main").shadowRoot;
 
         const linkElement = document.createElement('link');
         linkElement.rel = 'stylesheet';
-        linkElement.href = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css';
+        linkElement.href = 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css';
         mainShadowRoot.appendChild(linkElement);
 
-        mainShadowRoot.querySelectorAll("pre code").forEach((block) => {
-          const code = block.textContent;
-          const language = block.className.replace("language-", "")
-
-
-          const result = hljs.highlight(code, { language, ignoreIllegals: true });
-          block.innerHTML = result.value;
-        });
+        mainShadowRoot.querySelectorAll("pre code").forEach((block) => Prism.highlightElement(block));
 
         if (mainShadowRoot) {
          mainShadowRoot.querySelectorAll(".content-section").forEach((section) => {
