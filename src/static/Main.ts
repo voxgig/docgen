@@ -189,20 +189,20 @@ code {
 
       <h3>1. Install SDK</h3>
       <pre><code class="language-javascript">
-          npm install ${model.name}-sdk
+  npm install ${model.name}-sdk
       </code></pre>
 
       <h3>2. Initialize SDK</h3>
           <pre><code class="language-javascript">
-            const client = ${model.Name}SDK.make({
-              `)
+  const client = ${model.Name}SDK.make({
+      `)
     each(option, (opt: any) => {
-      if (opt.kind == "String") {
-        Content(`${opt.name}: process.env.${model.NAME}_${opt.name.toUpperCase()},
-              `)
-      }
+    if (opt.kind == "String") {
+    Content(`${opt.name}: process.env.${model.NAME}_${opt.name.toUpperCase()},
+      `)
+    }
     })
-    Content(`})
+Content(`})
           </code></pre>
         </section>
     `)
@@ -213,8 +213,8 @@ code {
     <section id="JavaScript-${op.Name}${entity.Name}">
       <h2>${op.Name} ${entity.Name}</h2>
       <pre><code class="language-javascript">
-          ${entity.name} = await client.${entity.Name}().${op.name}()
-          console.log('${entity.Name}', ${entity.name})
+  ${entity.name} = await client.${entity.Name}().${op.name}()
+  console.log('${entity.Name}', ${entity.name})
       </code></pre>
       </section>
                `)
@@ -223,11 +223,11 @@ code {
     <section id="JavaScript-${op.Name}${entity.Name}">
       <h2>${op.Name} ${entity.Name}</h2>
       <pre><code class="language-javascript">
-        ${entity.name} = await client.${entity.Name}().${op.name}({
-            baa: "foo",
-        })
+  ${entity.name} = await client.${entity.Name}().${op.name}({
+      baa: "foo",
+  })
 
-        console.log('${entity.Name}', ${entity.name})
+  console.log('${entity.Name}', ${entity.name})
       </code></pre>
       </section>
                `)
@@ -236,12 +236,12 @@ code {
     <section id="JavaScript-${op.Name}${entity.Name}">
     <h2>${op.Name} ${entity.Name}</h2>
       <pre><code class="language-javascript">
-        ${entity.name} = await client.${entity.Name}().${op.name}({
-            id: 1,
-            baa: "foo",
-        })
+  ${entity.name} = await client.${entity.Name}().${op.name}({
+      id: 1,
+      baa: "foo",
+  })
 
-        console.log('${entity.Name}', ${entity.name})
+  console.log('${entity.Name}', ${entity.name})
       </code></pre>
       </section>
                `)
@@ -250,9 +250,9 @@ code {
     <section id="JavaScript-${op.Name}${entity.Name}">
       <h2>${op.Name} ${entity.Name}</h2>
       <pre><code class="language-javascript">
-        ${entity.name} = await client.${entity.Name}().${op.name}({
-            id: 1
-        })
+  ${entity.name} = await client.${entity.Name}().${op.name}({
+      id: 1
+  })
       </code></pre>
     </section>
 
@@ -273,21 +273,21 @@ code {
       <h2>Getting Started</h2>
       <h3 class="steps">1. Install SDK</h3>
       <pre><code class="language-go">
-        go get ${model.name}
+  go get ${model.name}
       </code></pre>
 
       <h3 class="steps">2. Initialize SDK</h3>
         <pre><code class="language-go">
-            options := ${model.name}sdk.Options{`)
-    each(option, (opt: any) => {
-      if (opt.kind == "String") {
-        const capName = opt.name.charAt(0).toUpperCase() + opt.name.substring(1, opt.name.length);
-        Content(`
-            ${capName}: os.Getenv("${model.NAME}_${opt.name.toUpperCase()}"),`)
-      }
-    })
+  options := ${model.name}sdk.Options{`)
+  each(option, (opt: any) => {
+  if (opt.kind == "String") {
+    const capName = opt.name.charAt(0).toUpperCase() + opt.name.substring(1, opt.name.length);
     Content(`
-            }
+    ${capName}: os.Getenv("${model.NAME}_${opt.name.toUpperCase()}"),`)
+  }
+  })
+    Content(`
+  }
           </code></pre>
         </section>
     `)
@@ -298,13 +298,13 @@ code {
     <section id="Go-${op.Name}${entity.Name}">
       <h2>${op.Name} ${entity.Name}</h2>
         <pre><code class="language-go">
-        ${entity.name}, err := client.${entity.Name}().${op.Name}()
-        if err != nil {
-          log.Println("Error running ${entity.name} ${op.Name}:", err)
-          return
-        }
+  ${entity.name}, err := client.${entity.Name}().${op.Name}()
+  if err != nil {
+    log.Println("Error running ${entity.name} ${op.Name}:", err)
+    return
+  }
 
-        log.Printf("${entity.Name} %+v\\n", ${entity.name})
+  log.Printf("${entity.Name} %+v\\n", ${entity.name})
       </code></pre>
       </section>
                `)
@@ -313,17 +313,17 @@ code {
     <section id="Go-${op.Name}${entity.Name}">
       <h2>${op.Name} ${entity.Name}</h2>
         <pre><code class="language-go">
-        data := ${entity.Name}Data{
-          Foo: zed
-        }
+  data := ${entity.Name}Data{
+    Foo: zed
+  }
 
-        ${entity.name}, err := client.${entity.Name}().${op.Name}(data)
-        if err != nil {
-          fmt.Println("Error running ${entity.Name} ${op.Name}:", err)
-          return
-        }
+  ${entity.name}, err := client.${entity.Name}().${op.Name}(data)
+  if err != nil {
+    fmt.Println("Error running ${entity.Name} ${op.Name}:", err)
+    return
+  }
 
-        fmt.Printf("${entity.Name} %+v\\n", ${entity.name})
+  fmt.Printf("${entity.Name} %+v\\n", ${entity.name})
       </code></pre>
       </section>
                `)
@@ -332,18 +332,18 @@ code {
     <section id="Go-${op.Name}${entity.Name}">
     <h2>${op.Name} ${entity.Name}</h2>
         <pre><code class="language-go">
-        data := ${entity.Name}Data{
-          Id: 1
-          Foo: zed
-        }
+  data := ${entity.Name}Data{
+    Id: 1
+    Foo: zed
+  }
 
-        ${entity.name}, err := client.${entity.Name}().${op.Name}(data)
-        if err != nil {
-          fmt.Println("Error running ${entity.Name} ${op.Name}:", err)
-          return
-        }
+  ${entity.name}, err := client.${entity.Name}().${op.Name}(data)
+  if err != nil {
+    fmt.Println("Error running ${entity.Name} ${op.Name}:", err)
+    return
+  }
 
-        fmt.Printf("${entity.Name} %+v\\n", ${entity.name})
+  fmt.Printf("${entity.Name} %+v\\n", ${entity.name})
       </code></pre>
       </section>
                `)
@@ -352,17 +352,17 @@ code {
     <section id="Go-${op.Name}${entity.Name}">
       <h2>${op.Name} ${entity.Name}</h2>
         <pre><code class="language-go">
-        query := Query{
-          Id: 1
-        }
+  query := Query{
+    Id: 1
+  }
 
-        ${entity.name}, err := client.${entity.Name}().${op.Name}(query)
-        if err != nil {
-          fmt.Println("Error running ${entity.Name} ${op.Name}:", err)
-          return
-        }
+  ${entity.name}, err := client.${entity.Name}().${op.Name}(query)
+  if err != nil {
+    fmt.Println("Error running ${entity.Name} ${op.Name}:", err)
+    return
+  }
 
-        fmt.Printf("${entity.Name} %+v\\n", ${entity.name})
+  fmt.Printf("${entity.Name} %+v\\n", ${entity.name})
       </code></pre>
     </section>
                `)
