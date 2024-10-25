@@ -188,12 +188,12 @@ code {
       <h2>Getting Started</h2>
 
       <h3>1. Install SDK</h3>
-      <pre><code>
+      <pre><code class="language-javascript">
           npm install ${model.name}-sdk
       </code></pre>
 
       <h3>2. Initialize SDK</h3>
-          <pre><code>
+          <pre><code class="language-javascript">
             const client = ${model.Name}SDK.make({
               `)
     each(option, (opt: any) => {
@@ -212,7 +212,7 @@ code {
         Content(`
     <section id="JavaScript-${op.Name}${entity.Name}">
       <h2>${op.Name} ${entity.Name}</h2>
-      <pre><code>
+      <pre><code class="language-javascript">
           ${entity.name} = await client.${entity.Name}().${op.name}()
           console.log('${entity.Name}', ${entity.name})
       </code></pre>
@@ -222,7 +222,7 @@ code {
         Content(`
     <section id="JavaScript-${op.Name}${entity.Name}">
       <h2>${op.Name} ${entity.Name}</h2>
-      <pre><code>
+      <pre><code class="language-javascript">
         ${entity.name} = await client.${entity.Name}().${op.name}({
             baa: "foo",
         })
@@ -235,7 +235,7 @@ code {
         Content(`
     <section id="JavaScript-${op.Name}${entity.Name}">
     <h2>${op.Name} ${entity.Name}</h2>
-      <pre><code>
+      <pre><code class="language-javascript">
         ${entity.name} = await client.${entity.Name}().${op.name}({
             id: 1,
             baa: "foo",
@@ -249,7 +249,7 @@ code {
         Content(`
     <section id="JavaScript-${op.Name}${entity.Name}">
       <h2>${op.Name} ${entity.Name}</h2>
-      <pre><code>
+      <pre><code class="language-javascript">
         ${entity.name} = await client.${entity.Name}().${op.name}({
             id: 1
         })
@@ -272,12 +272,12 @@ code {
       <section id="Go-GettingStarted">
       <h2>Getting Started</h2>
       <h3 class="steps">1. Install SDK</h3>
-      <pre><code>
+      <pre><code class="language-go">
         go get ${model.name}
       </code></pre>
 
       <h3 class="steps">2. Initialize SDK</h3>
-          <pre><code>
+        <pre><code class="language-go">
             options := ${model.name}sdk.Options{`)
     each(option, (opt: any) => {
       if (opt.kind == "String") {
@@ -297,7 +297,7 @@ code {
         Content(`
     <section id="Go-${op.Name}${entity.Name}">
       <h2>${op.Name} ${entity.Name}</h2>
-      <pre><code>
+        <pre><code class="language-go">
         ${entity.name}, err := client.${entity.Name}().${op.Name}()
         if err != nil {
           log.Println("Error running ${entity.name} ${op.Name}:", err)
@@ -312,7 +312,7 @@ code {
         Content(`
     <section id="Go-${op.Name}${entity.Name}">
       <h2>${op.Name} ${entity.Name}</h2>
-      <pre><code>
+        <pre><code class="language-go">
         data := ${entity.Name}Data{
           Foo: zed
         }
@@ -331,7 +331,7 @@ code {
         Content(`
     <section id="Go-${op.Name}${entity.Name}">
     <h2>${op.Name} ${entity.Name}</h2>
-      <pre><code>
+        <pre><code class="language-go">
         data := ${entity.Name}Data{
           Id: 1
           Foo: zed
@@ -351,7 +351,7 @@ code {
         Content(`
     <section id="Go-${op.Name}${entity.Name}">
       <h2>${op.Name} ${entity.Name}</h2>
-      <pre><code>
+        <pre><code class="language-go">
         query := Query{
           Id: 1
         }
@@ -376,6 +376,7 @@ code {
   </section>
   </div>
 </main>
+
           `)
 
 })

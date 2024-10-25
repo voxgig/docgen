@@ -182,12 +182,12 @@ code {
       <h2>Getting Started</h2>
 
       <h3>1. Install SDK</h3>
-      <pre><code>
+      <pre><code class="language-javascript">
           npm install ${model.name}-sdk
       </code></pre>
 
       <h3>2. Initialize SDK</h3>
-          <pre><code>
+          <pre><code class="language-javascript">
             const client = ${model.Name}SDK.make({
               `);
         (0, jostraca_1.each)(option, (opt) => {
@@ -205,7 +205,7 @@ code {
                 (0, jostraca_1.Content)(`
     <section id="JavaScript-${op.Name}${entity.Name}">
       <h2>${op.Name} ${entity.Name}</h2>
-      <pre><code>
+      <pre><code class="language-javascript">
           ${entity.name} = await client.${entity.Name}().${op.name}()
           console.log('${entity.Name}', ${entity.name})
       </code></pre>
@@ -216,7 +216,7 @@ code {
                 (0, jostraca_1.Content)(`
     <section id="JavaScript-${op.Name}${entity.Name}">
       <h2>${op.Name} ${entity.Name}</h2>
-      <pre><code>
+      <pre><code class="language-javascript">
         ${entity.name} = await client.${entity.Name}().${op.name}({
             baa: "foo",
         })
@@ -230,7 +230,7 @@ code {
                 (0, jostraca_1.Content)(`
     <section id="JavaScript-${op.Name}${entity.Name}">
     <h2>${op.Name} ${entity.Name}</h2>
-      <pre><code>
+      <pre><code class="language-javascript">
         ${entity.name} = await client.${entity.Name}().${op.name}({
             id: 1,
             baa: "foo",
@@ -245,7 +245,7 @@ code {
                 (0, jostraca_1.Content)(`
     <section id="JavaScript-${op.Name}${entity.Name}">
       <h2>${op.Name} ${entity.Name}</h2>
-      <pre><code>
+      <pre><code class="language-javascript">
         ${entity.name} = await client.${entity.Name}().${op.name}({
             id: 1
         })
@@ -268,12 +268,12 @@ code {
       <section id="Go-GettingStarted">
       <h2>Getting Started</h2>
       <h3 class="steps">1. Install SDK</h3>
-      <pre><code>
+      <pre><code class="language-go">
         go get ${model.name}
       </code></pre>
 
       <h3 class="steps">2. Initialize SDK</h3>
-          <pre><code>
+        <pre><code class="language-go">
             options := ${model.name}sdk.Options{`);
         (0, jostraca_1.each)(option, (opt) => {
             if (opt.kind == "String") {
@@ -292,7 +292,7 @@ code {
                 (0, jostraca_1.Content)(`
     <section id="Go-${op.Name}${entity.Name}">
       <h2>${op.Name} ${entity.Name}</h2>
-      <pre><code>
+        <pre><code class="language-go">
         ${entity.name}, err := client.${entity.Name}().${op.Name}()
         if err != nil {
           log.Println("Error running ${entity.name} ${op.Name}:", err)
@@ -308,7 +308,7 @@ code {
                 (0, jostraca_1.Content)(`
     <section id="Go-${op.Name}${entity.Name}">
       <h2>${op.Name} ${entity.Name}</h2>
-      <pre><code>
+        <pre><code class="language-go">
         data := ${entity.Name}Data{
           Foo: zed
         }
@@ -328,7 +328,7 @@ code {
                 (0, jostraca_1.Content)(`
     <section id="Go-${op.Name}${entity.Name}">
     <h2>${op.Name} ${entity.Name}</h2>
-      <pre><code>
+        <pre><code class="language-go">
         data := ${entity.Name}Data{
           Id: 1
           Foo: zed
@@ -349,7 +349,7 @@ code {
                 (0, jostraca_1.Content)(`
     <section id="Go-${op.Name}${entity.Name}">
       <h2>${op.Name} ${entity.Name}</h2>
-      <pre><code>
+        <pre><code class="language-go">
         query := Query{
           Id: 1
         }
@@ -374,6 +374,7 @@ code {
   </section>
   </div>
 </main>
+
           `);
 });
 exports.Main = Main;

@@ -89,10 +89,24 @@ const Index = cmp(function Index(props: any) {
         Content(`
      </template>
    </footer>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
    <script>
         document.addEventListener("DOMContentLoaded", () => {
         const mainShadowRoot = document.querySelector("main").shadowRoot;
-        // const footerShadowRoot = document.querySelector("footer").shadowRoot;
+
+        const linkElement = document.createElement('link');
+        linkElement.rel = 'stylesheet';
+        linkElement.href = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css';
+        mainShadowRoot.appendChild(linkElement);
+
+        mainShadowRoot.querySelectorAll("pre code").forEach((block) => {
+          const code = block.textContent;
+          const language = block.className.replace("language-", "")
+
+
+          const result = hljs.highlight(code, { language, ignoreIllegals: true });
+          block.innerHTML = result.value;
+        });
 
         if (mainShadowRoot) {
          mainShadowRoot.querySelectorAll(".content-section").forEach((section) => {
@@ -117,9 +131,6 @@ const Index = cmp(function Index(props: any) {
             }
           });
         }
-
-        // if (footerShadowRoot) {
-        // }
       });
    </script>
   </body>
