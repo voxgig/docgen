@@ -144,6 +144,7 @@ code {
   <a class="content-section" data-target="JavaScript-${op.Name}${entity.Name}">${op.Name} ${entity.Name}</a>
         `)
     })
+
     Content(`
  <a class="content-section" data-target="Go">
   <h3>Go</h3>
@@ -155,6 +156,33 @@ code {
   <a class="content-section" data-target="Go-${op.Name}${entity.Name}">${op.Name} ${entity.Name}</a>
         `)
     })
+
+    Content(`
+ <a class="content-section" data-target="Python">
+  <h3>Python</h3>
+ </a>
+ <a class="content-section" data-target="Python-GettingStarted">Getting Started</a>
+           `)
+    each(entity.op, (op: any) => {
+      Content(`
+  <a class="content-section" data-target="Python-${op.Name}${entity.Name}">${op.Name} ${entity.Name}</a>
+        `)
+    })
+
+
+
+    Content(`
+ <a class="content-section" data-target="Ruby">
+  <h3>Ruby</h3>
+ </a>
+ <a class="content-section" data-target="Ruby-GettingStarted">Getting Started</a>
+           `)
+    each(entity.op, (op: any) => {
+      Content(`
+  <a class="content-section" data-target="Ruby-${op.Name}${entity.Name}">${op.Name} ${entity.Name}</a>
+        `)
+    })
+
   })
   Content(`
 </nav>
@@ -179,8 +207,8 @@ code {
     Content(`
   <section id="${entity.Name}">
     <h2>${entity.Name}</h2>
-<!-- JavaScript Section -->
 
+<!-- JavaScript Section -->
     <section id="JavaScript">
       <h1 id="JavaScript">JavaScript</h1>
 
@@ -194,15 +222,15 @@ code {
 
       <h3>2. Initialize SDK</h3>
           <pre><code class="language-javascript">
-  const client = ${model.Name}SDK.make({
-      `)
+  const client = ${model.Name}SDK.make({`)
     each(option, (opt: any) => {
-    if (opt.kind == "String") {
-    Content(`${opt.name}: process.env.${model.NAME}_${opt.name.toUpperCase()},
-      `)
-    }
+      if (opt.kind == "String") {
+        Content(`
+    ${opt.name}: process.env.${model.NAME}_${opt.name.toUpperCase()},`)
+      }
     })
-Content(`})
+    Content(`
+  })
           </code></pre>
         </section>
     `)
@@ -224,7 +252,7 @@ Content(`})
       <h2>${op.Name} ${entity.Name}</h2>
       <pre><code class="language-javascript">
   ${entity.name} = await client.${entity.Name}().${op.name}({
-      baa: "foo",
+    baa: "foo",
   })
 
   console.log('${entity.Name}', ${entity.name})
@@ -237,8 +265,8 @@ Content(`})
     <h2>${op.Name} ${entity.Name}</h2>
       <pre><code class="language-javascript">
   ${entity.name} = await client.${entity.Name}().${op.name}({
-      id: 1,
-      baa: "foo",
+    id: 1,
+    baa: "foo",
   })
 
   console.log('${entity.Name}', ${entity.name})
@@ -251,8 +279,10 @@ Content(`})
       <h2>${op.Name} ${entity.Name}</h2>
       <pre><code class="language-javascript">
   ${entity.name} = await client.${entity.Name}().${op.name}({
-      id: 1
+    id: 1
   })
+
+  console.log('${entity.Name}', ${entity.name})
       </code></pre>
     </section>
 
@@ -279,13 +309,13 @@ Content(`})
       <h3 class="steps">2. Initialize SDK</h3>
         <pre><code class="language-go">
   options := ${model.name}sdk.Options{`)
-  each(option, (opt: any) => {
-  if (opt.kind == "String") {
-    const capName = opt.name.charAt(0).toUpperCase() + opt.name.substring(1, opt.name.length);
-    Content(`
+    each(option, (opt: any) => {
+      if (opt.kind == "String") {
+        const capName = opt.name.charAt(0).toUpperCase() + opt.name.substring(1, opt.name.length);
+        Content(`
     ${capName}: os.Getenv("${model.NAME}_${opt.name.toUpperCase()}"),`)
-  }
-  })
+      }
+    })
     Content(`
   }
           </code></pre>
@@ -314,7 +344,7 @@ Content(`})
       <h2>${op.Name} ${entity.Name}</h2>
         <pre><code class="language-go">
   data := ${entity.Name}Data{
-    Foo: zed
+    Baa: "foo"
   }
 
   ${entity.name}, err := client.${entity.Name}().${op.Name}(data)
@@ -333,8 +363,8 @@ Content(`})
     <h2>${op.Name} ${entity.Name}</h2>
         <pre><code class="language-go">
   data := ${entity.Name}Data{
-    Id: 1
-    Foo: zed
+    Id: 1,
+    Baa: "foo",
   }
 
   ${entity.name}, err := client.${entity.Name}().${op.Name}(data)
@@ -368,10 +398,184 @@ Content(`})
                `)
       }
     })
+    Content(`
+  </section>
+<!-- End Go Section -->
+
+
+
+<!-- Python Section -->
+    <section id="Python">
+      <h1 id="Python">Python</h1>
+
+      <section id="Python-GettingStarted">
+      <h2>Getting Started</h2>
+
+      <h3>1. Install SDK</h3>
+      <pre><code class="language-python">
+  pip3 install ${model.name}_sdk
+      </code></pre>
+
+      <h3>2. Initialize SDK</h3>
+          <pre><code class="language-python">
+  client = ${model.Name}SDK.make((`)
+    each(option, (opt: any) => {
+      if (opt.kind == "String") {
+        Content(`
+    ${opt.name}: environ['${model.NAME}_${opt.name.toUpperCase()}'],`)
+      }
+    })
+    Content(`
+  ))
+          </code></pre>
+        </section>
+    `)
+
+    each(entity.op, (op: any) => {
+      if (op.name == "list") {
+        Content(`
+    <section id="Python-${op.Name}${entity.Name}">
+      <h2>${op.Name} ${entity.Name}</h2>
+      <pre><code class="language-python">
+  ${entity.name} = client.${entity.Name}().${op.name}()
+  print('${entity.Name}', ${entity.name})
+      </code></pre>
+      </section>
+               `)
+      } else if (op.name == "create") {
+        Content(`
+    <section id="Python-${op.Name}${entity.Name}">
+      <h2>${op.Name} ${entity.Name}</h2>
+      <pre><code class="language-python">
+  ${entity.name} = client.${entity.Name}().${op.name}(Data(
+    baa: "foo",
+  ))
+
+  print('${entity.Name}', ${entity.name})
+      </code></pre>
+      </section>
+               `)
+      } else if (op.name == "save") {
+        Content(`
+    <section id="Python-${op.Name}${entity.Name}">
+    <h2>${op.Name} ${entity.Name}</h2>
+      <pre><code class="language-python">
+  ${entity.name} = client.${entity.Name}().${op.name}(Data(
+    id = 1,
+    baa = "foo",
+  ))
+
+  print('${entity.Name}', ${entity.name})
+      </code></pre>
+      </section>
+               `)
+      } else {
+        Content(`
+    <section id="Python-${op.Name}${entity.Name}">
+      <h2>${op.Name} ${entity.Name}</h2>
+      <pre><code class="language-python">
+  ${entity.name} = client.${entity.Name}().${op.name}({
+    "id": 1
+  })
+
+  print('${entity.Name}', ${entity.name})
+      </code></pre>
+    </section>
+
+
+               `)
+      }
+    })
+    Content(`
+  </section>
+<!-- End Python Section -->
+
+
+
+
+<!-- Ruby Section -->
+<section id="Ruby">
+      <h1 id="Ruby">Ruby</h1>
+      <section id="Ruby-GettingStarted">
+      <h2>Getting Started</h2>
+      <h3 class="steps">1. Install SDK</h3>
+      <pre><code class="language-ruby">
+  gem install ${model.name}-sdk
+      </code></pre>
+
+      <h3 class="steps">2. Initialize SDK</h3>
+        <pre><code class="language-ruby">
+  const client = ${model.Name}SDK.new({`)
+    each(option, (opt: any) => {
+      if (opt.kind == "String") {
+        const capName = opt.name.charAt(0).toUpperCase() + opt.name.substring(1, opt.name.length);
+        Content(`
+    ${capName}: ENV['${model.NAME}_${opt.name.toUpperCase()}'],`)
+      }
+    })
+    Content(`
+  }
+          </code></pre>
+        </section>
+    `)
+
+    each(entity.op, (op: any) => {
+      if (op.name == "list") {
+        Content(`
+    <section id="Ruby-${op.Name}${entity.Name}">
+      <h2>${op.Name} ${entity.Name}</h2>
+        <pre><code class="language-ruby">
+  ${entity.name} = client.${entity.Name}.${op.name}()
+  puts "${entity.Name} #{${entity.name}}"
+      </code></pre>
+      </section>
+               `)
+      } else if (op.name == "create") {
+        Content(`
+    <section id="Ruby-${op.Name}${entity.Name}">
+      <h2>${op.Name} ${entity.Name}</h2>
+        <pre><code class="language-ruby">
+  ${entity.name} = client.${entity.Name}.${op.name}({
+    baa: "foo"
+  })
+
+  puts "${entity.Name} #{${entity.name}}"
+      </code></pre>
+      </section>
+               `)
+      } else if (op.name == "save") {
+        Content(`
+    <section id="Ruby-${op.Name}${entity.Name}">
+    <h2>${op.Name} ${entity.Name}</h2>
+        <pre><code class="language-ruby">
+  ${entity.name} = client.${entity.Name}.${op.name}({
+    id: 1,
+    baa: "foo",
+  })
+
+  puts "${entity.Name} #{${entity.name}}"
+      </code></pre>
+      </section>
+               `)
+      } else {
+        Content(`
+    <section id="Ruby-${op.Name}${entity.Name}">
+      <h2>${op.Name} ${entity.Name}</h2>
+        <pre><code class="language-ruby">
+  ${entity.name} = client.${entity.Name}.${op.name}({
+    id: 1
+  })
+
+  puts "${entity.Name} #{${entity.name}}"
+      </code></pre>
+    </section>
+               `)
+      }
+    })
   })
   Content(`
   </section>
-<!-- End Go Section -->
+<!-- End Ruby Section -->
 
   </section>
   </div>
