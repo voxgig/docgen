@@ -169,6 +169,18 @@ code {
         `)
     })
 
+    Content(`
+ <a class="content-section" data-target="PHP">
+  <h3>PHP</h3>
+ </a>
+ <a class="content-section" data-target="PHP-GettingStarted">Getting Started</a>
+           `)
+    each(entity.op, (op: any) => {
+      Content(`
+  <a class="content-section" data-target="PHP-${op.Name}${entity.Name}">${op.Name} ${entity.Name}</a>
+        `)
+    })
+
 
 
     Content(`
@@ -489,6 +501,97 @@ code {
     Content(`
   </section>
 <!-- End Python Section -->
+
+
+<!-- PHP Section -->
+    <section id="PHP">
+      <h1 id="PHP">PHP</h1>
+
+      <section id="PHP-GettingStarted">
+      <h2>Getting Started</h2>
+
+      <h3>1. Install SDK</h3>
+      <pre><code class="language-php">
+  composer install ${model.name}-sdk
+      </code></pre>
+
+      <h3>2. Initialize SDK</h3>
+          <pre><code class="language-php">
+  $client = ${model.Name}SDK([ `)
+    each(option, (opt: any) => {
+      if (opt.kind == "String") {
+        Content(`
+    '${opt.name}' => getenv('${model.NAME}_${opt.name.toUpperCase()}'),`)
+      }
+    })
+    Content(`
+  ]);
+          </code></pre>
+        </section>
+    `)
+
+    each(entity.op, (op: any) => {
+      if (op.name == "list") {
+        Content(`
+    <section id="PHP-${op.Name}${entity.Name}">
+      <h2>${op.Name} ${entity.Name}</h2>
+      <pre><code class="language-php">
+  $${entity.name} = new ${entity.Name}($client);
+  $${entity.name} = $${entity.name}->${op.name}();
+  print_r("${entity.Name} " . $${entity.name});
+      </code></pre>
+      </section>
+               `)
+      } else if (op.name == "create") {
+        Content(`
+    <section id="PHP-${op.Name}${entity.Name}">
+      <h2>${op.Name} ${entity.Name}</h2>
+      <pre><code class="language-php">
+  $${entity.name} = new ${entity.Name}($client);
+  $${entity.name} = $${entity.name}->${op.name}([
+    'baa' => "foo",
+  ]);
+
+  print_r("${entity.Name} " . $${entity.name});
+      </code></pre>
+      </section>
+               `)
+      } else if (op.name == "save") {
+        Content(`
+    <section id="PHP-${op.Name}${entity.Name}">
+    <h2>${op.Name} ${entity.Name}</h2>
+      <pre><code class="language-php">
+  $${entity.name} = new ${entity.Name}($client);
+  $${entity.name} = $${entity.name}->${op.name}([
+    'id' => 1,
+    'baa' => "foo",
+  ]);
+
+  print_r("${entity.Name} " . $${entity.name});
+      </code></pre>
+      </section>
+               `)
+      } else {
+        Content(`
+    <section id="PHP-${op.Name}${entity.Name}">
+      <h2>${op.Name} ${entity.Name}</h2>
+      <pre><code class="language-php">
+  $${entity.name} = new ${entity.Name}($client);
+  $${entity.name} = $${entity.name}->${op.name}([
+    "id" => 1
+  ]);
+
+  print_r("${entity.Name} " . $${entity.name});
+      </code></pre>
+    </section>
+
+
+               `)
+      }
+    })
+    Content(`
+  </section>
+<!-- End PHP Section -->
 
 
 

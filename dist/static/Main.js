@@ -162,6 +162,17 @@ code {
         `);
         });
         (0, jostraca_1.Content)(`
+ <a class="content-section" data-target="PHP">
+  <h3>PHP</h3>
+ </a>
+ <a class="content-section" data-target="PHP-GettingStarted">Getting Started</a>
+           `);
+        (0, jostraca_1.each)(entity.op, (op) => {
+            (0, jostraca_1.Content)(`
+  <a class="content-section" data-target="PHP-${op.Name}${entity.Name}">${op.Name} ${entity.Name}</a>
+        `);
+        });
+        (0, jostraca_1.Content)(`
  <a class="content-section" data-target="Ruby">
   <h3>Ruby</h3>
  </a>
@@ -483,6 +494,99 @@ code {
         (0, jostraca_1.Content)(`
   </section>
 <!-- End Python Section -->
+
+
+<!-- PHP Section -->
+    <section id="PHP">
+      <h1 id="PHP">PHP</h1>
+
+      <section id="PHP-GettingStarted">
+      <h2>Getting Started</h2>
+
+      <h3>1. Install SDK</h3>
+      <pre><code class="language-php">
+  composer install ${model.name}-sdk
+      </code></pre>
+
+      <h3>2. Initialize SDK</h3>
+          <pre><code class="language-php">
+  $client = ${model.Name}SDK([ `);
+        (0, jostraca_1.each)(option, (opt) => {
+            if (opt.kind == "String") {
+                (0, jostraca_1.Content)(`
+    '${opt.name}' => getenv('${model.NAME}_${opt.name.toUpperCase()}'),`);
+            }
+        });
+        (0, jostraca_1.Content)(`
+  ]);
+          </code></pre>
+        </section>
+    `);
+        (0, jostraca_1.each)(entity.op, (op) => {
+            if (op.name == "list") {
+                (0, jostraca_1.Content)(`
+    <section id="PHP-${op.Name}${entity.Name}">
+      <h2>${op.Name} ${entity.Name}</h2>
+      <pre><code class="language-php">
+  $${entity.name} = new ${entity.Name}($client);
+  $${entity.name} = $${entity.name}->${op.name}();
+  print_r("${entity.Name} " . $${entity.name});
+      </code></pre>
+      </section>
+               `);
+            }
+            else if (op.name == "create") {
+                (0, jostraca_1.Content)(`
+    <section id="PHP-${op.Name}${entity.Name}">
+      <h2>${op.Name} ${entity.Name}</h2>
+      <pre><code class="language-php">
+  $${entity.name} = new ${entity.Name}($client);
+  $${entity.name} = $${entity.name}->${op.name}([
+    'baa' => "foo",
+  ]);
+
+  print_r("${entity.Name} " . $${entity.name});
+      </code></pre>
+      </section>
+               `);
+            }
+            else if (op.name == "save") {
+                (0, jostraca_1.Content)(`
+    <section id="PHP-${op.Name}${entity.Name}">
+    <h2>${op.Name} ${entity.Name}</h2>
+      <pre><code class="language-php">
+  $${entity.name} = new ${entity.Name}($client);
+  $${entity.name} = $${entity.name}->${op.name}([
+    'id' => 1,
+    'baa' => "foo",
+  ]);
+
+  print_r("${entity.Name} " . $${entity.name});
+      </code></pre>
+      </section>
+               `);
+            }
+            else {
+                (0, jostraca_1.Content)(`
+    <section id="PHP-${op.Name}${entity.Name}">
+      <h2>${op.Name} ${entity.Name}</h2>
+      <pre><code class="language-php">
+  $${entity.name} = new ${entity.Name}($client);
+  $${entity.name} = $${entity.name}->${op.name}([
+    "id" => 1
+  ]);
+
+  print_r("${entity.Name} " . $${entity.name});
+      </code></pre>
+    </section>
+
+
+               `);
+            }
+        });
+        (0, jostraca_1.Content)(`
+  </section>
+<!-- End PHP Section -->
 
 
 
