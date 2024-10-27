@@ -95,10 +95,15 @@ const Index = cmp(function Index(props: any) {
         document.addEventListener("DOMContentLoaded", () => {
         const mainShadowRoot = document.querySelector("main").shadowRoot;
 
-        const linkElement = document.createElement('link');
-        linkElement.rel = 'stylesheet';
-        linkElement.href = 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css';
-        mainShadowRoot.appendChild(linkElement);
+        const tailwindLinkEl = document.createElement('link');
+        tailwindLinkEl.rel = 'stylesheet';
+        tailwindLinkEl.href = 'https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css';
+        mainShadowRoot.appendChild(tailwindLinkEl);
+
+        const prismlinkEl = document.createElement('link');
+        prismlinkEl.rel = 'stylesheet';
+        prismlinkEl.href = 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css';
+        mainShadowRoot.appendChild(prismlinkEl);
 
         mainShadowRoot.querySelectorAll("pre code").forEach((block) => Prism.highlightElement(block));
 
