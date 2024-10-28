@@ -61,7 +61,7 @@ const Index = cmp(function Index(props: any) {
      </template>
    </header>
 
-   <main>
+   <main class="content space-y-8">
      <template shadowrootmode="open">
 `)
 
@@ -73,13 +73,15 @@ const Index = cmp(function Index(props: any) {
 
    <footer>
      <template shadowrootmode="open">
-      <style>
-        hr {
-          border: 0;
-          height: var(--s1); /* Adjust the height to your preference */
-          background-image: linear-gradient(to right, var(--c1), var(--c2), var(--c3));
-        }
-      </style>
+       <style>
+          hr {
+            border: 0;
+            height: var(--s1);
+            /* Adjust the height to your preference */
+            background-image: linear-gradient(to right, var(--c1), var(--c2), var(--c3));
+          }
+       </style>
+
 `)
 
         if (!model.test) {
@@ -118,17 +120,17 @@ const Index = cmp(function Index(props: any) {
             });
           });
 
-          const toggleButton = mainShadowRoot.querySelector(".toggle-button");
-          toggleButton.addEventListener("click", () => {
-            mainShadowRoot.host.classList.toggle("dark-mode");
-            if (mainShadowRoot.host.classList.contains('dark-mode')) {
-              toggleButton.classList.remove('dark-mode');
-              toggleButton.classList.add('light-mode');
-            } else {
-              toggleButton.classList.remove('light-mode');
-              toggleButton.classList.add('dark-mode');
-            }
-          });
+          // const toggleButton = mainShadowRoot.querySelector(".toggle-button");
+          // toggleButton.addEventListener("click", () => {
+          //   mainShadowRoot.host.classList.toggle("dark-mode");
+          //   if (mainShadowRoot.host.classList.contains('dark-mode')) {
+          //     toggleButton.classList.remove('dark-mode');
+          //     toggleButton.classList.add('light-mode');
+          //   } else {
+          //     toggleButton.classList.remove('light-mode');
+          //     toggleButton.classList.add('dark-mode');
+          //   }
+          // });
         }
       });
    </script>

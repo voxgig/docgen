@@ -8,18 +8,71 @@ const Main = (0, jostraca_1.cmp)(function Main(props) {
     const { entity, option } = model.main.sdk;
     (0, jostraca_1.Content)(`
 <style>
- @import url('index.css');
+:host {
+  /* Colors */
+  --c1: #ffffff;
+  --c2: #1b1b1b;
+  --c3: #85ea2d;
 
- h1 {
-  background: linear-gradient(to right, var(--c3), var(--c1));
-  background-clip: text;
-  color: transparent;
+  /* Size */
+  --s0: 0rem;
+  --s1: 0.25rem;
+  --s2: 0.5rem;
+  --s3: 0.75rem;
+  --s4: 1rem;
+  --s5: 1.25rem;
+  --s6: 1.5rem;
+  --s7: 1.75rem;
+  --s8: 2rem;
+  --s9: 2.25rem;
+  --s10: 2.5rem;
+  }
+}
+
+/* Generic Styles */
+html {
+  box-sizing: border-box;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: inherit;
+}
+
+body {
+  background-color: var(--c2);
+  color: var(--c1);
+}
+
+main,
+footer {
+  background-color: var(--c2);
+  color: var(--c1);
+}
+
+main {
+  display: flex;
+  height: 100vh;
+}
+
+footer {
+  background-color: var(--c2);
+  color: var(--c1);
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+
+h1 {
+background: linear-gradient(to right, var(--c3), var(--c1));
+background-clip: text;
+color: transparent;
 }
 
 .sidebar {
   width: 10rem;
   padding: var(--s4);
-  background-color: var(--c2);
   color: var(--c1);
   border-right: 1px solid var(--c3);
   position: sticky;
@@ -27,17 +80,6 @@ const Main = (0, jostraca_1.cmp)(function Main(props) {
   height: 100vh;
   overflow: auto;
   z-index: 0;
-}
-
-.content {
-  flex: 1;
-  padding: var(--s4);
-  overflow-y: auto;
-}
-
-.content-section {
-  display: block;
-  margin-bottom: var(--s4);
 }
 
 .content-section:hover {
@@ -50,11 +92,6 @@ pre {
   border-radius: var(--s1);
   padding: var(--s3);
   margin-bottom: var(--s4)
-}
-
-code {
-  color: var(--c2);
-  font-family: var(--ff1);
 }
 
 .lang-section {
@@ -87,36 +124,13 @@ code {
 .light-mode .moon-icon {
   display: inline-block;
 }
-
-.dark-mode .sun-icon {
-  display: inline-block;
-}
 </style>
 
 
+<main class="text-white bg-black">
+
 <!-- Sidebar -->
-
 <nav class="sidebar">
-  <button class="toggle-button content-section dark-mode">
-    <!-- Moon icon for toggling to dark mode -->
-    <svg class="moon-icon" width="30" height="30" id="dark-icon">
-      <path fill="currentColor" d="M 23, 5 A 12 12 0 1 0 23, 25 A 12 12 0 0 1 23, 5" />
-    </svg>
-
-    <!-- Sun icon for toggling to light mode -->
-    <svg class="sun-icon" width="30" height="30" id="light-icon">
-      <circle cx="15" cy="15" r="6" fill="currentColor" />
-      <line id="ray" stroke="currentColor" stroke-width="2" stroke-linecap="round" x1="15" y1="1" x2="15" y2="4" />
-      <use href="#ray" transform="rotate(45 15 15)" />
-      <use href="#ray" transform="rotate(90 15 15)" />
-      <use href="#ray" transform="rotate(135 15 15)" />
-      <use href="#ray" transform="rotate(180 15 15)" />
-      <use href="#ray" transform="rotate(225 15 15)" />
-      <use href="#ray" transform="rotate(270 15 15)" />
-      <use href="#ray" transform="rotate(315 15 15)" />
-    </svg>
-  </button>
-
   <a class="content-section" data-target="introduction">
    <h2>Introduction</h2>
   </a>
@@ -191,34 +205,35 @@ code {
 
 
 
-<div class="content">
-<h1 class="text-4xl font-bold text-center"> ${model.Name} SDK Documentation</h1>
+<div class="flex flex-col overflow-y-auto p-4 w-full">
+<h1 class="text-5xl font-extrabold text-center tracking-wide my-4 shadow-sm"> ${model.Name} SDK Documentation</h1>
 
-  <main>
-    <section id="introduction">
-      <h2>Introduction</h2>
-      <p>Welcome to the ${model.Name} SDK documentation. This guide will help you integrate and use our SDK effectively.</p>
+  <div>
+    <section id="introduction" class="w-2/3 mx-auto shadow-sm my-20">
+      <h2 class="text-3xl font-bold mb-4">Introduction</h2>
+      <p class="text-lg leading-relaxed">Welcome to the ${model.Name} SDK documentation. This guide will help you integrate and use our SDK effectively.</p>
     </section>
 
          `);
     (0, jostraca_1.each)(entity, (entity) => {
         (0, jostraca_1.Content)(`
-  <section id="${entity.Name}">
-    <h2>${entity.Name}</h2>
+  <section id="${entity.Name}" class="bg-black w-2/3 mx-auto p-6 rounded-lg shadow-md my-20">
+    <h2 class="text-3xl font-bold mb-4">${entity.Name}</h2>
+    <p class="text-lg leading-relaxed">Details about the Pet entity goes here.</p>
 
 <!-- JavaScript Section -->
-    <section id="JavaScript">
-      <h1 id="JavaScript">JavaScript</h1>
+    <section id="JavaScript" class="p-6 rounded-lg shadow-md my-10">
+      <h1 id="JavaScript" class="text-3xl font-bold mb-4">JavaScript</h1>
 
       <section id="JavaScript-GettingStarted">
-      <h2>Getting Started</h2>
+      <h2 class="text-2xl font-bold mb-4">Getting Started</h2>
 
-      <h3>1. Install SDK</h3>
+      <h3 class="font-bold mb-4">1. Install SDK</h3>
       <pre><code class="language-javascript">
   npm install ${model.name}-sdk
       </code></pre>
 
-      <h3>2. Initialize SDK</h3>
+      <h3 class="text-1xl font-bold mb-4">2. Initialize SDK</h3>
           <pre><code class="language-javascript">
   const client = ${model.Name}SDK.make({`);
         (0, jostraca_1.each)(option, (opt) => {
@@ -236,7 +251,7 @@ code {
             if (op.name == "list") {
                 (0, jostraca_1.Content)(`
     <section id="JavaScript-${op.Name}${entity.Name}">
-      <h2>${op.Name} ${entity.Name}</h2>
+      <h2 class="text-2xl font-bold mb-4">${op.Name} ${entity.Name}</h2>
       <pre><code class="language-javascript">
   ${entity.name} = await client.${entity.Name}().${op.name}()
   console.log('${entity.Name}', ${entity.name})
@@ -247,7 +262,7 @@ code {
             else if (op.name == "create") {
                 (0, jostraca_1.Content)(`
     <section id="JavaScript-${op.Name}${entity.Name}">
-      <h2>${op.Name} ${entity.Name}</h2>
+      <h2 class="text-2xl font-bold mb-4">${op.Name} ${entity.Name}</h2>
       <pre><code class="language-javascript">
   ${entity.name} = await client.${entity.Name}().${op.name}({
     baa: "foo",
@@ -261,7 +276,7 @@ code {
             else if (op.name == "save") {
                 (0, jostraca_1.Content)(`
     <section id="JavaScript-${op.Name}${entity.Name}">
-    <h2>${op.Name} ${entity.Name}</h2>
+    <h2 class="text-2xl font-bold mb-4">${op.Name} ${entity.Name}</h2>
       <pre><code class="language-javascript">
   ${entity.name} = await client.${entity.Name}().${op.name}({
     id: 1,
@@ -276,7 +291,7 @@ code {
             else {
                 (0, jostraca_1.Content)(`
     <section id="JavaScript-${op.Name}${entity.Name}">
-      <h2>${op.Name} ${entity.Name}</h2>
+      <h2 class="text-2xl font-bold mb-4">${op.Name} ${entity.Name}</h2>
       <pre><code class="language-javascript">
   ${entity.name} = await client.${entity.Name}().${op.name}({
     id: 1
@@ -297,16 +312,18 @@ code {
 
 <!-- Go Section -->
 
-<section id="Go">
-      <h1 id="GO">Go</h1>
+<section id="Go" class="p-6 rounded-lg shadow-md my-10">
+      <h1 id="GO" class="text-3xl font-bold mb-4">Go</h1>
+
       <section id="Go-GettingStarted">
-      <h2>Getting Started</h2>
-      <h3 class="steps">1. Install SDK</h3>
+      <h2 class="text-2xl font-bold mb-4">Getting Started</h2>
+
+      <h3 class="font-bold mb-4">1. Install SDK</h3>
       <pre><code class="language-go">
   go get ${model.name}
       </code></pre>
 
-      <h3 class="steps">2. Initialize SDK</h3>
+      <h3 class="font-bold mb-4">2. Initialize SDK</h3>
         <pre><code class="language-go">
   options := ${model.name}sdk.Options{`);
         (0, jostraca_1.each)(option, (opt) => {
@@ -325,7 +342,7 @@ code {
             if (op.name == "list") {
                 (0, jostraca_1.Content)(`
     <section id="Go-${op.Name}${entity.Name}">
-      <h2>${op.Name} ${entity.Name}</h2>
+      <h2 class="text-2xl font-bold mb-4">${op.Name} ${entity.Name}</h2>
         <pre><code class="language-go">
   ${entity.name}, err := client.${entity.Name}().${op.Name}()
   if err != nil {
@@ -341,7 +358,7 @@ code {
             else if (op.name == "create") {
                 (0, jostraca_1.Content)(`
     <section id="Go-${op.Name}${entity.Name}">
-      <h2>${op.Name} ${entity.Name}</h2>
+      <h2 class="text-2xl font-bold mb-4">${op.Name} ${entity.Name}</h2>
         <pre><code class="language-go">
   data := ${entity.Name}Data{
     Baa: "foo"
@@ -361,7 +378,7 @@ code {
             else if (op.name == "save") {
                 (0, jostraca_1.Content)(`
     <section id="Go-${op.Name}${entity.Name}">
-    <h2>${op.Name} ${entity.Name}</h2>
+    <h2 class="text-2xl font-bold mb-4">${op.Name} ${entity.Name}</h2>
         <pre><code class="language-go">
   data := ${entity.Name}Data{
     Id: 1,
@@ -382,7 +399,7 @@ code {
             else {
                 (0, jostraca_1.Content)(`
     <section id="Go-${op.Name}${entity.Name}">
-      <h2>${op.Name} ${entity.Name}</h2>
+      <h2 class="text-2xl font-bold mb-4">${op.Name} ${entity.Name}</h2>
         <pre><code class="language-go">
   query := Query{
     Id: 1
@@ -407,18 +424,18 @@ code {
 
 
 <!-- Python Section -->
-    <section id="Python">
-      <h1 id="Python">Python</h1>
+    <section id="Python" class="p-6 rounded-lg shadow-md my-10">
+      <h1 id="Python" class="text-3xl font-bold mb-4">Python</h1>
 
       <section id="Python-GettingStarted">
-      <h2>Getting Started</h2>
+      <h2 class="text-2xl font-bold mb-4">Getting Started</h2>
 
-      <h3>1. Install SDK</h3>
+      <h3 class="font-bold mb-4">1. Install SDK</h3>
       <pre><code class="language-python">
   pip3 install ${model.name}_sdk
       </code></pre>
 
-      <h3>2. Initialize SDK</h3>
+      <h3 class="font-bold mb-4">2. Initialize SDK</h3>
           <pre><code class="language-python">
   client = ${model.Name}SDK.make((`);
         (0, jostraca_1.each)(option, (opt) => {
@@ -436,7 +453,7 @@ code {
             if (op.name == "list") {
                 (0, jostraca_1.Content)(`
     <section id="Python-${op.Name}${entity.Name}">
-      <h2>${op.Name} ${entity.Name}</h2>
+      <h2 class="text-2xl font-bold mb-4">${op.Name} ${entity.Name}</h2>
       <pre><code class="language-python">
   ${entity.name} = client.${entity.Name}().${op.name}()
   print('${entity.Name}', ${entity.name})
@@ -447,7 +464,7 @@ code {
             else if (op.name == "create") {
                 (0, jostraca_1.Content)(`
     <section id="Python-${op.Name}${entity.Name}">
-      <h2>${op.Name} ${entity.Name}</h2>
+      <h2 class="text-2xl font-bold mb-4">${op.Name} ${entity.Name}</h2>
       <pre><code class="language-python">
   ${entity.name} = client.${entity.Name}().${op.name}(Data(
     baa: "foo",
@@ -461,7 +478,7 @@ code {
             else if (op.name == "save") {
                 (0, jostraca_1.Content)(`
     <section id="Python-${op.Name}${entity.Name}">
-    <h2>${op.Name} ${entity.Name}</h2>
+    <h2 class="text-2xl font-bold mb-4">${op.Name} ${entity.Name}</h2>
       <pre><code class="language-python">
   ${entity.name} = client.${entity.Name}().${op.name}(Data(
     id = 1,
@@ -476,7 +493,7 @@ code {
             else {
                 (0, jostraca_1.Content)(`
     <section id="Python-${op.Name}${entity.Name}">
-      <h2>${op.Name} ${entity.Name}</h2>
+      <h2 class="text-2xl font-bold mb-4">${op.Name} ${entity.Name}</h2>
       <pre><code class="language-python">
   ${entity.name} = client.${entity.Name}().${op.name}({
     "id": 1
@@ -496,18 +513,18 @@ code {
 
 
 <!-- PHP Section -->
-    <section id="PHP">
-      <h1 id="PHP">PHP</h1>
+    <section id="PHP" class="p-6 rounded-lg shadow-md my-10">
+      <h1 id="PHP" class="text-3xl font-bold mb-4">PHP</h1>
 
       <section id="PHP-GettingStarted">
-      <h2>Getting Started</h2>
+      <h2 class="text-2xl font-bold mb-4">Getting Started</h2>
 
-      <h3>1. Install SDK</h3>
+      <h3 class="font-bold mb-4">1. Install SDK</h3>
       <pre><code class="language-php">
   composer install ${model.name}-sdk
       </code></pre>
 
-      <h3>2. Initialize SDK</h3>
+      <h3 class="font-bold mb-4">2. Initialize SDK</h3>
           <pre><code class="language-php">
   $client = ${model.Name}SDK([ `);
         (0, jostraca_1.each)(option, (opt) => {
@@ -525,7 +542,7 @@ code {
             if (op.name == "list") {
                 (0, jostraca_1.Content)(`
     <section id="PHP-${op.Name}${entity.Name}">
-      <h2>${op.Name} ${entity.Name}</h2>
+      <h2 class="text-2xl font-bold mb-4">${op.Name} ${entity.Name}</h2>
       <pre><code class="language-php">
   $${entity.name} = new ${entity.Name}($client);
   $${entity.name} = $${entity.name}->${op.name}();
@@ -537,7 +554,7 @@ code {
             else if (op.name == "create") {
                 (0, jostraca_1.Content)(`
     <section id="PHP-${op.Name}${entity.Name}">
-      <h2>${op.Name} ${entity.Name}</h2>
+      <h2 class="text-2xl font-bold mb-4">${op.Name} ${entity.Name}</h2>
       <pre><code class="language-php">
   $${entity.name} = new ${entity.Name}($client);
   $${entity.name} = $${entity.name}->${op.name}([
@@ -552,7 +569,7 @@ code {
             else if (op.name == "save") {
                 (0, jostraca_1.Content)(`
     <section id="PHP-${op.Name}${entity.Name}">
-    <h2>${op.Name} ${entity.Name}</h2>
+    <h2 class="text-2xl font-bold mb-4">${op.Name} ${entity.Name}</h2>
       <pre><code class="language-php">
   $${entity.name} = new ${entity.Name}($client);
   $${entity.name} = $${entity.name}->${op.name}([
@@ -568,7 +585,7 @@ code {
             else {
                 (0, jostraca_1.Content)(`
     <section id="PHP-${op.Name}${entity.Name}">
-      <h2>${op.Name} ${entity.Name}</h2>
+      <h2 class="text-2xl font-bold mb-4">${op.Name} ${entity.Name}</h2>
       <pre><code class="language-php">
   $${entity.name} = new ${entity.Name}($client);
   $${entity.name} = $${entity.name}->${op.name}([
@@ -591,16 +608,17 @@ code {
 
 
 <!-- Ruby Section -->
-<section id="Ruby">
-      <h1 id="Ruby">Ruby</h1>
+<section id="Ruby" class="p-6 rounded-lg shadow-md my-10">
+      <h1 id="Ruby" class="text-3xl font-bold mb-4">Ruby</h1>
       <section id="Ruby-GettingStarted">
-      <h2>Getting Started</h2>
-      <h3 class="steps">1. Install SDK</h3>
+
+      <h2 class="text-2xl font-bold mb-4">Getting Started</h2>
+      <h3 class="font-bold mb-4">1. Install SDK</h3>
       <pre><code class="language-ruby">
   gem install ${model.name}-sdk
       </code></pre>
 
-      <h3 class="steps">2. Initialize SDK</h3>
+      <h3 class="font-bold mb-4">2. Initialize SDK</h3>
         <pre><code class="language-ruby">
   const client = ${model.Name}SDK.new({`);
         (0, jostraca_1.each)(option, (opt) => {
@@ -619,7 +637,7 @@ code {
             if (op.name == "list") {
                 (0, jostraca_1.Content)(`
     <section id="Ruby-${op.Name}${entity.Name}">
-      <h2>${op.Name} ${entity.Name}</h2>
+      <h2 class="text-2xl font-bold mb-4">${op.Name} ${entity.Name}</h2>
         <pre><code class="language-ruby">
   ${entity.name} = client.${entity.Name}.${op.name}()
   puts "${entity.Name} #{${entity.name}}"
@@ -630,7 +648,7 @@ code {
             else if (op.name == "create") {
                 (0, jostraca_1.Content)(`
     <section id="Ruby-${op.Name}${entity.Name}">
-      <h2>${op.Name} ${entity.Name}</h2>
+      <h2 class="text-2xl font-bold mb-4">${op.Name} ${entity.Name}</h2>
         <pre><code class="language-ruby">
   ${entity.name} = client.${entity.Name}.${op.name}({
     baa: "foo"
@@ -644,7 +662,7 @@ code {
             else if (op.name == "save") {
                 (0, jostraca_1.Content)(`
     <section id="Ruby-${op.Name}${entity.Name}">
-    <h2>${op.Name} ${entity.Name}</h2>
+    <h2 class="text-2xl font-bold mb-4">${op.Name} ${entity.Name}</h2>
         <pre><code class="language-ruby">
   ${entity.name} = client.${entity.Name}.${op.name}({
     id: 1,
@@ -659,7 +677,7 @@ code {
             else {
                 (0, jostraca_1.Content)(`
     <section id="Ruby-${op.Name}${entity.Name}">
-      <h2>${op.Name} ${entity.Name}</h2>
+      <h2 class="text-2xl font-bold mb-4">${op.Name} ${entity.Name}</h2>
         <pre><code class="language-ruby">
   ${entity.name} = client.${entity.Name}.${op.name}({
     id: 1
@@ -677,6 +695,7 @@ code {
 <!-- End Ruby Section -->
 
   </section>
+  </div>
   </div>
 </main>
 
