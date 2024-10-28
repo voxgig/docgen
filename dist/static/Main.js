@@ -37,8 +37,7 @@ const Main = (0, jostraca_1.cmp)(function Main(props) {
 
 .content-section {
   display: block;
-  margin-bottom: var(--s2);
-  color: var(--c1);
+  margin-bottom: var(--s4);
 }
 
 .content-section:hover {
@@ -193,7 +192,7 @@ code {
 
 
 <div class="content">
-<h1> ${model.Name} SDK Documentation</h1>
+<h1 class="text-4xl font-bold text-center"> ${model.Name} SDK Documentation</h1>
 
   <main>
     <section id="introduction">
