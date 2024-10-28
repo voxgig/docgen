@@ -102,7 +102,7 @@ code {
 <!-- Sidebar -->
 
 <nav class="sidebar">
-  <button class="toggle-button content-section light-mode">
+  <button class="toggle-button content-section dark-mode">
     <!-- Moon icon for toggling to dark mode -->
     <svg class="moon-icon" width="30" height="30" id="dark-icon">
       <path fill="currentColor" d="M 23, 5 A 12 12 0 1 0 23, 25 A 12 12 0 0 1 23, 5" />

@@ -122,11 +122,11 @@ const Index = cmp(function Index(props: any) {
           toggleButton.addEventListener("click", () => {
             mainShadowRoot.host.classList.toggle("dark-mode");
             if (mainShadowRoot.host.classList.contains('dark-mode')) {
-              toggleButton.classList.remove('light-mode');
-              toggleButton.classList.add('dark-mode');
-            } else {
               toggleButton.classList.remove('dark-mode');
               toggleButton.classList.add('light-mode');
+            } else {
+              toggleButton.classList.remove('light-mode');
+              toggleButton.classList.add('dark-mode');
             }
           });
         }
