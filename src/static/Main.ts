@@ -192,11 +192,14 @@ pre {
       <section id="JavaScript-GettingStarted" class="my-10 p-1 rounded-lg lang-section bg-opacity-55">
       <h2 class="text-2xl font-bold my-4">Getting Started</h2>
 
-      <h3 class="font-bold my-4">1. Install SDK:</h3>
-      <pre><code class="language-javascript">
+      <section id="JavaScript-Install" class="my-5 p-2 rounded-lg lang-section bg-opacity-60">
+        <h3 class="font-bold my-4">1. Install SDK:</h3>
+        <pre><code class="language-javascript">
   npm install ${model.name}-sdk
-      </code></pre>
+        </code></pre>
+      </section>
 
+      <section id="JavaScript-Initialize" class="my-5 p-2 rounded-lg lang-section bg-opacity-60">
       <h3 class="text-1xl font-bold my-4">2. Initialize SDK:</h3>
           <pre><code class="language-javascript">
   const client = ${model.Name}SDK.make({`)
@@ -209,6 +212,7 @@ pre {
     Content(`
   })
           </code></pre>
+          </section>
         </section>
 
 
@@ -219,7 +223,7 @@ pre {
     each(entity.op, (op: any) => {
       if (op.name == "list") {
         Content(`
-    <section id="JavaScript-${op.Name}${entity.Name}">
+    <section id="JavaScript-${op.Name}${entity.Name}" class="my-5 p-2 rounded-lg lang-section bg-opacity-60">
       <h3 class="font-bold my-4">${op.Name} ${entity.Name}:</h3>
       <pre><code class="language-javascript">
   ${entity.name} = await client.${entity.Name}().${op.name}()
@@ -229,7 +233,7 @@ pre {
                `)
       } else if (op.name == "create") {
         Content(`
-    <section id="JavaScript-${op.Name}${entity.Name}">
+    <section id="JavaScript-${op.Name}${entity.Name}" class="my-5 p-2 rounded-lg lang-section bg-opacity-60">
       <h3 class="font-bold my-4">${op.Name} ${entity.Name}:</h3>
       <pre><code class="language-javascript">
   ${entity.name} = await client.${entity.Name}().${op.name}({
@@ -242,7 +246,7 @@ pre {
                `)
       } else if (op.name == "save") {
         Content(`
-    <section id="JavaScript-${op.Name}${entity.Name}">
+    <section id="JavaScript-${op.Name}${entity.Name}" class="my-5 p-2 rounded-lg lang-section bg-opacity-60">
     <h3 class="font-bold my-4">${op.Name} ${entity.Name}:</h3>
       <pre><code class="language-javascript">
   ${entity.name} = await client.${entity.Name}().${op.name}({
@@ -256,7 +260,7 @@ pre {
                `)
       } else {
         Content(`
-    <section id="JavaScript-${op.Name}${entity.Name}">
+    <section id="JavaScript-${op.Name}${entity.Name}" class="my-5 p-2 rounded-lg lang-section bg-opacity-60">
     <h3 class="font-bold my-4">${op.Name} ${entity.Name}:</h3>
       <pre><code class="language-javascript">
   ${entity.name} = await client.${entity.Name}().${op.name}({
@@ -285,11 +289,14 @@ pre {
       <section id="Go-GettingStarted" class="my-10 p-1 rounded-lg lang-section bg-opacity-55">
       <h2 class="text-2xl font-bold mb-4">Getting Started</h2>
 
-      <h3 class="font-bold my-4">1. Install SDK:</h3>
-      <pre><code class="language-go">
+      <section id="Go-Install" class="my-5 p-2 rounded-lg lang-section bg-opacity-60">
+        <h3 class="font-bold my-4">1. Install SDK:</h3>
+        <pre><code class="language-go">
   go get ${model.name}
-      </code></pre>
+        </code></pre>
+      </section>
 
+      <section id="Go-Initialize" class="my-5 p-2 rounded-lg lang-section bg-opacity-60">
       <h3 class="text-1xl font-bold my-4">2. Initialize SDK:</h3>
         <pre><code class="language-go">
   options := ${model.name}sdk.Options{`)
@@ -303,6 +310,7 @@ pre {
     Content(`
   }
           </code></pre>
+          </section>
         </section>
 
 
@@ -314,7 +322,7 @@ pre {
     each(entity.op, (op: any) => {
       if (op.name == "list") {
         Content(`
-    <section id="Go-${op.Name}${entity.Name}">
+    <section id="Go-${op.Name}${entity.Name}" class="my-5 p-2 rounded-lg lang-section bg-opacity-60">
       <h3 class="font-bold my-4">${op.Name} ${entity.Name}:</h3>
         <pre><code class="language-go">
   ${entity.name}, err := client.${entity.Name}().${op.Name}()
@@ -329,7 +337,7 @@ pre {
                `)
       } else if (op.name == "create") {
         Content(`
-    <section id="Go-${op.Name}${entity.Name}">
+    <section id="Go-${op.Name}${entity.Name}" class="my-5 p-2 rounded-lg lang-section bg-opacity-60">
       <h3 class="font-bold my-4">${op.Name} ${entity.Name}:</h3>
         <pre><code class="language-go">
   data := ${entity.Name}Data{
@@ -348,7 +356,7 @@ pre {
                `)
       } else if (op.name == "save") {
         Content(`
-    <section id="Go-${op.Name}${entity.Name}">
+    <section id="Go-${op.Name}${entity.Name}" class="my-5 p-2 rounded-lg lang-section bg-opacity-60">
       <h3 class="font-bold my-4">${op.Name} ${entity.Name}:</h3>
         <pre><code class="language-go">
   data := ${entity.Name}Data{
@@ -368,7 +376,7 @@ pre {
                `)
       } else {
         Content(`
-    <section id="Go-${op.Name}${entity.Name}">
+    <section id="Go-${op.Name}${entity.Name}" class="my-5 p-2 rounded-lg lang-section bg-opacity-60">
       <h3 class="font-bold my-4">${op.Name} ${entity.Name}:</h3>
         <pre><code class="language-go">
   query := Query{
@@ -401,11 +409,14 @@ pre {
       <section id="Python-GettingStarted" class="my-10 p-1 rounded-lg lang-section bg-opacity-55">
       <h2 class="text-2xl font-bold my-4">Getting Started</h2>
 
+      <section id="Python-Install" class="my-5 p-2 rounded-lg lang-section bg-opacity-60">
       <h3 class="font-bold my-4">1. Install SDK:</h3>
       <pre><code class="language-python">
   pip3 install ${model.name}_sdk
       </code></pre>
+      </section>
 
+      <section id="Python-Initialize" class="my-5 p-2 rounded-lg lang-section bg-opacity-60">
       <h3 class="text-1xl font-bold my-4">2. Initialize SDK:</h3>
           <pre><code class="language-python">
   client = ${model.Name}SDK.make((`)
@@ -418,6 +429,7 @@ pre {
     Content(`
   ))
           </code></pre>
+          </section>
         </section>
 
 
@@ -428,7 +440,7 @@ pre {
     each(entity.op, (op: any) => {
       if (op.name == "list") {
         Content(`
-    <section id="Python-${op.Name}${entity.Name}">
+    <section id="Python-${op.Name}${entity.Name}" class="my-5 p-2 rounded-lg lang-section bg-opacity-60">
       <h3 class="font-bold my-4">${op.Name} ${entity.Name}:</h3>
       <pre><code class="language-python">
   ${entity.name} = client.${entity.Name}().${op.name}()
@@ -438,7 +450,7 @@ pre {
                `)
       } else if (op.name == "create") {
         Content(`
-    <section id="Python-${op.Name}${entity.Name}">
+    <section id="Python-${op.Name}${entity.Name}" class="my-5 p-2 rounded-lg lang-section bg-opacity-60">
       <h3 class="font-bold my-4">${op.Name} ${entity.Name}:</h3>
       <pre><code class="language-python">
   ${entity.name} = client.${entity.Name}().${op.name}(Data(
@@ -451,7 +463,7 @@ pre {
                `)
       } else if (op.name == "save") {
         Content(`
-    <section id="Python-${op.Name}${entity.Name}">
+    <section id="Python-${op.Name}${entity.Name}" class="my-5 p-2 rounded-lg lang-section bg-opacity-60">
     <h3 class="font-bold my-4">${op.Name} ${entity.Name}:</h3>
       <pre><code class="language-python">
   ${entity.name} = client.${entity.Name}().${op.name}(Data(
@@ -465,7 +477,7 @@ pre {
                `)
       } else {
         Content(`
-    <section id="Python-${op.Name}${entity.Name}">
+    <section id="Python-${op.Name}${entity.Name}" class="my-5 p-2 rounded-lg lang-section bg-opacity-60">
     <h3 class="font-bold my-4">${op.Name} ${entity.Name}:</h3>
       <pre><code class="language-python">
   ${entity.name} = client.${entity.Name}().${op.name}({
@@ -487,18 +499,21 @@ pre {
 
 
 <!-- PHP Section -->
-    <section id="PHP" class="p-6 rounded-lg shadow-md my-10">
-      <h1 id="PHP" class="text-3xl font-bold mb-4">PHP</h1>
+    <section id="PHP" class="p-6 rounded-lg my-30 lang-section bg-opacity-50">
+    <h1 id="PHP" class="text-3xl font-bold mb-4">PHP</h1>
 
-      <section id="PHP-GettingStarted">
+      <section id="PHP-GettingStarted" class="my-10 p-1 rounded-lg lang-section bg-opacity-55">
       <h2 class="text-2xl font-bold mb-4">Getting Started</h2>
 
-      <h3 class="font-bold mb-4">1. Install SDK</h3>
+      <section id="PHP-Install" class="my-5 p-2 rounded-lg lang-section bg-opacity-60">
+      <h3 class="font-bold my-4">1. Install SDK:</h3>
       <pre><code class="language-php">
   composer install ${model.name}-sdk
       </code></pre>
+      </section>
 
-      <h3 class="font-bold mb-4">2. Initialize SDK</h3>
+      <section id="PHP-Initialize" class="my-5 p-2 rounded-lg lang-section bg-opacity-60">
+      <h3 class="text-1xl font-bold my-4">2. Initialize SDK:</h3>
           <pre><code class="language-php">
   $client = ${model.Name}SDK([ `)
     each(option, (opt: any) => {
@@ -510,14 +525,19 @@ pre {
     Content(`
   ]);
           </code></pre>
+          </section>
         </section>
+
+
+    <section id="PHP-Methods" class="my-10 p-1 rounded-lg lang-section bg-opacity-55">
+      <h2 class="text-2xl font-bold my-4">Methods</h2>
     `)
 
     each(entity.op, (op: any) => {
       if (op.name == "list") {
         Content(`
-    <section id="PHP-${op.Name}${entity.Name}">
-      <h2 class="text-2xl font-bold mb-4">${op.Name} ${entity.Name}</h2>
+    <section id="PHP-${op.Name}${entity.Name}" class="my-5 p-2 rounded-lg lang-section bg-opacity-60">
+      <h3 class="font-bold my-4">${op.Name} ${entity.Name}:</h3>
       <pre><code class="language-php">
   $${entity.name} = new ${entity.Name}($client);
   $${entity.name} = $${entity.name}->${op.name}();
@@ -527,8 +547,8 @@ pre {
                `)
       } else if (op.name == "create") {
         Content(`
-    <section id="PHP-${op.Name}${entity.Name}">
-      <h2 class="text-2xl font-bold mb-4">${op.Name} ${entity.Name}</h2>
+    <section id="PHP-${op.Name}${entity.Name}" class="my-5 p-2 rounded-lg lang-section bg-opacity-60">
+      <h3 class="font-bold my-4">${op.Name} ${entity.Name}:</h3>
       <pre><code class="language-php">
   $${entity.name} = new ${entity.Name}($client);
   $${entity.name} = $${entity.name}->${op.name}([
@@ -541,8 +561,8 @@ pre {
                `)
       } else if (op.name == "save") {
         Content(`
-    <section id="PHP-${op.Name}${entity.Name}">
-    <h2 class="text-2xl font-bold mb-4">${op.Name} ${entity.Name}</h2>
+    <section id="PHP-${op.Name}${entity.Name}" class="my-5 p-2 rounded-lg lang-section bg-opacity-60">
+      <h3 class="font-bold my-4">${op.Name} ${entity.Name}:</h3>
       <pre><code class="language-php">
   $${entity.name} = new ${entity.Name}($client);
   $${entity.name} = $${entity.name}->${op.name}([
@@ -556,8 +576,8 @@ pre {
                `)
       } else {
         Content(`
-    <section id="PHP-${op.Name}${entity.Name}">
-      <h2 class="text-2xl font-bold mb-4">${op.Name} ${entity.Name}</h2>
+    <section id="PHP-${op.Name}${entity.Name}" class="my-5 p-2 rounded-lg lang-section bg-opacity-60">
+      <h3 class="font-bold my-4">${op.Name} ${entity.Name}:</h3>
       <pre><code class="language-php">
   $${entity.name} = new ${entity.Name}($client);
   $${entity.name} = $${entity.name}->${op.name}([
@@ -574,23 +594,28 @@ pre {
     })
     Content(`
   </section>
+  </section>
 <!-- End PHP Section -->
 
 
 
 
 <!-- Ruby Section -->
-<section id="Ruby" class="p-6 rounded-lg shadow-md my-10">
+<section id="Ruby" class="p-6 rounded-lg my-30 lang-section bg-opacity-50">
       <h1 id="Ruby" class="text-3xl font-bold mb-4">Ruby</h1>
-      <section id="Ruby-GettingStarted">
 
+      <section id="Ruby-GettingStarted" class="my-10 p-1 rounded-lg lang-section bg-opacity-55">
       <h2 class="text-2xl font-bold mb-4">Getting Started</h2>
-      <h3 class="font-bold mb-4">1. Install SDK</h3>
+
+      <section id="Ruby-Install" class="my-5 p-2 rounded-lg lang-section bg-opacity-60">
+      <h3 class="font-bold my-4">1. Install SDK:</h3>
       <pre><code class="language-ruby">
   gem install ${model.name}-sdk
       </code></pre>
+      </section>
 
-      <h3 class="font-bold mb-4">2. Initialize SDK</h3>
+      <section id="Ruby-Initialize" class="my-5 p-2 rounded-lg lang-section bg-opacity-60">
+      <h3 class="text-1xl font-bold my-4">2. Initialize SDK:</h3>
         <pre><code class="language-ruby">
   const client = ${model.Name}SDK.new({`)
     each(option, (opt: any) => {
@@ -603,14 +628,19 @@ pre {
     Content(`
   }
           </code></pre>
+          </section>
         </section>
+
+
+    <section id="Ruby-Methods" class="my-10 p-1 rounded-lg lang-section bg-opacity-55">
+      <h2 class="text-2xl font-bold my-4">Methods</h2>
     `)
 
     each(entity.op, (op: any) => {
       if (op.name == "list") {
         Content(`
-    <section id="Ruby-${op.Name}${entity.Name}">
-      <h2 class="text-2xl font-bold mb-4">${op.Name} ${entity.Name}</h2>
+    <section id="Ruby-${op.Name}${entity.Name}" class="my-5 p-2 rounded-lg lang-section bg-opacity-60">
+      <h3 class="font-bold my-4">${op.Name} ${entity.Name}:</h3>
         <pre><code class="language-ruby">
   ${entity.name} = client.${entity.Name}.${op.name}()
   puts "${entity.Name} #{${entity.name}}"
@@ -619,8 +649,8 @@ pre {
                `)
       } else if (op.name == "create") {
         Content(`
-    <section id="Ruby-${op.Name}${entity.Name}">
-      <h2 class="text-2xl font-bold mb-4">${op.Name} ${entity.Name}</h2>
+    <section id="Ruby-${op.Name}${entity.Name}" class="my-5 p-2 rounded-lg lang-section bg-opacity-60">
+      <h3 class="font-bold my-4">${op.Name} ${entity.Name}:</h3>
         <pre><code class="language-ruby">
   ${entity.name} = client.${entity.Name}.${op.name}({
     baa: "foo"
@@ -632,8 +662,8 @@ pre {
                `)
       } else if (op.name == "save") {
         Content(`
-    <section id="Ruby-${op.Name}${entity.Name}">
-    <h2 class="text-2xl font-bold mb-4">${op.Name} ${entity.Name}</h2>
+    <section id="Ruby-${op.Name}${entity.Name}" class="my-5 p-2 rounded-lg lang-section bg-opacity-60">
+      <h3 class="font-bold my-4">${op.Name} ${entity.Name}:</h3>
         <pre><code class="language-ruby">
   ${entity.name} = client.${entity.Name}.${op.name}({
     id: 1,
@@ -646,8 +676,8 @@ pre {
                `)
       } else {
         Content(`
-    <section id="Ruby-${op.Name}${entity.Name}">
-      <h2 class="text-2xl font-bold mb-4">${op.Name} ${entity.Name}</h2>
+    <section id="Ruby-${op.Name}${entity.Name}" class="my-5 p-2 rounded-lg lang-section bg-opacity-60">
+      <h3 class="font-bold my-4">${op.Name} ${entity.Name}:</h3>
         <pre><code class="language-ruby">
   ${entity.name} = client.${entity.Name}.${op.name}({
     id: 1
@@ -661,6 +691,7 @@ pre {
     })
   })
   Content(`
+    </section>
   </section>
 <!-- End Ruby Section -->
 
