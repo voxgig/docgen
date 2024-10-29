@@ -11,22 +11,8 @@ const Main = (0, jostraca_1.cmp)(function Main(props) {
 :host {
   /* Colors */
   --c1: #ffffff;
-  --c2: #1b1b1b;
+  --c2: #000000;
   --c3: #85ea2d;
-
-  /* Size */
-  --s0: 0rem;
-  --s1: 0.25rem;
-  --s2: 0.5rem;
-  --s3: 0.75rem;
-  --s4: 1rem;
-  --s5: 1.25rem;
-  --s6: 1.5rem;
-  --s7: 1.75rem;
-  --s8: 2rem;
-  --s9: 2.25rem;
-  --s10: 2.5rem;
-  }
 }
 
 /* Generic Styles */
@@ -56,14 +42,6 @@ main {
   height: 100vh;
 }
 
-footer {
-  background-color: var(--c2);
-  color: var(--c1);
-  text-align: center;
-  position: relative;
-  z-index: 1;
-}
-
 h1 {
 background: linear-gradient(to right, var(--c3), var(--c1));
 background-clip: text;
@@ -72,7 +50,6 @@ color: transparent;
 
 .sidebar {
   width: 10rem;
-  padding: var(--s4);
   color: var(--c1);
   border-right: 1px solid var(--c3);
   position: sticky;
@@ -82,6 +59,10 @@ color: transparent;
   z-index: 0;
 }
 
+.content-section {
+  display: block;
+}
+
 .content-section:hover {
   cursor: pointer;
   color: var(--c3);
@@ -89,45 +70,15 @@ color: transparent;
 
 pre {
   background-color: var(--c1);
-  border-radius: var(--s1);
-  padding: var(--s3);
-  margin-bottom: var(--s4)
 }
 
 .lang-section {
-  color: var(--c3);
-}
-
-.toggle-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--s2);
-  margin-bottom: var(--s4);
-  background-color: var(--c3);
-  color: var(--c2);
-  border: none;
-  border-radius: var(--s3);
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.toggle-button:hover {
-  background-color: var(--c1);
-}
-
-.sun-icon,
-.moon-icon {
-  display: none;
-}
-
-.light-mode .moon-icon {
-  display: inline-block;
+  background-color: rgba(17, 24, 39, var(--tw-bg-opacity));
 }
 </style>
 
 
-<main class="text-white bg-black">
+<main>
 
 <!-- Sidebar -->
 <nav class="sidebar">
@@ -217,23 +168,23 @@ pre {
          `);
     (0, jostraca_1.each)(entity, (entity) => {
         (0, jostraca_1.Content)(`
-  <section id="${entity.Name}" class="bg-black w-2/3 mx-auto p-6 rounded-lg shadow-md my-20">
+  <section id="${entity.Name}" class="w-2/3 mx-auto p-6 rounded-lg shadow-md my-20">
     <h2 class="text-3xl font-bold mb-4">${entity.Name}</h2>
     <p class="text-lg leading-relaxed">Details about the Pet entity goes here.</p>
 
 <!-- JavaScript Section -->
-    <section id="JavaScript" class="p-6 rounded-lg shadow-md my-10">
+    <section id="JavaScript" class="p-6 rounded-lg my-30 lang-section bg-opacity-50">
       <h1 id="JavaScript" class="text-3xl font-bold mb-4">JavaScript</h1>
 
-      <section id="JavaScript-GettingStarted">
-      <h2 class="text-2xl font-bold mb-4">Getting Started</h2>
+      <section id="JavaScript-GettingStarted" class="my-10 p-1 rounded-lg lang-section bg-opacity-55">
+      <h2 class="text-2xl font-bold my-4">Getting Started</h2>
 
-      <h3 class="font-bold mb-4">1. Install SDK</h3>
+      <h3 class="font-bold my-4">1. Install SDK:</h3>
       <pre><code class="language-javascript">
   npm install ${model.name}-sdk
       </code></pre>
 
-      <h3 class="text-1xl font-bold mb-4">2. Initialize SDK</h3>
+      <h3 class="text-1xl font-bold my-4">2. Initialize SDK:</h3>
           <pre><code class="language-javascript">
   const client = ${model.Name}SDK.make({`);
         (0, jostraca_1.each)(option, (opt) => {
@@ -246,12 +197,16 @@ pre {
   })
           </code></pre>
         </section>
+
+
+    <section id="JavaScript-Methods" class="my-10 p-1 rounded-lg lang-section bg-opacity-55">
+      <h2 class="text-2xl font-bold my-4">Methods</h2>
     `);
         (0, jostraca_1.each)(entity.op, (op) => {
             if (op.name == "list") {
                 (0, jostraca_1.Content)(`
     <section id="JavaScript-${op.Name}${entity.Name}">
-      <h2 class="text-2xl font-bold mb-4">${op.Name} ${entity.Name}</h2>
+      <h3 class="font-bold my-4">${op.Name} ${entity.Name}:</h3>
       <pre><code class="language-javascript">
   ${entity.name} = await client.${entity.Name}().${op.name}()
   console.log('${entity.Name}', ${entity.name})
@@ -262,7 +217,7 @@ pre {
             else if (op.name == "create") {
                 (0, jostraca_1.Content)(`
     <section id="JavaScript-${op.Name}${entity.Name}">
-      <h2 class="text-2xl font-bold mb-4">${op.Name} ${entity.Name}</h2>
+      <h3 class="font-bold my-4">${op.Name} ${entity.Name}:</h3>
       <pre><code class="language-javascript">
   ${entity.name} = await client.${entity.Name}().${op.name}({
     baa: "foo",
@@ -276,7 +231,7 @@ pre {
             else if (op.name == "save") {
                 (0, jostraca_1.Content)(`
     <section id="JavaScript-${op.Name}${entity.Name}">
-    <h2 class="text-2xl font-bold mb-4">${op.Name} ${entity.Name}</h2>
+    <h3 class="font-bold my-4">${op.Name} ${entity.Name}:</h3>
       <pre><code class="language-javascript">
   ${entity.name} = await client.${entity.Name}().${op.name}({
     id: 1,
@@ -291,7 +246,7 @@ pre {
             else {
                 (0, jostraca_1.Content)(`
     <section id="JavaScript-${op.Name}${entity.Name}">
-      <h2 class="text-2xl font-bold mb-4">${op.Name} ${entity.Name}</h2>
+    <h3 class="font-bold my-4">${op.Name} ${entity.Name}:</h3>
       <pre><code class="language-javascript">
   ${entity.name} = await client.${entity.Name}().${op.name}({
     id: 1
@@ -307,23 +262,24 @@ pre {
         });
         (0, jostraca_1.Content)(`
   </section>
+  </section>
 <!-- End JavaScript Section -->
 
 
 <!-- Go Section -->
 
-<section id="Go" class="p-6 rounded-lg shadow-md my-10">
+<section id="Go" class="p-6 rounded-lg my-30 lang-section bg-opacity-50">
       <h1 id="GO" class="text-3xl font-bold mb-4">Go</h1>
 
-      <section id="Go-GettingStarted">
+      <section id="Go-GettingStarted" class="my-10 p-1 rounded-lg lang-section bg-opacity-55">
       <h2 class="text-2xl font-bold mb-4">Getting Started</h2>
 
-      <h3 class="font-bold mb-4">1. Install SDK</h3>
+      <h3 class="font-bold my-4">1. Install SDK:</h3>
       <pre><code class="language-go">
   go get ${model.name}
       </code></pre>
 
-      <h3 class="font-bold mb-4">2. Initialize SDK</h3>
+      <h3 class="text-1xl font-bold my-4">2. Initialize SDK:</h3>
         <pre><code class="language-go">
   options := ${model.name}sdk.Options{`);
         (0, jostraca_1.each)(option, (opt) => {
@@ -337,12 +293,17 @@ pre {
   }
           </code></pre>
         </section>
+
+
+
+    <section id="Go-Methods" class="my-10 p-1 rounded-lg lang-section bg-opacity-55">
+      <h2 class="text-2xl font-bold my-4">Methods</h2>
     `);
         (0, jostraca_1.each)(entity.op, (op) => {
             if (op.name == "list") {
                 (0, jostraca_1.Content)(`
     <section id="Go-${op.Name}${entity.Name}">
-      <h2 class="text-2xl font-bold mb-4">${op.Name} ${entity.Name}</h2>
+      <h3 class="font-bold my-4">${op.Name} ${entity.Name}:</h3>
         <pre><code class="language-go">
   ${entity.name}, err := client.${entity.Name}().${op.Name}()
   if err != nil {
@@ -358,7 +319,7 @@ pre {
             else if (op.name == "create") {
                 (0, jostraca_1.Content)(`
     <section id="Go-${op.Name}${entity.Name}">
-      <h2 class="text-2xl font-bold mb-4">${op.Name} ${entity.Name}</h2>
+      <h3 class="font-bold my-4">${op.Name} ${entity.Name}:</h3>
         <pre><code class="language-go">
   data := ${entity.Name}Data{
     Baa: "foo"
@@ -378,7 +339,7 @@ pre {
             else if (op.name == "save") {
                 (0, jostraca_1.Content)(`
     <section id="Go-${op.Name}${entity.Name}">
-    <h2 class="text-2xl font-bold mb-4">${op.Name} ${entity.Name}</h2>
+      <h3 class="font-bold my-4">${op.Name} ${entity.Name}:</h3>
         <pre><code class="language-go">
   data := ${entity.Name}Data{
     Id: 1,
@@ -399,7 +360,7 @@ pre {
             else {
                 (0, jostraca_1.Content)(`
     <section id="Go-${op.Name}${entity.Name}">
-      <h2 class="text-2xl font-bold mb-4">${op.Name} ${entity.Name}</h2>
+      <h3 class="font-bold my-4">${op.Name} ${entity.Name}:</h3>
         <pre><code class="language-go">
   query := Query{
     Id: 1
@@ -418,24 +379,25 @@ pre {
             }
         });
         (0, jostraca_1.Content)(`
+    </section>
   </section>
 <!-- End Go Section -->
 
 
 
 <!-- Python Section -->
-    <section id="Python" class="p-6 rounded-lg shadow-md my-10">
+    <section id="Python" class="p-6 rounded-lg my-30 lang-section bg-opacity-50">
       <h1 id="Python" class="text-3xl font-bold mb-4">Python</h1>
 
-      <section id="Python-GettingStarted">
-      <h2 class="text-2xl font-bold mb-4">Getting Started</h2>
+      <section id="Python-GettingStarted" class="my-10 p-1 rounded-lg lang-section bg-opacity-55">
+      <h2 class="text-2xl font-bold my-4">Getting Started</h2>
 
-      <h3 class="font-bold mb-4">1. Install SDK</h3>
+      <h3 class="font-bold my-4">1. Install SDK:</h3>
       <pre><code class="language-python">
   pip3 install ${model.name}_sdk
       </code></pre>
 
-      <h3 class="font-bold mb-4">2. Initialize SDK</h3>
+      <h3 class="text-1xl font-bold my-4">2. Initialize SDK:</h3>
           <pre><code class="language-python">
   client = ${model.Name}SDK.make((`);
         (0, jostraca_1.each)(option, (opt) => {
@@ -448,12 +410,16 @@ pre {
   ))
           </code></pre>
         </section>
+
+
+    <section id="Python-Methods" class="my-10 p-1 rounded-lg lang-section bg-opacity-55">
+      <h2 class="text-2xl font-bold my-4">Methods</h2>
     `);
         (0, jostraca_1.each)(entity.op, (op) => {
             if (op.name == "list") {
                 (0, jostraca_1.Content)(`
     <section id="Python-${op.Name}${entity.Name}">
-      <h2 class="text-2xl font-bold mb-4">${op.Name} ${entity.Name}</h2>
+      <h3 class="font-bold my-4">${op.Name} ${entity.Name}:</h3>
       <pre><code class="language-python">
   ${entity.name} = client.${entity.Name}().${op.name}()
   print('${entity.Name}', ${entity.name})
@@ -464,7 +430,7 @@ pre {
             else if (op.name == "create") {
                 (0, jostraca_1.Content)(`
     <section id="Python-${op.Name}${entity.Name}">
-      <h2 class="text-2xl font-bold mb-4">${op.Name} ${entity.Name}</h2>
+      <h3 class="font-bold my-4">${op.Name} ${entity.Name}:</h3>
       <pre><code class="language-python">
   ${entity.name} = client.${entity.Name}().${op.name}(Data(
     baa: "foo",
@@ -478,7 +444,7 @@ pre {
             else if (op.name == "save") {
                 (0, jostraca_1.Content)(`
     <section id="Python-${op.Name}${entity.Name}">
-    <h2 class="text-2xl font-bold mb-4">${op.Name} ${entity.Name}</h2>
+    <h3 class="font-bold my-4">${op.Name} ${entity.Name}:</h3>
       <pre><code class="language-python">
   ${entity.name} = client.${entity.Name}().${op.name}(Data(
     id = 1,
@@ -493,7 +459,7 @@ pre {
             else {
                 (0, jostraca_1.Content)(`
     <section id="Python-${op.Name}${entity.Name}">
-      <h2 class="text-2xl font-bold mb-4">${op.Name} ${entity.Name}</h2>
+    <h3 class="font-bold my-4">${op.Name} ${entity.Name}:</h3>
       <pre><code class="language-python">
   ${entity.name} = client.${entity.Name}().${op.name}({
     "id": 1
@@ -508,6 +474,7 @@ pre {
             }
         });
         (0, jostraca_1.Content)(`
+  </section>
   </section>
 <!-- End Python Section -->
 
