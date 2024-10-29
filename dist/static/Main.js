@@ -15,18 +15,7 @@ const Main = (0, jostraca_1.cmp)(function Main(props) {
   --c3: #85ea2d;
 }
 
-/* Generic Styles */
-html {
-  box-sizing: border-box;
-}
-
-*,
-*::before,
-*::after {
-  box-sizing: inherit;
-}
-
-body {
+main {
   background-color: var(--c2);
   color: var(--c1);
 }
