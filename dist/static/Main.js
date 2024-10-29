@@ -31,41 +31,24 @@ body {
   color: var(--c1);
 }
 
-main,
-footer {
-  background-color: var(--c2);
-  color: var(--c1);
-}
-
-main {
-  display: flex;
-  height: 100vh;
-}
-
 h1 {
-background: linear-gradient(to right, var(--c3), var(--c1));
-background-clip: text;
-color: transparent;
+  background: linear-gradient(to right, var(--c3), var(--c1));
+  background-clip: text;
+  color: transparent;
 }
 
-.sidebar {
-  border-right: 1px solid var(--c3);
-  position: sticky;
-  overflow: auto;
-  z-index: 0;
-}
-
-pre {
-  background-color: var(--c1);
-}
 
 .lang-section {
   background-color: rgba(17, 24, 39, var(--tw-bg-opacity));
 }
+
+.sidebar-section:hover {
+  color: var(--c3);
+}
 </style>
 
 
-<main>
+<main class="flex h-screen">
 
 <!-- Sidebar -->
 <aside class="w-64 flex flex-col lang-section bg-opacity-50">
