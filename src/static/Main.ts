@@ -53,23 +53,10 @@ color: transparent;
 }
 
 .sidebar {
-  width: 10rem;
-  color: var(--c1);
   border-right: 1px solid var(--c3);
   position: sticky;
-  top: 0;
-  height: 100vh;
   overflow: auto;
   z-index: 0;
-}
-
-.content-section {
-  display: block;
-}
-
-.content-section:hover {
-  cursor: pointer;
-  color: var(--c3);
 }
 
 pre {
@@ -85,83 +72,43 @@ pre {
 <main>
 
 <!-- Sidebar -->
-<nav class="sidebar">
-  <a class="content-section" data-target="introduction">
-   <h2>Introduction</h2>
-  </a>
-         `)
+<aside class="w-64 flex flex-col lang-section bg-opacity-50">
+    <section class="p-4 text-2xl font-bold border-b">
+        <h1>${model.Name} SDK</h1>
+    </section>
 
-  each(entity, (entity: any) => {
-    Content(`
- <a class="content-section" data-target="${entity.Name}">
-  <h2>${entity.Name}</h2>
-  </a>
-
- <a class="content-section" data-target="JavaScript">
-  <h3>JavaScript</h3>
- </a>
-
- <a class="content-section" data-target="JavaScript-GettingStarted">Getting Started</a>
+  <nav class="flex-1 p-4 space-y-4">
+  <section>
+    <button 
+    class="sidebar-section cursor-pointer w-full text-left flex items-center justify-between font-semibold hover:bg-gray-800 p-2 rounded-md"
+    data-target="#section-intro"
+    >
+     Introduction
+    </button>
+  </section>
            `)
-    each(entity.op, (op: any) => {
-      Content(`
-  <a class="content-section" data-target="JavaScript-${op.Name}${entity.Name}">${op.Name} ${entity.Name}</a>
-        `)
-    })
 
-    Content(`
- <a class="content-section" data-target="Go">
-  <h3>Go</h3>
- </a>
- <a class="content-section" data-target="Go-GettingStarted">Getting Started</a>
-           `)
-    each(entity.op, (op: any) => {
+    each(entity, (entity: any) => {
       Content(`
-  <a class="content-section" data-target="Go-${op.Name}${entity.Name}">${op.Name} ${entity.Name}</a>
-        `)
-    })
+<section class="group">
+  <button class="side-nav-btn w-full text-left flex items-center justify-between font-semibold hover:bg-gray-800 p-2 rounded-md" data-target="#side-sect">
+    ${entity.Name}
+    <span class="indicator">+</span>
+  </button>
+  <section id="side-sect" class="hidden pl-4 space-y-2">
+    <a  class="sidebar-section cursor-pointer block hover:bg-gray-800 p-2 rounded-md" data-target="#section-javascript">JavaScript</a>
+    <a  class="sidebar-section cursor-pointer block hover:bg-gray-800 p-2 rounded-md" data-target="#section-go">Go</a>
+    <a  class="sidebar-section cursor-pointer block hover:bg-gray-800 p-2 rounded-md" data-target="#section-python">Python</a>
+    <a  class="sidebar-section cursor-pointer block hover:bg-gray-800 p-2 rounded-md" data-target="#section-php">PHP</a>
+    <a  class="sidebar-section cursor-pointer block hover:bg-gray-800 p-2 rounded-md" data-target="#section-ruby">Ruby</a>
+  </section>
+</section>
+          `)
+      })
 
     Content(`
- <a class="content-section" data-target="Python">
-  <h3>Python</h3>
- </a>
- <a class="content-section" data-target="Python-GettingStarted">Getting Started</a>
-           `)
-    each(entity.op, (op: any) => {
-      Content(`
-  <a class="content-section" data-target="Python-${op.Name}${entity.Name}">${op.Name} ${entity.Name}</a>
-        `)
-    })
-
-    Content(`
- <a class="content-section" data-target="PHP">
-  <h3>PHP</h3>
- </a>
- <a class="content-section" data-target="PHP-GettingStarted">Getting Started</a>
-           `)
-    each(entity.op, (op: any) => {
-      Content(`
-  <a class="content-section" data-target="PHP-${op.Name}${entity.Name}">${op.Name} ${entity.Name}</a>
-        `)
-    })
-
-
-
-    Content(`
- <a class="content-section" data-target="Ruby">
-  <h3>Ruby</h3>
- </a>
- <a class="content-section" data-target="Ruby-GettingStarted">Getting Started</a>
-           `)
-    each(entity.op, (op: any) => {
-      Content(`
-  <a class="content-section" data-target="Ruby-${op.Name}${entity.Name}">${op.Name} ${entity.Name}</a>
-        `)
-    })
-
-  })
-  Content(`
-</nav>
+  </nav>
+</aside>
 
 <!-- End Sidebar -->
 
@@ -169,10 +116,10 @@ pre {
 
 
 <div class="flex flex-col overflow-y-auto p-4 w-full">
-<h1 class="text-5xl font-extrabold text-center tracking-wide my-4 shadow-sm"> ${model.Name} SDK Documentation</h1>
+<h1 class="text-5xl font-extrabold text-center tracking-wide my-4 p-10 shadow-sm"> ${model.Name} SDK Documentation</h1>
 
   <div>
-    <section id="introduction" class="w-2/3 mx-auto shadow-sm my-20">
+    <section id="section-intro" class="w-2/3 mx-auto shadow-sm my-20">
       <h2 class="text-3xl font-bold mb-4">Introduction</h2>
       <p class="text-lg leading-relaxed">Welcome to the ${model.Name} SDK documentation. This guide will help you integrate and use our SDK effectively.</p>
     </section>
@@ -186,7 +133,7 @@ pre {
     <p class="text-lg leading-relaxed">Details about the Pet entity goes here.</p>
 
 <!-- JavaScript Section -->
-    <section id="JavaScript" class="p-6 rounded-lg my-30 lang-section bg-opacity-50">
+    <section id="section-javascript" class="p-6 rounded-lg my-30 lang-section bg-opacity-50">
       <h1 id="JavaScript" class="text-3xl font-bold mb-4">JavaScript</h1>
 
       <section id="JavaScript-GettingStarted" class="my-10 p-1 rounded-lg lang-section bg-opacity-55">
@@ -283,7 +230,7 @@ pre {
 
 <!-- Go Section -->
 
-<section id="Go" class="p-6 rounded-lg my-30 lang-section bg-opacity-50">
+<section id="section-go" class="p-6 rounded-lg my-30 lang-section bg-opacity-50">
       <h1 id="GO" class="text-3xl font-bold mb-4">Go</h1>
 
       <section id="Go-GettingStarted" class="my-10 p-1 rounded-lg lang-section bg-opacity-55">
@@ -403,7 +350,7 @@ pre {
 
 
 <!-- Python Section -->
-    <section id="Python" class="p-6 rounded-lg my-30 lang-section bg-opacity-50">
+    <section id="section-python" class="p-6 rounded-lg my-30 lang-section bg-opacity-50">
       <h1 id="Python" class="text-3xl font-bold mb-4">Python</h1>
 
       <section id="Python-GettingStarted" class="my-10 p-1 rounded-lg lang-section bg-opacity-55">
@@ -499,7 +446,7 @@ pre {
 
 
 <!-- PHP Section -->
-    <section id="PHP" class="p-6 rounded-lg my-30 lang-section bg-opacity-50">
+    <section id="section-php" class="p-6 rounded-lg my-30 lang-section bg-opacity-50">
     <h1 id="PHP" class="text-3xl font-bold mb-4">PHP</h1>
 
       <section id="PHP-GettingStarted" class="my-10 p-1 rounded-lg lang-section bg-opacity-55">
@@ -601,7 +548,7 @@ pre {
 
 
 <!-- Ruby Section -->
-<section id="Ruby" class="p-6 rounded-lg my-30 lang-section bg-opacity-50">
+<section id="section-ruby" class="p-6 rounded-lg my-30 lang-section bg-opacity-50">
       <h1 id="Ruby" class="text-3xl font-bold mb-4">Ruby</h1>
 
       <section id="Ruby-GettingStarted" class="my-10 p-1 rounded-lg lang-section bg-opacity-55">

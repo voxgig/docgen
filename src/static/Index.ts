@@ -109,29 +109,39 @@ const Index = cmp(function Index(props: any) {
 
         mainShadowRoot.querySelectorAll("pre code").forEach((block) => Prism.highlightElement(block));
 
-        if (mainShadowRoot) {
-         mainShadowRoot.querySelectorAll(".content-section").forEach((section) => {
-            section.addEventListener("click", function () {
-              const targetID = this.getAttribute("data-target");
-              const targetSection = mainShadowRoot.querySelector(\`#\${targetID}\`);
-              if (targetSection) {
-                targetSection.scrollIntoView({ behavior: "smooth" });
+        mainShadowRoot.querySelectorAll(".sidebar-section").forEach((el) => {
+          el.addEventListener("click", function () {
+            const targetID = this.getAttribute("data-target")
+            const targetSection = mainShadowRoot.querySelector(targetID);
+
+            if (targetSection) {
+              targetSection.scrollIntoView({ behavior: "smooth" });
+            } else {
+              console.error(\`Target section not found: \${targetID}\`)
+            }
+          });
+        });
+
+          // Toggle the sidebar visibility of sections
+          mainShadowRoot.querySelectorAll(".side-nav-btn").forEach(button => {
+            button.addEventListener('click', function () {
+              const targetID = this.getAttribute('data-target');
+              const target = mainShadowRoot.querySelector(targetID);
+              const indicator = this.querySelector(".indicator");
+              if (target) {
+                if (target.classList.contains('hidden')) {
+                  target.classList.remove('hidden');
+                  indicator.textContent = '-';
+                } else {
+                  target.classList.add('hidden');
+                  indicator.textContent = '+';
+                }
+              } else {
+                console.error(\`Sidebar target not found: \${targetID}\`);
               }
             });
           });
 
-          // const toggleButton = mainShadowRoot.querySelector(".toggle-button");
-          // toggleButton.addEventListener("click", () => {
-          //   mainShadowRoot.host.classList.toggle("dark-mode");
-          //   if (mainShadowRoot.host.classList.contains('dark-mode')) {
-          //     toggleButton.classList.remove('dark-mode');
-          //     toggleButton.classList.add('light-mode');
-          //   } else {
-          //     toggleButton.classList.remove('light-mode');
-          //     toggleButton.classList.add('dark-mode');
-          //   }
-          // });
-        }
       });
    </script>
   </body>
