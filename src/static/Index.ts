@@ -109,7 +109,22 @@ const Index = cmp(function Index(props: any) {
 
         mainShadowRoot.querySelectorAll("pre code").forEach((block) => Prism.highlightElement(block));
 
-        mainShadowRoot.querySelectorAll(".sidebar-section").forEach((el) => {
+
+        mainShadowRoot.querySelectorAll(".side-get-start-sect").forEach((el) => {
+          el.addEventListener("click", function () {
+            const targetID = this.getAttribute("data-target")
+            const targetSection = mainShadowRoot.querySelector(targetID);
+
+            if (targetSection) {
+              targetSection.scrollIntoView({ behavior: "smooth" });
+            } else {
+              console.error(\`Target section not found: \${targetID}\`)
+            }
+          });
+        });
+
+
+        mainShadowRoot.querySelectorAll(".sidebar-section ").forEach((el) => {
           el.addEventListener("click", function () {
             const targetID = this.getAttribute("data-target")
             const targetSection = mainShadowRoot.querySelector(targetID);
@@ -142,6 +157,28 @@ const Index = cmp(function Index(props: any) {
             });
           });
 
+
+          // Toggle the get started sidebar visibility of sections
+          mainShadowRoot.querySelectorAll(".side-get-start-nav-btn").forEach(button => {
+            button.addEventListener('click', function () {
+              const targetID = this.getAttribute('data-target');
+              const target = mainShadowRoot.querySelector(targetID);
+              const indicator = this.querySelector(".indicator");
+              if (target) {
+                if (target.classList.contains('hidden')) {
+                  target.classList.remove('hidden');
+                  indicator.textContent = '-';
+                } else {
+                  target.classList.add('hidden');
+                  indicator.textContent = '+';
+                }
+              } else {
+                console.error(\`Sidebar target not found: \${targetID}\`);
+              }
+            });
+          });
+
+        
       });
    </script>
   </body>
