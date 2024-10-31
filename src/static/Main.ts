@@ -2,15 +2,17 @@
 import { cmp, each, File, Folder, Content, Fragment } from 'jostraca'
 
 import { resolvePath } from '../utility'
+import { strict } from 'node:assert'
+import { spec } from 'node:test/reporters'
 
 
 const Main = cmp(function Main(props: any) {
   const { ctx$ } = props
   const { model } = ctx$
 
-  const { entity, option } = model.main.sdk
+  const { entity, option, build } = model.main.sdk
 
-  const languagesSpec = {
+  const languagesSpec: Record<string, any> = {
     js: {
       Name: "JavaScript",
       name: "javascript",
@@ -317,9 +319,10 @@ main {
     <span class="indicator">+</span>
   </button>
   <section id="side-get-start-sect" class="hidden pl-4 space-y-2">`)
-  each(languagesSpec, (lg: any) => {
+  each(build, (lg: any) => {
+    const spec = languagesSpec[lg.name$]
     Content(`
-    <a  class="side-get-start-sect cursor-pointer block hover:bg-gray-800 p-2 rounded-md" data-target="#section-get-start-${lg.name}">${lg.Name}</a>
+    <a  class="side-get-start-sect cursor-pointer block hover:bg-gray-800 p-2 rounded-md" data-target="#section-get-start-${spec.name}">${spec.Name}</a>
 `)
   })
   Content(`
@@ -335,9 +338,10 @@ main {
     <span class="indicator">+</span>
   </button>
   <section id="side-sect" class="hidden pl-4 space-y-2">`)
-    each(languagesSpec, (lg: any) => {
+    each(build, (lg: any) => {
+      const spec = languagesSpec[lg.name]
       Content(`
-    <a  class="sidebar-section cursor-pointer block hover:bg-gray-800 p-2 rounded-md" data-target="#section-${lg.name}">${lg.Name}</a>
+    <a  class="sidebar-section cursor-pointer block hover:bg-gray-800 p-2 rounded-md" data-target="#section-${spec.name}">${spec.Name}</a>
 `)
     })
     Content(`
@@ -378,23 +382,24 @@ main {
 
   <div class="w-3/4 mx-auto p-6 rounded-lg shadow-md my-20" >
       <h2 class="text-3xl font-bold my-4">Getting Started</h2>`)
-  each(languagesSpec, (lg: any) => {
+  each(build, (lg: any) => {
+    const spec = languagesSpec[lg.name$]
     Content(`
-    <section id="section-get-start-${lg.name}" class="p-6 rounded-lg my-30 lang-section">
-      <h3 id="${lg.Name}" class="lg-header text-3xl font-bold mb-4">${lg.Name}</h3>
+    <section id="section-get-start-${spec.name}" class="p-6 rounded-lg my-30 lang-section">
+      <h3 id="${spec.Name}" class="lg-header text-3xl font-bold mb-4">${spec.Name}</h3>
 
-      <section id="${lg.Name}-GettingStarted" class="flex flex-col content-between mb-30 p-1 rounded-lg lang-section">
+      <section id="${spec.Name}-GettingStarted" class="flex flex-col content-between mb-30 p-1 rounded-lg lang-section">
       <section class="flex justify-between gap-8 mb-20 p-2 rounded-lg lang-section">
       <section class="w-1/2">
         <h4 class="font-bold my-4">1. Install SDK</h4>
         <p class="break-words">
-        Use the following command to install the SDK for ${lg.Name}. This SDK provides all necessary functions to interact with our APIs easily.
+        Use the following command to install the SDK for ${spec.Name}. This SDK provides all necessary functions to interact with our APIs easily.
       </p>
       </section>
 
         <pre class="w-1/2">
-        <code class="language-${lg.name}">
-  ${lg.install}
+        <code class="language-${spec.name}">
+  ${spec.install}
         </code>
         </pre>
       </section>
@@ -408,8 +413,8 @@ main {
       </section>
 
           <pre class="w-1/2">
-          <code class="language-${lg.name}">`)
-    lg.init()
+          <code class="language-${spec.name}">`)
+    spec.init()
     Content(`
           </code>
           </pre>
@@ -432,12 +437,13 @@ main {
     <p class="text-lg leading-relaxed">Details about the ${entity.Name} entity goes here.</p>
 
            `)
-    each(languagesSpec, (lg: any) => {
+    each(build, (lg: any) => {
+    const spec = languagesSpec[lg.name$]
       Content(`
-    <section id="section-${lg.name}" class="p-6 rounded-lg my-30 lang-section">
-      <h1 id="${lg.Name}" class="lg-header text-3xl font-bold mb-4">${lg.Name}</h1>
+    <section id="section-${spec.name}" class="p-6 rounded-lg my-30 lang-section">
+      <h1 id="${spec.Name}" class="lg-header text-3xl font-bold mb-4">${spec.Name}</h1>
 
-    <section id="${lg.Name}-Methods" class="my-10 p-1 rounded-lg">
+    <section id="${spec.Name}-Methods" class="my-10 p-1 rounded-lg">
       <h2 class="text-2xl font-bold my-4">Methods</h2>
     `)
 
@@ -452,9 +458,9 @@ main {
       </p>
       </section>
         <pre class="w-1/2">
-        <code class="language-${lg.name}">
+        <code class="language-${spec.name}">
                   `)
-          lg.list(op, entity)
+          spec.list(op, entity)
           Content(`
         </code>
         </pre>
@@ -470,9 +476,9 @@ main {
       </p>
       </section>
         <pre class="w-1/2">
-        <code class="language-${lg.name}">
+        <code class="language-${spec.name}">
                   `)
-          lg.create(op, entity)
+          spec.create(op, entity)
           Content(`
         </code>
         </pre>
@@ -488,9 +494,9 @@ main {
       </p>
       </section>
         <pre class="w-1/2">
-        <code class="language-${lg.name}">
+        <code class="language-${spec.name}">
                   `)
-          lg.save(op, entity)
+          spec.save(op, entity)
           Content(`
         </code>
         </pre>
@@ -506,9 +512,9 @@ main {
       </p>
       </section>
         <pre class="w-1/2">
-        <code class="language-${lg.name}">
+        <code class="language-${spec.name}">
                   `)
-          lg.load(op, entity)
+          spec.load(op, entity)
           Content(`
         </code>
         </pre>
