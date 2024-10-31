@@ -2,256 +2,11 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Main = void 0;
 const jostraca_1 = require("jostraca");
+const languagesSpec_1 = require("./languagesSpec");
 const Main = (0, jostraca_1.cmp)(function Main(props) {
     const { ctx$ } = props;
     const { model } = ctx$;
     const { entity, option, build } = model.main.sdk;
-    const languagesSpec = {
-        js: {
-            Name: "JavaScript",
-            name: "javascript",
-            install: `npm install ${model.name}-sdk`,
-            init: () => {
-                (0, jostraca_1.Content)(`
-  const client = ${model.Name}SDK.make({`);
-                (0, jostraca_1.each)(option, (opt) => {
-                    if (opt.kind == "String") {
-                        (0, jostraca_1.Content)(`
-    ${opt.name}: process.env.${model.NAME}_${opt.name.toUpperCase()},`);
-                    }
-                });
-                (0, jostraca_1.Content)(`
-  })`);
-            },
-            create: (op, entity) => (0, jostraca_1.Content)(`
-  ${entity.name} = await client.${entity.Name}().${op.name}({
-    baa: "foo",
-  })
-
-  console.log('${entity.Name}', ${entity.name})
-               `),
-            save: (op, entity) => (0, jostraca_1.Content)(`
-  ${entity.name} = await client.${entity.Name}().${op.name}({
-    id: 1,
-    baa: "foo",
-  })
-
-  console.log('${entity.Name}', ${entity.name})
-               `),
-            load: (op, entity) => (0, jostraca_1.Content)(`
-  ${entity.name} = await client.${entity.Name}().${op.name}({
-    id: 1
-  })
-
-  console.log('${entity.Name}', ${entity.name})
-               `),
-            list: (op, entity) => (0, jostraca_1.Content)(`
-  ${entity.name} = await client.${entity.Name}().${op.name}()
-  console.log('${entity.Name}', ${entity.name})
-               `),
-        },
-        go: {
-            Name: "Go",
-            name: "go",
-            install: `go get ${model.name}`,
-            init: () => {
-                (0, jostraca_1.Content)(`
-  options := ${model.name}sdk.Options{`);
-                (0, jostraca_1.each)(option, (opt) => {
-                    if (opt.kind == "String") {
-                        const capName = opt.name.charAt(0).toUpperCase() + opt.name.substring(1, opt.name.length);
-                        (0, jostraca_1.Content)(`
-    ${capName}: os.Getenv("${model.NAME}_${opt.name.toUpperCase()}"),`);
-                    }
-                });
-                (0, jostraca_1.Content)(`
-  }`);
-            },
-            create: (op, entity) => (0, jostraca_1.Content)(`
-  data := ${entity.Name}Data{
-    Baa: "foo"
-  }
-
-  ${entity.name}, err := client.${entity.Name}().${op.Name}(data)
-  if err != nil {
-    fmt.Println("Error running ${entity.Name} ${op.Name}:", err)
-    return
-  }
-
-  fmt.Printf("${entity.Name} %+v\\n", ${entity.name})
-               `),
-            save: (op, entity) => (0, jostraca_1.Content)(`
-  data := ${entity.Name}Data{
-    Id: 1,
-    Baa: "foo",
-  }
-
-  ${entity.name}, err := client.${entity.Name}().${op.Name}(data)
-  if err != nil {
-    fmt.Println("Error running ${entity.Name} ${op.Name}:", err)
-    return
-  }
-
-  fmt.Printf("${entity.Name} %+v\\n", ${entity.name})
-               `),
-            load: (op, entity) => (0, jostraca_1.Content)(`
-  query := Query{
-    Id: 1
-  }
-
-  ${entity.name}, err := client.${entity.Name}().${op.Name}(query)
-  if err != nil {
-    fmt.Println("Error running ${entity.Name} ${op.Name}:", err)
-    return
-  }
-
-  fmt.Printf("${entity.Name} %+v\\n", ${entity.name})
-               `),
-            list: (op, entity) => (0, jostraca_1.Content)(`
-  ${entity.name}, err := client.${entity.Name}().${op.Name}()
-  if err != nil {
-    log.Println("Error running ${entity.name} ${op.Name}:", err)
-    return
-  }
-
-  log.Printf("${entity.Name} %+v\\n", ${entity.name})
-               `),
-        },
-        py: {
-            Name: "Python",
-            name: "python",
-            install: `pip3 install ${model.name}_sdk`,
-            init: () => {
-                (0, jostraca_1.Content)(`
-  client = ${model.Name}SDK.make((`);
-                (0, jostraca_1.each)(option, (opt) => {
-                    if (opt.kind == "String") {
-                        (0, jostraca_1.Content)(`
-    ${opt.name}: environ['${model.NAME}_${opt.name.toUpperCase()}'],`);
-                    }
-                });
-                (0, jostraca_1.Content)(`
-  ))`);
-            },
-            create: (op, entity) => (0, jostraca_1.Content)(`
-  ${entity.name} = client.${entity.Name}().${op.name}(Data(
-    baa: "foo",
-  ))
-
-  print('${entity.Name}', ${entity.name})
-               `),
-            save: (op, entity) => (0, jostraca_1.Content)(`
-  ${entity.name} = client.${entity.Name}().${op.name}(Data(
-    id = 1,
-    baa = "foo",
-  ))
-
-  print('${entity.Name}', ${entity.name})
-               `),
-            load: (op, entity) => (0, jostraca_1.Content)(`
-  ${entity.name} = client.${entity.Name}().${op.name}({
-    "id": 1
-  })
-
-  print('${entity.Name}', ${entity.name})
-               `),
-            list: (op, entity) => (0, jostraca_1.Content)(`
-  ${entity.name} = client.${entity.Name}().${op.name}()
-  print('${entity.Name}', ${entity.name})
-               `),
-        },
-        php: {
-            Name: "PHP",
-            name: "php",
-            install: `composer install ${model.name}-sdk`,
-            init: () => {
-                (0, jostraca_1.Content)(`
-  $client = ${model.Name}SDK([ `);
-                (0, jostraca_1.each)(option, (opt) => {
-                    if (opt.kind == "String") {
-                        (0, jostraca_1.Content)(`
-    '${opt.name}' => getenv('${model.NAME}_${opt.name.toUpperCase()}'),`);
-                    }
-                });
-                (0, jostraca_1.Content)(`
-  ]);`);
-            },
-            create: (op, entity) => (0, jostraca_1.Content)(`
-  $${entity.name} = new ${entity.Name}($client);
-  $${entity.name} = $${entity.name}->${op.name}([
-    'baa' => "foo",
-  ]);
-
-  print_r("${entity.Name} " . $${entity.name});
-               `),
-            save: (op, entity) => (0, jostraca_1.Content)(`
-  $${entity.name} = new ${entity.Name}($client);
-  $${entity.name} = $${entity.name}->${op.name}([
-    'id' => 1,
-    'baa' => "foo",
-  ]);
-
-  print_r("${entity.Name} " . $${entity.name});
-               `),
-            load: (op, entity) => (0, jostraca_1.Content)(`
-  $${entity.name} = new ${entity.Name}($client);
-  $${entity.name} = $${entity.name}->${op.name}([
-    "id" => 1
-  ]);
-
-  print_r("${entity.Name} " . $${entity.name});
-               `),
-            list: (op, entity) => (0, jostraca_1.Content)(`
-  $${entity.name} = new ${entity.Name}($client);
-  $${entity.name} = $${entity.name}->${op.name}();
-  print_r("${entity.Name} " . $${entity.name});
-               `),
-        },
-        rb: {
-            Name: "Ruby",
-            name: "ruby",
-            install: `gem install ${model.name}-sdk`,
-            init: () => {
-                (0, jostraca_1.Content)(`
-  const client = ${model.Name}SDK.new({`);
-                (0, jostraca_1.each)(option, (opt) => {
-                    if (opt.kind == "String") {
-                        const capName = opt.name.charAt(0).toUpperCase() + opt.name.substring(1, opt.name.length);
-                        (0, jostraca_1.Content)(`
-    ${capName}: ENV['${model.NAME}_${opt.name.toUpperCase()}'],`);
-                    }
-                });
-                (0, jostraca_1.Content)(`
-  }`);
-            },
-            create: (op, entity) => (0, jostraca_1.Content)(`
-  ${entity.name} = client.${entity.Name}.${op.name}({
-    baa: "foo"
-  })
-
-  puts "${entity.Name} #{${entity.name}}"
-               `),
-            save: (op, entity) => (0, jostraca_1.Content)(`
-  ${entity.name} = client.${entity.Name}.${op.name}({
-    id: 1,
-    baa: "foo",
-  })
-
-  puts "${entity.Name} #{${entity.name}}"
-               `),
-            load: (op, entity) => (0, jostraca_1.Content)(`
-  ${entity.name} = client.${entity.Name}.${op.name}({
-    id: 1
-  })
-
-  puts "${entity.Name} #{${entity.name}}"
-               `),
-            list: (op, entity) => (0, jostraca_1.Content)(`
-  ${entity.name} = client.${entity.Name}.${op.name}()
-  puts "${entity.Name} #{${entity.name}}"
-               `),
-        },
-    };
     (0, jostraca_1.Content)(`
 <style>
 :host {
@@ -313,7 +68,7 @@ main {
   </button>
   <section id="side-get-start-sect" class="hidden pl-4 space-y-2">`);
     (0, jostraca_1.each)(build, (lg) => {
-        const spec = languagesSpec[lg.name$];
+        const spec = languagesSpec_1.languagesSpec[lg.name$];
         (0, jostraca_1.Content)(`
     <a  class="side-get-start-sect cursor-pointer block hover:bg-gray-800 p-2 rounded-md" data-target="#section-get-start-${spec.name}">${spec.Name}</a>
 `);
@@ -331,7 +86,7 @@ main {
   </button>
   <section id="side-sect" class="hidden pl-4 space-y-2">`);
         (0, jostraca_1.each)(build, (lg) => {
-            const spec = languagesSpec[lg.name];
+            const spec = languagesSpec_1.languagesSpec[lg.name];
             (0, jostraca_1.Content)(`
     <a  class="sidebar-section cursor-pointer block hover:bg-gray-800 p-2 rounded-md" data-target="#section-${spec.name}">${spec.Name}</a>
 `);
@@ -374,7 +129,7 @@ main {
   <div class="w-3/4 mx-auto p-6 rounded-lg shadow-md my-20" >
       <h2 class="text-3xl font-bold my-4">Getting Started</h2>`);
     (0, jostraca_1.each)(build, (lg) => {
-        const spec = languagesSpec[lg.name$];
+        const spec = languagesSpec_1.languagesSpec[lg.name$];
         (0, jostraca_1.Content)(`
     <section id="section-get-start-${spec.name}" class="p-6 rounded-lg my-30 lang-section">
       <h3 id="${spec.Name}" class="lg-header text-3xl font-bold mb-4">${spec.Name}</h3>
@@ -390,7 +145,7 @@ main {
 
         <pre class="w-1/2">
         <code class="language-${spec.name}">
-  ${spec.install}
+  ${spec.install(model)}
         </code>
         </pre>
       </section>
@@ -405,7 +160,7 @@ main {
 
           <pre class="w-1/2">
           <code class="language-${spec.name}">`);
-        spec.init();
+        spec.init(model, option);
         (0, jostraca_1.Content)(`
           </code>
           </pre>
@@ -428,7 +183,7 @@ main {
 
            `);
         (0, jostraca_1.each)(build, (lg) => {
-            const spec = languagesSpec[lg.name$];
+            const spec = languagesSpec_1.languagesSpec[lg.name$];
             (0, jostraca_1.Content)(`
     <section id="section-${spec.name}" class="p-6 rounded-lg my-30 lang-section">
       <h1 id="${spec.Name}" class="lg-header text-3xl font-bold mb-4">${spec.Name}</h1>
