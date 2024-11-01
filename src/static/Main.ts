@@ -14,27 +14,10 @@ const Main = cmp(function Main(props: any) {
 
   Content(`
 <style>
-:host {
-  /* Colors */
-  --c1: #ffffff;
-  --c2: #000000;
-  --c3: #85ea2d;
-}
-
-main {
-  background-color: var(--c2);
-  color: var(--c1);
-}
-
 .lg-header {
   background: linear-gradient(to right, var(--c3), var(--c1));
   background-clip: text;
   color: transparent;
-}
-
-
-.lang-section {
-  background-color: rgba(17, 24, 39, var(--tw-bg-opacity));
 }
 
 .side-get-start-sect:hover {
@@ -50,7 +33,7 @@ main {
 <main class="flex h-screen">
 
 <!-- Sidebar -->
-<aside class="w-64 flex flex-col lang-section bg-opacity-50">
+<aside class="w-64 flex flex-col bg-opacity-50">
     <section class="p-3 text-2xl font-bold border-b">
         <h1 class="lg-header">${model.Name} SDK</h1>
     </section>
@@ -85,16 +68,16 @@ main {
 
   each(entity, (entity: any) => {
     Content(`
-<section class="group">
-  <button class="side-nav-btn w-full text-left flex items-center justify-between font-semibold hover:bg-gray-800 p-2 rounded-md" data-target="#side-sect">
+<section class="${entity}-group">
+  <button class="side-nav-btn w-full text-left flex items-center justify-between font-semibold hover:bg-gray-800 p-2 rounded-md" data-target="#side-sect-${entity.name}">
     ${entity.Name}
     <span class="indicator">+</span>
   </button>
-  <section id="side-sect" class="hidden pl-4 space-y-2">`)
+  <section id="side-sect-${entity.name}" class="hidden pl-4 space-y-2">`)
     each(build, (lg: any) => {
       const spec = languagesSpec[lg.name]
       Content(`
-    <a  class="sidebar-section cursor-pointer block hover:bg-gray-800 p-2 rounded-md" data-target="#section-${spec.name}">${spec.Name}</a>
+    <a  class="sidebar-section cursor-pointer block hover:bg-gray-800 p-2 rounded-md" data-target="#section-${entity.name}-${spec.name}">${spec.Name}</a>
 `)
     })
     Content(`
@@ -138,11 +121,11 @@ main {
   each(build, (lg: any) => {
     const spec = languagesSpec[lg.name$]
     Content(`
-    <section id="section-get-start-${spec.name}" class="p-6 rounded-lg my-30 lang-section">
+    <section id="section-get-start-${spec.name}" class="p-6 rounded-lg my-30">
       <h3 id="${spec.Name}" class="lg-header text-3xl font-bold mb-4">${spec.Name}</h3>
 
-      <section id="${spec.Name}-GettingStarted" class="flex flex-col content-between mb-30 p-1 rounded-lg lang-section">
-      <section class="flex justify-between gap-8 mb-20 p-2 rounded-lg lang-section">
+      <section id="${spec.Name}-GettingStarted" class="flex flex-col content-between mb-30 p-1 rounded-lg">
+      <section class="flex justify-between gap-8 mb-20 p-2 rounded-lg">
       <section class="w-1/2">
         <h4 class="font-bold my-4">1. Install SDK</h4>
         <p class="break-words">
@@ -157,7 +140,7 @@ main {
         </pre>
       </section>
 
-      <section class="flex justify-between gap-8 mb-20 p-2 rounded-lg lang-section">
+      <section class="flex justify-between gap-8 mb-20 p-2 rounded-lg">
       <section class="w-1/2">
       <h4 class="text-1xl font-bold my-4">2. Initialize SDK</h4>
         <p class="break-words">
@@ -185,7 +168,7 @@ main {
 
   each(entity, (entity: any) => {
     Content(`
-  <section id="${entity.Name}" class="p-6 rounded-lg my-30 lang-section">
+  <section id="${entity.Name}" class="p-6 rounded-lg my-30">
     <h2 class="text-3xl font-bold mb-4">${entity.Name}</h2>
     <p class="text-lg leading-relaxed">Details about the ${entity.Name} entity goes here.</p>
 
@@ -193,7 +176,7 @@ main {
     each(build, (lg: any) => {
       const spec = languagesSpec[lg.name$]
       Content(`
-    <section id="section-${spec.name}" class="p-6 rounded-lg my-30 lang-section">
+    <section id="section-${entity.name}-${spec.name}" class="p-6 rounded-lg my-30">
       <h1 id="${spec.Name}" class="lg-header text-3xl font-bold mb-4">${spec.Name}</h1>
 
     <section id="${spec.Name}-Methods" class="my-10 p-1 rounded-lg">
@@ -203,7 +186,7 @@ main {
       each(entity.op, (op: any) => {
         if (op.name == "list") {
           Content(`
-      <section class="flex justify-between gap-8 mb-20 p-2 rounded-lg lang-section">
+      <section class="flex justify-between gap-8 mb-20 p-2 rounded-lg">
       <section class="w-1/2">
         <h4 class="font-bold my-4">${op.Name} ${entity.Name}</h4>
         <p class="break-words">
@@ -221,7 +204,7 @@ main {
                   `)
         } else if (op.name == "create") {
           Content(`
-      <section class="flex justify-between gap-8 mb-20 p-2 rounded-lg lang-section">
+      <section class="flex justify-between gap-8 mb-20 p-2 rounded-lg">
       <section class="w-1/2">
         <h4 class="font-bold my-4">${op.Name} ${entity.Name}</h4>
         <p class="break-words">
@@ -239,7 +222,7 @@ main {
                   `)
         } else if (op.name == "save") {
           Content(`
-      <section class="flex justify-between gap-8 mb-20 p-2 rounded-lg lang-section">
+      <section class="flex justify-between gap-8 mb-20 p-2 rounded-lg">
       <section class="w-1/2">
         <h4 class="font-bold my-4">${op.Name} ${entity.Name}</h4>
         <p class="break-words">
@@ -257,7 +240,7 @@ main {
                   `)
         } else {
           Content(`
-      <section class="flex justify-between gap-8 mb-20 p-2 rounded-lg lang-section">
+      <section class="flex justify-between gap-8 mb-20 p-2 rounded-lg">
       <section class="w-1/2">
         <h4 class="font-bold my-4">${op.Name} ${entity.Name}</h4>
         <p class="break-words">
@@ -283,12 +266,14 @@ main {
     Content(`
 
   </section>
+          `)
+
+  })
+  Content(`
   </div>
   </div>
 </main>
           `)
-
-  })
 })
 
 export {

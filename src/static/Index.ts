@@ -76,7 +76,7 @@ const Index = cmp(function Index(props: any) {
        <style>
           hr {
             border: 0;
-            height: var(--s1);
+            height: 0.25rem;
             /* Adjust the height to your preference */
             background-image: linear-gradient(to right, var(--c1), var(--c2), var(--c3));
           }
