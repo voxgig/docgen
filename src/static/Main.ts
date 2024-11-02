@@ -33,7 +33,7 @@ const Main = cmp(function Main(props: any) {
 <main class="flex h-screen">
 
 <!-- Sidebar -->
-<aside class="w-64 flex flex-col bg-opacity-50">
+<aside class="w-64 flex flex-col overflow-y-auto bg-opacity-50">
     <section class="p-3 text-2xl font-bold border-b">
         <h1 class="lg-header">${model.Name} SDK</h1>
     </section>
@@ -102,11 +102,11 @@ const Main = cmp(function Main(props: any) {
       <p class="text-lg leading-relaxed">Welcome to the ${model.Name} SDK documentation. This guide will help you integrate and use our SDK effectively.</p>
     <p class="text-lg leading-relaxed mb-4">
       This comprehensive documentation will guide you through the ${model.Name} SDK, designed to simplify integration with our APIs.
-      Whether you're working with <strong>JavaScript, Go, Python, PHP, or Ruby</strong>, you'll find everything you need to
+      Whether working with multiple languages, you'll find everything you need to
       get started and efficiently manage its business entities.
     </p>
     <p class="text-lg leading-relaxed mb-4">
-      The ${model.Name} SDK adopts an entity-oriented approach, mapping business logic directly to your code, without the need to 
+      The ${model.Name} SDK adopts an entity-oriented approach, mapping business logic directly to your code without the need to 
       handle individual endpoint paths. With this SDK, you can create multiple concurrent client instances, each providing
       intuitive methods for managing and interacting with your business entities.
     </p>
