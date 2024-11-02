@@ -59,7 +59,6 @@ const Index = (0, jostraca_1.cmp)(function Index(props) {
           hr {
             border: 0;
             height: 0.25rem;
-            /* Adjust the height to your preference */
             background-image: linear-gradient(to right, var(--c1), var(--c2), var(--c3));
           }
        </style>
@@ -73,21 +72,28 @@ const Index = (0, jostraca_1.cmp)(function Index(props) {
    </footer>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/toolbar/prism-toolbar.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/copy-to-clipboard/prism-copy-to-clipboard.min.js"></script>
    <script>
         document.addEventListener("DOMContentLoaded", () => {
         const mainShadowRoot = document.querySelector("main").shadowRoot;
 
-        const tailwindLinkEl = document.createElement('link');
-        tailwindLinkEl.rel = 'stylesheet';
-        tailwindLinkEl.href = 'https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css';
-        mainShadowRoot.appendChild(tailwindLinkEl);
+        const tCssLink = document.createElement('link');
+        tCssLink.rel = 'stylesheet';
+        tCssLink.href = 'https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css';
+        mainShadowRoot.appendChild(tCssLink);
 
-        const prismlinkEl = document.createElement('link');
-        prismlinkEl.rel = 'stylesheet';
-        prismlinkEl.href = 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css';
-        mainShadowRoot.appendChild(prismlinkEl);
+        const prismlink = document.createElement('link');
+        prismlink.rel = 'stylesheet';
+        prismlink.href = 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css';
+        mainShadowRoot.appendChild(prismlink);
 
         mainShadowRoot.querySelectorAll("pre code").forEach((block) => Prism.highlightElement(block));
+
+        const prismTooklink = document.createElement('link');
+        prismTooklink.rel = 'stylesheet';
+        prismTooklink.href = 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/toolbar/prism-toolbar.min.css';
+        mainShadowRoot.appendChild(prismTooklink);
 
 
         mainShadowRoot.querySelectorAll(".side-get-start-sect").forEach((el) => {
@@ -117,7 +123,6 @@ const Index = (0, jostraca_1.cmp)(function Index(props) {
           });
         });
 
-          // Toggle the sidebar visibility of sections
           mainShadowRoot.querySelectorAll(".side-nav-btn").forEach(button => {
             button.addEventListener('click', function () {
               const targetID = this.getAttribute('data-target');
@@ -138,7 +143,6 @@ const Index = (0, jostraca_1.cmp)(function Index(props) {
           });
 
 
-          // Toggle the get started sidebar visibility of sections
           mainShadowRoot.querySelectorAll(".side-get-start-nav-btn").forEach(button => {
             button.addEventListener('click', function () {
               const targetID = this.getAttribute('data-target');
@@ -157,7 +161,6 @@ const Index = (0, jostraca_1.cmp)(function Index(props) {
               }
             });
           });
-
         
       });
    </script>
