@@ -25,6 +25,10 @@ const Index = (0, jostraca_1.cmp)(function Index(props) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/toolbar/prism-toolbar.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/copy-to-clipboard/prism-copy-to-clipboard.min.js"></script>
     <style>
 `);
                 // TODO: need to be able to resolve fragments from source folder too
@@ -70,66 +74,6 @@ const Index = (0, jostraca_1.cmp)(function Index(props) {
                 (0, jostraca_1.Content)(`
      </template>
    </footer>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/toolbar/prism-toolbar.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/copy-to-clipboard/prism-copy-to-clipboard.min.js"></script>
-   <script>
-        document.addEventListener("DOMContentLoaded", () => {
-        const mainShadowRoot = document.querySelector("main").shadowRoot;
-
-        const tCssLink = document.createElement('link');
-        tCssLink.rel = 'stylesheet';
-        tCssLink.href = 'https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css';
-        mainShadowRoot.appendChild(tCssLink);
-
-        const prismlink = document.createElement('link');
-        prismlink.rel = 'stylesheet';
-        prismlink.href = 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css';
-        mainShadowRoot.appendChild(prismlink);
-
-        mainShadowRoot.querySelectorAll("pre code").forEach((block) => Prism.highlightElement(block));
-
-        const prismTooklink = document.createElement('link');
-        prismTooklink.rel = 'stylesheet';
-        prismTooklink.href = 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/toolbar/prism-toolbar.min.css';
-        mainShadowRoot.appendChild(prismTooklink);
-
-
-        mainShadowRoot.querySelectorAll(".side-get-start-sect, .sidebar-section").forEach((el) => {
-          el.addEventListener("click", function () {
-            const targetID = this.getAttribute("data-target")
-            const targetSection = mainShadowRoot.querySelector(targetID);
-
-            if (targetSection) {
-              targetSection.scrollIntoView({ behavior: "smooth" });
-            } else {
-              console.error(\`Target section not found: \${targetID}\`)
-            }
-          });
-        });
-
-          mainShadowRoot.querySelectorAll(".side-nav-btn, .side-get-start-nav-btn").forEach(button => {
-            button.addEventListener('click', function () {
-              const targetID = this.getAttribute('data-target');
-              const target = mainShadowRoot.querySelector(targetID);
-              const indicator = this.querySelector(".indicator");
-              if (target) {
-                if (target.classList.contains('hidden')) {
-                  target.classList.remove('hidden');
-                  indicator.textContent = '-';
-                } else {
-                  target.classList.add('hidden');
-                  indicator.textContent = '+';
-                }
-              } else {
-                console.error(\`Sidebar target not found: \${targetID}\`);
-              }
-            });
-          });
-        
-      });
-   </script>
   </body>
 </html>
 `);

@@ -13,6 +13,9 @@ const Main = cmp(function Main(props: any) {
   const { entity, option, build } = model.main.sdk
 
   Content(`
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+
 <style>
 .lg-header {
   background: linear-gradient(to right, var(--c3), var(--c1));
@@ -239,6 +242,48 @@ const Main = cmp(function Main(props: any) {
   Content(`
   </div>
   </div>
+   <script>
+        document.addEventListener("DOMContentLoaded", () => {
+        const mainShadowRoot = document.querySelector("main").shadowRoot;
+
+        mainShadowRoot.querySelectorAll("pre code").forEach((block) => Prism.highlightElement(block));
+
+        const prismTooklink = document.createElement('link');
+        prismTooklink.rel = 'stylesheet';
+        prismTooklink.href = 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/toolbar/prism-toolbar.min.css';
+        mainShadowRoot.appendChild(prismTooklink);
+
+
+        mainShadowRoot.querySelectorAll(".side-get-start-sect, .sidebar-section").forEach((el) => {
+          el.addEventListener("click", function () {
+            const targetID = this.getAttribute("data-target")
+            const targetSection = mainShadowRoot.querySelector(targetID);
+
+            if (targetSection) {
+              targetSection.scrollIntoView({ behavior: "smooth" });
+            } 
+          });
+        });
+
+        mainShadowRoot.querySelectorAll(".side-nav-btn, .side-get-start-nav-btn").forEach(button => {
+          button.addEventListener('click', function () {
+            const targetID = this.getAttribute('data-target');
+            const target = mainShadowRoot.querySelector(targetID);
+            const indicator = this.querySelector(".indicator");
+            if (target) {
+              if (target.classList.contains('hidden')) {
+                target.classList.remove('hidden');
+                indicator.textContent = '-';
+              } else {
+                target.classList.add('hidden');
+                indicator.textContent = '+';
+              }
+            } 
+          });
+        });
+        
+      });
+   </script>
 </main>
           `)
 })
