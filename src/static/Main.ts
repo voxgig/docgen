@@ -128,7 +128,7 @@ const Main = cmp(function Main(props: any) {
       <h3 id="${spec.Name}" class="lg-header text-3xl font-bold mb-4">${spec.Name}</h3>
 
       <section id="${spec.Name}-GettingStarted" class="flex flex-col content-between mb-30 p-4 rounded-lg">
-      <section class="flex justify-between gap-8 mb-40 p-2 rounded-lg">
+      <section class="flex justify-between gap-8 items-center mb-40 p-2 rounded-lg">
       <section class="w-1/3">
         <h4 class="font-bold my-4">1. Install SDK</h4>
         <p class="break-words">
@@ -139,7 +139,7 @@ const Main = cmp(function Main(props: any) {
       <pre class="p-2 rounded-md"><code class="language-${spec.name}">${spec.install(model)}</code></pre>
       </section>
 
-      <section class="flex justify-between gap-8 my-10 p-2 rounded-lg">
+      <section class="flex justify-between gap-8 items-center my-10 p-2 rounded-lg">
       <section class="w-1/3">
       <h4 class="text-1xl font-bold my-4">2. Initialize SDK</h4>
         <p class="break-words">
@@ -164,8 +164,6 @@ const Main = cmp(function Main(props: any) {
     Content(`
   <section id="${entity.Name}" class="p-6 rounded-lg my-30">
     <h2 class="text-3xl font-bold mb-4">${entity.Name}</h2>
-    <p class="text-lg leading-relaxed">Details about the ${entity.Name} entity goes here.</p>
-
            `)
     each(build, (lg: any) => {
       const spec = languagesSpec[lg.name$]
@@ -180,11 +178,25 @@ const Main = cmp(function Main(props: any) {
       each(entity.op, (op: any) => {
         if (op.name == "list") {
           Content(`
-      <section class="flex justify-between gap-8 my-20 p-2 rounded-lg">
+      <section class="flex justify-between items-center gap-8 my-20 p-2 rounded-lg">
       <section class="w-1/3">
         <h4 class="font-bold my-4">${op.Name} ${entity.Name}</h4>
         <p class="break-words">
-        ${op.Name} options and description.
+          Lists all matching ${entity.Name} entities based on the provided query criteria.
+          This method is ideal for retrieving collections of ${entity.Name} entities that meet certain criteria,
+          enabling batch operations and bulk data handling.
+        </p>
+        <h5 class="my-4 font-bold">Parameters:</h5>
+        <ul class="list-disc pl-8 space-y-2">
+          <li class="text-lg"><strong>query</strong>: 
+            <span class="italic">optional</span> - 
+            The criteria to filter ${entity.name} entities for listing.
+            If omitted, all entities are listed.
+          </li>
+        </ul>
+      <h5 class="my-4 font-bold">Return:</h5>
+        <p class="text-lg"><strong>List of ${entity.Name} Entities</strong> -
+        A list with one or more ${entity.Name} instances.
       </p>
       </section>
       <pre class="p-2 rounded-md"><code class="language-${spec.name}">`); spec.list(op, entity); Content(`</code></pre>
@@ -192,11 +204,24 @@ const Main = cmp(function Main(props: any) {
                   `)
         } else if (op.name == "create") {
           Content(`
-      <section class="flex justify-between gap-8 my-20 p-2 rounded-lg">
+      <section class="flex justify-between items-center gap-8 my-20 p-2 rounded-lg">
       <section class="w-1/3">
         <h4 class="font-bold my-4">${op.Name} ${entity.Name}</h4>
         <p class="break-words">
-        ${op.Name} options and description.
+          ${op.Name} an instance of ${entity.name}.
+          Returns the created ${entity.name}, 
+          allowing easy access and manipulation within your application.
+      </p>
+
+      <h5 class="my-4 font-bold">Parameters:</h5>
+      <ul class="list-disc pl-8 space-y-2">
+        <li class="text-lg"><strong>data</strong>:
+          <span class="italic">optional</span> - 
+          The data for the new ${entity.name}.</li>
+      </ul>
+      <h5 class="my-4 font-bold">Return:</h5>
+      <p class="text-lg"><strong>${entity.Name}</strong> -
+        The created ${entity.Name} instance.
       </p>
       </section>
       <pre class="p-2 rounded-md"><code class="language-${spec.name}">`); spec.create(op, entity); Content(`</code></pre>
@@ -204,24 +229,82 @@ const Main = cmp(function Main(props: any) {
                   `)
         } else if (op.name == "save") {
           Content(`
-      <section class="flex justify-between gap-8 my-20 p-2 rounded-lg">
+      <section class="flex justify-between items-center gap-8 my-20 p-2 rounded-lg">
       <section class="w-1/3">
         <h4 class="font-bold my-4">${op.Name} ${entity.Name}</h4>
         <p class="break-words">
-        ${op.Name} options and description.
+          It saves an instance of ${entity.Name},
+          optionally updating it with new data.
+          This method persists the instance's data,
+          ensuring updates are stored consistently.
+      </p>
+      <h5 class="my-4 font-bold">Parameters:</h5>
+      <ul class="list-disc pl-8 space-y-2">
+        <li class="text-lg"><strong>id</strong>:
+          <span class="italic">required</span> - 
+          The ${entity.name} identifier to be updated.
+        </li>
+        <li class="text-lg"><strong>data</strong>:
+          <span class="italic">optional</span> - 
+          The new ${entity.name} data.
+        </li>
+      </ul>
+      <h5 class="my-4 font-bold">Return:</h5>
+      <p class="text-lg"><strong>${entity.Name}</strong> -
+        The updated ${entity.Name} instance.
       </p>
       </section>
       <pre class="p-2 rounded-md"><code class="language-${spec.name}">`); spec.save(op, entity); Content(`</code></pre>
       </section>
                   `)
-        } else {
+        } else if (op.name == "remove") {
           Content(`
-      <section class="flex justify-between gap-8 my-20 p-2 rounded-lg">
+      <section class="flex justify-between items-center gap-8 my-20 p-2 rounded-lg">
       <section class="w-1/3">
         <h4 class="font-bold my-4">${op.Name} ${entity.Name}</h4>
         <p class="break-words">
-        ${op.Name} options and description.
+        <p class="break-words">
+          Deletes a matching ${entity.Name} specified by the query parameter.
+          This method removes a single ${entity.Name} instance based on the query parameters.
+        </p>
+        <h5 class="my-4 font-bold">Parameters:</h5>
+        <ul class="list-disc pl-8 space-y-2">
+          <li class="text-lg"><strong>query</strong>:
+            <span class="italic">required</span> - 
+            The query criteria for identifying the ${entity.name} to remove.
+          </li>
+        </ul>
+        <h5 class="my-4 font-bold">Return:</h5>
+        <p class="text-lg"><strong>N/A</strong>
       </p>
+        </p>
+      </section>
+      <pre class="p-2 rounded-md"><code class="language-${spec.name}">`); spec.load(op, entity); Content(`</code></pre>
+      </section>
+                  `)
+        } else {
+          Content(`
+      <section class="flex justify-between items-center gap-8 my-20 p-2 rounded-lg">
+      <section class="w-1/3">
+        <h4 class="font-bold my-4">${op.Name} ${entity.Name}</h4>
+        <p class="break-words">
+        <p class="break-words">
+        Loads a single, matching ${entity.name}'s data into its instance.
+        The query parameter should specify the identifier or criteria for the ${entity.Name} to be retrieved,
+        effectively syncing the instance with stored entity data.
+        </p>
+        <h5 class="my-4 font-bold">Parameters:</h5>
+        <ul class="list-disc pl-8 space-y-2">
+          <li class="text-lg"><strong>query</strong>:
+            <span class="italic">required</span> - 
+            The query criteria used to identify and load the ${entity.name} data.
+          </li>
+        </ul>
+        <h5 class="my-4 font-bold">Return:</h5>
+        <p class="text-lg"><strong>${entity.Name}</strong> -
+        The ${entity.Name} instance.
+      </p>
+        </p>
       </section>
       <pre class="p-2 rounded-md"><code class="language-${spec.name}">`); spec.load(op, entity); Content(`</code></pre>
       </section>
