@@ -11,6 +11,7 @@ const Main = (0, jostraca_1.cmp)(function Main(props) {
 <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/toolbar/prism-toolbar.min.css" rel="stylesheet">
+
 <style>
 .lg-header {
   background: linear-gradient(to right, var(--c3), var(--c1));
@@ -28,15 +29,18 @@ const Main = (0, jostraca_1.cmp)(function Main(props) {
 </style>
 
 
-<main class="flex h-screen">
+<main class="flex flex-col md:flex-row h-screen">
 
 <!-- Sidebar -->
-<aside class="w-64 flex flex-col overflow-y-auto bg-opacity-50">
-    <section class="p-3 text-2xl font-bold border-b">
-        <h1 class="lg-header">${model.Name} SDK</h1>
+<aside class="w-full md:w-64 p-6 md:p-0 flex flex-col md:sticky md:overflow-y-auto">
+    <section class="p-3 text-2xl font-bold border-none md:border-b">
+        <h1 class="lg-header hidden md:block">${model.Name} SDK</h1>
     </section>
-
-  <nav class="flex-1 p-4 space-y-4">
+  <button class="side-get-start-nav-btn text-2xl w-full text-left flex items-center justify-between font-semibold p-2 md:hidden" data-target="#sections-mobile"> 
+      Sections
+      <span class="indicator">+</span>
+  </button>
+  <nav id="sections-mobile" class="flex-1 p-4 space-y-4 hidden md:block">
   <section>
     <button 
     class="sidebar-section cursor-pointer w-full text-left flex items-center justify-between font-semibold p-2 rounded-md"
@@ -90,9 +94,9 @@ const Main = (0, jostraca_1.cmp)(function Main(props) {
 
 
 <div class="flex flex-col overflow-y-auto p-4 w-full">
-  <h1 class="lg-header text-5xl font-extrabold text-center tracking-wide my-4 p-10"> ${model.Name} SDK Documentation</h1>
+  <h1 class="lg-header text-4xl md:text-5xl break-words font-extrabold text-center tracking-wide my-4 p-10"> ${model.Name} SDK Documentation</h1>
 
-  <div class="w-3/4 mx-auto p-6 rounded-lg shadow-lg my-20">
+  <div class="w-full md:w-3/4 mx-auto p-6 rounded-lg shadow-lg my-20">
     <section id="section-intro" class="my-10">
       <h2 class="text-3xl font-bold my-4">Introduction</h2>
       <p class="text-lg leading-relaxed">Welcome to the ${model.Name} SDK documentation. This guide will help you integrate and use our SDK effectively.</p>
@@ -112,17 +116,17 @@ const Main = (0, jostraca_1.cmp)(function Main(props) {
     </section>
   </div>
 
-  <div class="w-3/4 mx-auto p-6 rounded-lg my-20" >
+  <div class="w-full md:w-3/4 mx-auto p-6 rounded-lg lg:my-20" >
       <h2 class="text-3xl font-bold my-4">Getting Started</h2>`);
     (0, jostraca_1.each)(build, (lg) => {
         const spec = languagesSpec_1.languagesSpec[lg.name$];
         (0, jostraca_1.Content)(`
-    <section id="section-get-start-${spec.name}" class="my-20 p-6 rounded-lg shadow-lg">
+    <section id="section-get-start-${spec.name}" class="lg:my-20 md:p-6 rounded-lg shadow-lg">
       <h3 id="${spec.Name}" class="lg-header text-3xl font-bold mb-4">${spec.Name}</h3>
 
-      <section id="${spec.Name}-GettingStarted" class="flex flex-col content-between mb-30 p-4 rounded-lg">
-      <section class="flex justify-between gap-8 items-center mb-40 p-2 rounded-lg">
-      <section class="w-1/3">
+      <section id="${spec.Name}-GettingStarted" class="flex flex-col content-between mb-10 lg:mb-30 p-4 rounded-lg">
+      <section class="flex flex-col 2xl:flex-row justify-between gap-8 items-center mb-20 lg:mb-40 lg:p-2 rounded-lg">
+      <section class="w-full 2xl:w-1/3">
         <h4 class="font-bold my-4">1. Install SDK</h4>
         <p class="break-words">
         Use the following command to install the SDK for ${spec.Name}. This SDK provides all necessary functions to interact with our APIs easily.
@@ -132,8 +136,8 @@ const Main = (0, jostraca_1.cmp)(function Main(props) {
       <pre class="p-2 rounded-md"><code class="language-${spec.name}">${spec.install(model)}</code></pre>
       </section>
 
-      <section class="flex justify-between gap-8 items-center my-10 p-2 rounded-lg">
-      <section class="w-1/3">
+      <section class="flex flex-col 2xl:flex-row justify-between gap-8 items-center mb-20 lg:mb-40 lg:p-2 rounded-lg">
+      <section class="w-full 2xl:w-1/3">
       <h4 class="text-1xl font-bold my-4">2. Initialize SDK</h4>
         <p class="break-words">
           The ${model.Name} SDK provides a simple interface to interact with the API, allowing you to easily create client instances for working with different business entities. This is a code snippet to initialize the SDK using environment variables.
@@ -151,7 +155,7 @@ const Main = (0, jostraca_1.cmp)(function Main(props) {
 </div>
 
 
-<div class="w-3/4 mx-auto p-6">
+<div class="w-full md:w-3/4 mx-auto p-6">
       <h2 class="text-3xl font-bold my-4">Entities</h2>
          `);
     (0, jostraca_1.each)(entity, (entity) => {
@@ -162,7 +166,7 @@ const Main = (0, jostraca_1.cmp)(function Main(props) {
         (0, jostraca_1.each)(build, (lg) => {
             const spec = languagesSpec_1.languagesSpec[lg.name$];
             (0, jostraca_1.Content)(`
-    <section id="section-${entity.name}-${spec.name}" class="my-20 p-6 rounded-lg  shadow-lg">
+    <section id="section-${entity.name}-${spec.name}" class="my-20 md:p-6 rounded-lg  shadow-lg">
       <h1 id="${spec.Name}" class="lg-header text-3xl font-bold mb-4">${spec.Name}</h1>
 
     <section id="${spec.Name}-Methods" class="my-10 rounded-lg">
@@ -171,8 +175,8 @@ const Main = (0, jostraca_1.cmp)(function Main(props) {
             (0, jostraca_1.each)(entity.op, (op) => {
                 if (op.name == "list") {
                     (0, jostraca_1.Content)(`
-      <section class="flex justify-between items-center gap-8 my-10 p-2 rounded-lg">
-      <section class="w-1/3">
+      <section class="flex flex-col 2xl:flex-row justify-between gap-8 items-center mb-20 lg:mb-40 lg:p-2 rounded-lg">
+      <section class="w-full 2xl:w-1/3">
         <h4 class="text-lg font-bold my-4">${op.Name} ${entity.Name}</h4>
         <p class="break-words">
           Lists all matching ${entity.Name} entities based on the provided query criteria.
@@ -200,8 +204,8 @@ const Main = (0, jostraca_1.cmp)(function Main(props) {
                 }
                 else if (op.name == "create") {
                     (0, jostraca_1.Content)(`
-      <section class="flex justify-between items-center gap-8 my-10 p-2 rounded-lg">
-      <section class="w-1/3">
+      <section class="flex flex-col 2xl:flex-row justify-between gap-8 items-center mb-20 lg:mb-40 lg:p-2 rounded-lg">
+      <section class="w-full 2xl:w-1/3">
         <h4 class="text-lg font-bold my-4">${op.Name} ${entity.Name}</h4>
         <p class="break-words">
           ${op.Name} an instance of ${entity.name}.

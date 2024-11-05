@@ -83,7 +83,7 @@ const Index = (0, jostraca_1.cmp)(function Index(props) {
           });
         });
 
-        mainShadowRoot.querySelectorAll(".side-nav-btn, .side-get-start-nav-btn").forEach(button => {
+        mainShadowRoot.querySelectorAll(".sections-mobile, .side-nav-btn, .side-get-start-nav-btn").forEach(button => {
           button.addEventListener('click', function () {
             const targetID = this.getAttribute('data-target');
             const target = mainShadowRoot.querySelector(targetID);
