@@ -133,7 +133,7 @@ const Main = (0, jostraca_1.cmp)(function Main(props) {
       </p>
       </section>
 
-      <pre class="p-2 rounded-md"><code class="language-${spec.name}">${spec.install(model)}</code></pre>
+      <pre class="p-2 rounded-md overflow-x-auto"><code class="language-${spec.name}">${spec.install(model)}</code></pre>
       </section>
 
       <section class="flex flex-col 2xl:flex-row justify-between gap-8 items-center mb-20 lg:mb-40 lg:p-2 rounded-lg">
@@ -144,7 +144,7 @@ const Main = (0, jostraca_1.cmp)(function Main(props) {
         </p>
       </section>
 
-      <pre class="p-2 rounded-md"><code class="language-${spec.name}">`);
+      <pre class="p-2 rounded-md overflow-x-auto"><code class="language-${spec.name}">`);
         spec.init(model, option);
         (0, jostraca_1.Content)(`</code></pre>
           </section>
@@ -155,7 +155,7 @@ const Main = (0, jostraca_1.cmp)(function Main(props) {
 </div>
 
 
-<div class="w-full md:w-3/4 mx-auto p-6">
+<div class="w-full md:w-3/4 mx-auto md:p-6">
       <h2 class="text-3xl font-bold my-4">Entities</h2>
          `);
     (0, jostraca_1.each)(entity, (entity) => {
@@ -169,7 +169,7 @@ const Main = (0, jostraca_1.cmp)(function Main(props) {
     <section id="section-${entity.name}-${spec.name}" class="my-20 md:p-6 rounded-lg  shadow-lg">
       <h1 id="${spec.Name}" class="lg-header text-3xl font-bold mb-4">${spec.Name}</h1>
 
-    <section id="${spec.Name}-Methods" class="my-10 rounded-lg">
+    <section id="${spec.Name}-Methods" class="my-10 p-3 rounded-lg">
       <h2 class="text-2xl font-bold my-4">Methods</h2>
     `);
             (0, jostraca_1.each)(entity.op, (op) => {
@@ -196,7 +196,7 @@ const Main = (0, jostraca_1.cmp)(function Main(props) {
         A list with one or more ${entity.Name} instances.
       </p>
       </section>
-      <pre class="p-2 rounded-md"><code class="language-${spec.name}">`);
+      <pre class="p-2 rounded-md overflow-x-auto"><code class="language-${spec.name}">`);
                     spec.list(op, entity);
                     (0, jostraca_1.Content)(`</code></pre>
       </section>
@@ -224,7 +224,7 @@ const Main = (0, jostraca_1.cmp)(function Main(props) {
         The created ${entity.Name} instance.
       </p>
       </section>
-      <pre class="p-2 rounded-md"><code class="language-${spec.name}">`);
+      <pre class="p-2 rounded-md overflow-x-auto"><code class="language-${spec.name}">`);
                     spec.create(op, entity);
                     (0, jostraca_1.Content)(`</code></pre>
       </section>
@@ -232,8 +232,8 @@ const Main = (0, jostraca_1.cmp)(function Main(props) {
                 }
                 else if (op.name == "save") {
                     (0, jostraca_1.Content)(`
-      <section class="flex justify-between items-center gap-8 my-10 p-2 rounded-lg">
-      <section class="w-1/3">
+      <section class="flex flex-col 2xl:flex-row justify-between gap-8 items-center mb-20 lg:mb-40 lg:p-2 rounded-lg">
+      <section class="w-full 2xl:w-1/3">
         <h4 class="text-lg font-bold my-4">${op.Name} ${entity.Name}</h4>
         <p class="break-words">
           It saves an instance of ${entity.Name},
@@ -257,7 +257,7 @@ const Main = (0, jostraca_1.cmp)(function Main(props) {
         The updated ${entity.Name} instance.
       </p>
       </section>
-      <pre class="p-2 rounded-md"><code class="language-${spec.name}">`);
+      <pre class="p-2 rounded-md overflow-x-auto"><code class="language-${spec.name}">`);
                     spec.save(op, entity);
                     (0, jostraca_1.Content)(`</code></pre>
       </section>
@@ -265,8 +265,8 @@ const Main = (0, jostraca_1.cmp)(function Main(props) {
                 }
                 else if (op.name == "remove") {
                     (0, jostraca_1.Content)(`
-      <section class="flex justify-between items-center gap-8 my-10 p-2 rounded-lg">
-      <section class="w-1/3">
+      <section class="flex flex-col 2xl:flex-row justify-between gap-8 items-center mb-20 lg:mb-40 lg:p-2 rounded-lg">
+      <section class="w-full 2xl:w-1/3">
         <h4 class="text-lg font-bold my-4">${op.Name} ${entity.Name}</h4>
         <p class="break-words">
         <p class="break-words">
@@ -285,7 +285,7 @@ const Main = (0, jostraca_1.cmp)(function Main(props) {
       </p>
         </p>
       </section>
-      <pre class="p-2 rounded-md"><code class="language-${spec.name}">`);
+      <pre class="p-2 rounded-md overflow-x-auto"><code class="language-${spec.name}">`);
                     spec.remove(op, entity);
                     (0, jostraca_1.Content)(`</code></pre>
       </section>
@@ -293,8 +293,8 @@ const Main = (0, jostraca_1.cmp)(function Main(props) {
                 }
                 else {
                     (0, jostraca_1.Content)(`
-      <section class="flex justify-between items-center gap-8 my-10 p-2 rounded-lg">
-      <section class="w-1/3">
+      <section class="flex flex-col 2xl:flex-row justify-between gap-8 items-center mb-20 lg:mb-40 lg:p-2 rounded-lg">
+      <section class="w-full 2xl:w-1/3">
         <h4 class="text-lg font-bold my-4">${op.Name} ${entity.Name}</h4>
         <p class="break-words">
         <p class="break-words">
@@ -315,7 +315,7 @@ const Main = (0, jostraca_1.cmp)(function Main(props) {
       </p>
         </p>
       </section>
-      <pre class="p-2 rounded-md"><code class="language-${spec.name}">`);
+      <pre class="p-2 rounded-md overflow-x-auto"><code class="language-${spec.name}">`);
                     spec.load(op, entity);
                     (0, jostraca_1.Content)(`</code></pre>
       </section>
