@@ -40,6 +40,11 @@ export const languagesSpec: Record<string, any> = {
 
   console.log('${entity.Name}', ${entity.name})
                `),
+    remove: (op: any, entity: any) => Content(`
+  await client.${entity.Name}().${op.name}({
+    id: 1
+  })
+               `),
     list: (op: any, entity: any) => Content(`
   ${entity.name} = await client.${entity.Name}().${op.name}()
   console.log('${entity.Name}', ${entity.name})
@@ -102,6 +107,17 @@ export const languagesSpec: Record<string, any> = {
 
   fmt.Printf("${entity.Name} %+v\\n", ${entity.name})
                `),
+    remove: (op: any, entity: any) => Content(`
+  query := Query{
+    Id: 1
+  }
+
+  _, err := client.${entity.Name}().${op.Name}(query)
+  if err != nil {
+    fmt.Println("Error running ${entity.Name} ${op.Name}:", err)
+    return
+  }
+               `),
     list: (op: any, entity: any) => Content(`
   ${entity.name}, err := client.${entity.Name}().${op.Name}()
   if err != nil {
@@ -150,6 +166,11 @@ export const languagesSpec: Record<string, any> = {
 
   print('${entity.Name}', ${entity.name})
                `),
+    remove: (op: any, entity: any) => Content(`
+ client.${entity.Name}().${op.name}({
+    "id": 1
+  })
+               `),
     list: (op: any, entity: any) => Content(`
   ${entity.name} = client.${entity.Name}().${op.name}()
   print('${entity.Name}', ${entity.name})
@@ -196,6 +217,12 @@ export const languagesSpec: Record<string, any> = {
 
   print_r("${entity.Name} " . $${entity.name});
                `),
+    remove: (op: any, entity: any) => Content(`
+  $${entity.name} = new ${entity.Name}($client);
+  $${entity.name}->${op.name}([
+    "id" => 1
+  ]);
+               `),
     list: (op: any, entity: any) => Content(`
   $${entity.name} = new ${entity.Name}($client);
   $${entity.name} = $${entity.name}->${op.name}();
@@ -240,6 +267,12 @@ export const languagesSpec: Record<string, any> = {
   })
 
   puts "${entity.Name} #{${entity.name}}"
+               `),
+  remove: (op: any, entity: any) => Content(`
+  client.${entity.Name}.${op.name}({
+    id: 1
+  })
+
                `),
     list: (op: any, entity: any) => Content(`
   ${entity.name} = client.${entity.Name}.${op.name}()

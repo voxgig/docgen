@@ -66,6 +66,42 @@ const Index = (0, jostraca_1.cmp)(function Index(props) {
                 (0, jostraca_1.Content)(`
      </template>
    </footer>
+   <script>
+        document.addEventListener("DOMContentLoaded", () => {
+        const mainShadowRoot = document.querySelector("main").shadowRoot;
+
+        mainShadowRoot.querySelectorAll("pre code").forEach((block) => Prism.highlightElement(block));
+
+        mainShadowRoot.querySelectorAll(".side-get-start-sect, .sidebar-section").forEach((el) => {
+          el.addEventListener("click", function () {
+            const targetID = this.getAttribute("data-target")
+            const targetSection = mainShadowRoot.querySelector(targetID);
+
+            if (targetSection) {
+              targetSection.scrollIntoView({ behavior: "smooth" });
+            } 
+          });
+        });
+
+        mainShadowRoot.querySelectorAll(".side-nav-btn, .side-get-start-nav-btn").forEach(button => {
+          button.addEventListener('click', function () {
+            const targetID = this.getAttribute('data-target');
+            const target = mainShadowRoot.querySelector(targetID);
+            const indicator = this.querySelector(".indicator");
+            if (target) {
+              if (target.classList.contains('hidden')) {
+                target.classList.remove('hidden');
+                indicator.textContent = '-';
+              } else {
+                target.classList.add('hidden');
+                indicator.textContent = '+';
+              }
+            } 
+          });
+        });
+        
+      });
+   </script>
   </body>
 </html>
 `);

@@ -10,7 +10,7 @@ const Main = (0, jostraca_1.cmp)(function Main(props) {
     (0, jostraca_1.Content)(`
 <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
-
+<link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/toolbar/prism-toolbar.min.css" rel="stylesheet">
 <style>
 .lg-header {
   background: linear-gradient(to right, var(--c3), var(--c1));
@@ -39,7 +39,7 @@ const Main = (0, jostraca_1.cmp)(function Main(props) {
   <nav class="flex-1 p-4 space-y-4">
   <section>
     <button 
-    class="sidebar-section cursor-pointer w-full text-left flex items-center justify-between font-semibold hover:bg-gray-800 p-2 rounded-md"
+    class="sidebar-section cursor-pointer w-full text-left flex items-center justify-between font-semibold p-2 rounded-md"
     data-target="#section-intro"
     >
      Introduction
@@ -48,7 +48,7 @@ const Main = (0, jostraca_1.cmp)(function Main(props) {
 
 
 <section class="group">
-  <button class="side-get-start-nav-btn w-full text-left flex items-center justify-between font-semibold hover:bg-gray-800 p-2 rounded-md" data-target="#side-get-start-sect">
+  <button class="side-get-start-nav-btn w-full text-left flex items-center justify-between font-semibold p-2 rounded-md" data-target="#side-get-start-sect">
     Getting Started
     <span class="indicator">+</span>
   </button>
@@ -56,7 +56,7 @@ const Main = (0, jostraca_1.cmp)(function Main(props) {
     (0, jostraca_1.each)(build, (lg) => {
         const spec = languagesSpec_1.languagesSpec[lg.name$];
         (0, jostraca_1.Content)(`
-    <a  class="side-get-start-sect cursor-pointer block hover:bg-gray-800 p-2 rounded-md" data-target="#section-get-start-${spec.name}">${spec.Name}</a>
+    <a  class="side-get-start-sect cursor-pointer block p-2 rounded-md" data-target="#section-get-start-${spec.name}">${spec.Name}</a>
 `);
     });
     (0, jostraca_1.Content)(`
@@ -66,7 +66,7 @@ const Main = (0, jostraca_1.cmp)(function Main(props) {
     (0, jostraca_1.each)(entity, (entity) => {
         (0, jostraca_1.Content)(`
 <section class="${entity}-group">
-  <button class="side-nav-btn w-full text-left flex items-center justify-between font-semibold hover:bg-gray-800 p-2 rounded-md" data-target="#side-sect-${entity.name}">
+  <button class="side-nav-btn w-full text-left flex items-center justify-between font-semibold p-2 rounded-md" data-target="#side-sect-${entity.name}">
     ${entity.Name}
     <span class="indicator">+</span>
   </button>
@@ -74,7 +74,7 @@ const Main = (0, jostraca_1.cmp)(function Main(props) {
         (0, jostraca_1.each)(build, (lg) => {
             const spec = languagesSpec_1.languagesSpec[lg.name];
             (0, jostraca_1.Content)(`
-    <a  class="sidebar-section cursor-pointer block hover:bg-gray-800 p-2 rounded-md" data-target="#section-${entity.name}-${spec.name}">${spec.Name}</a>
+    <a  class="sidebar-section cursor-pointer block p-2 rounded-md" data-target="#section-${entity.name}-${spec.name}">${spec.Name}</a>
 `);
         });
         (0, jostraca_1.Content)(`
@@ -171,9 +171,9 @@ const Main = (0, jostraca_1.cmp)(function Main(props) {
             (0, jostraca_1.each)(entity.op, (op) => {
                 if (op.name == "list") {
                     (0, jostraca_1.Content)(`
-      <section class="flex justify-between items-center gap-8 my-20 p-2 rounded-lg">
+      <section class="flex justify-between items-center gap-8 my-10 p-2 rounded-lg">
       <section class="w-1/3">
-        <h4 class="font-bold my-4">${op.Name} ${entity.Name}</h4>
+        <h4 class="text-lg font-bold my-4">${op.Name} ${entity.Name}</h4>
         <p class="break-words">
           Lists all matching ${entity.Name} entities based on the provided query criteria.
           This method is ideal for retrieving collections of ${entity.Name} entities that meet certain criteria,
@@ -181,14 +181,14 @@ const Main = (0, jostraca_1.cmp)(function Main(props) {
         </p>
         <h5 class="my-4 font-bold">Parameters:</h5>
         <ul class="list-disc pl-8 space-y-2">
-          <li class="text-lg"><strong>query</strong>: 
+          <li class="font-bold"><strong>query</strong>: 
             <span class="italic">optional</span> - 
             The criteria to filter ${entity.name} entities for listing.
             If omitted, all entities are listed.
           </li>
         </ul>
       <h5 class="my-4 font-bold">Return:</h5>
-        <p class="text-lg"><strong>List of ${entity.Name} Entities</strong> -
+        <p class="font-bold"><strong>List of ${entity.Name} Entities</strong> -
         A list with one or more ${entity.Name} instances.
       </p>
       </section>
@@ -200,9 +200,9 @@ const Main = (0, jostraca_1.cmp)(function Main(props) {
                 }
                 else if (op.name == "create") {
                     (0, jostraca_1.Content)(`
-      <section class="flex justify-between items-center gap-8 my-20 p-2 rounded-lg">
+      <section class="flex justify-between items-center gap-8 my-10 p-2 rounded-lg">
       <section class="w-1/3">
-        <h4 class="font-bold my-4">${op.Name} ${entity.Name}</h4>
+        <h4 class="text-lg font-bold my-4">${op.Name} ${entity.Name}</h4>
         <p class="break-words">
           ${op.Name} an instance of ${entity.name}.
           Returns the created ${entity.name}, 
@@ -211,12 +211,12 @@ const Main = (0, jostraca_1.cmp)(function Main(props) {
 
       <h5 class="my-4 font-bold">Parameters:</h5>
       <ul class="list-disc pl-8 space-y-2">
-        <li class="text-lg"><strong>data</strong>:
+        <li class="font-bold"><strong>data</strong>:
           <span class="italic">optional</span> - 
           The data for the new ${entity.name}.</li>
       </ul>
       <h5 class="my-4 font-bold">Return:</h5>
-      <p class="text-lg"><strong>${entity.Name}</strong> -
+      <p class="font-bold"><strong>${entity.Name}</strong> -
         The created ${entity.Name} instance.
       </p>
       </section>
@@ -228,9 +228,9 @@ const Main = (0, jostraca_1.cmp)(function Main(props) {
                 }
                 else if (op.name == "save") {
                     (0, jostraca_1.Content)(`
-      <section class="flex justify-between items-center gap-8 my-20 p-2 rounded-lg">
+      <section class="flex justify-between items-center gap-8 my-10 p-2 rounded-lg">
       <section class="w-1/3">
-        <h4 class="font-bold my-4">${op.Name} ${entity.Name}</h4>
+        <h4 class="text-lg font-bold my-4">${op.Name} ${entity.Name}</h4>
         <p class="break-words">
           It saves an instance of ${entity.Name},
           optionally updating it with new data.
@@ -239,11 +239,11 @@ const Main = (0, jostraca_1.cmp)(function Main(props) {
       </p>
       <h5 class="my-4 font-bold">Parameters:</h5>
       <ul class="list-disc pl-8 space-y-2">
-        <li class="text-lg"><strong>id</strong>:
+        <li class="font-bold"><strong>id</strong>:
           <span class="italic">required</span> - 
           The ${entity.name} identifier to be updated.
         </li>
-        <li class="text-lg"><strong>data</strong>:
+        <li class="font-bold"><strong>data</strong>:
           <span class="italic">optional</span> - 
           The new ${entity.name} data.
         </li>
@@ -261,9 +261,9 @@ const Main = (0, jostraca_1.cmp)(function Main(props) {
                 }
                 else if (op.name == "remove") {
                     (0, jostraca_1.Content)(`
-      <section class="flex justify-between items-center gap-8 my-20 p-2 rounded-lg">
+      <section class="flex justify-between items-center gap-8 my-10 p-2 rounded-lg">
       <section class="w-1/3">
-        <h4 class="font-bold my-4">${op.Name} ${entity.Name}</h4>
+        <h4 class="text-lg font-bold my-4">${op.Name} ${entity.Name}</h4>
         <p class="break-words">
         <p class="break-words">
           Deletes a matching ${entity.Name} specified by the query parameter.
@@ -271,27 +271,27 @@ const Main = (0, jostraca_1.cmp)(function Main(props) {
         </p>
         <h5 class="my-4 font-bold">Parameters:</h5>
         <ul class="list-disc pl-8 space-y-2">
-          <li class="text-lg"><strong>query</strong>:
+          <li class="font-bold"><strong>query</strong>:
             <span class="italic">required</span> - 
             The query criteria for identifying the ${entity.name} to remove.
           </li>
         </ul>
         <h5 class="my-4 font-bold">Return:</h5>
-        <p class="text-lg"><strong>N/A</strong>
+        <p class="font-bold"><strong>N/A</strong>
       </p>
         </p>
       </section>
       <pre class="p-2 rounded-md"><code class="language-${spec.name}">`);
-                    spec.load(op, entity);
+                    spec.remove(op, entity);
                     (0, jostraca_1.Content)(`</code></pre>
       </section>
                   `);
                 }
                 else {
                     (0, jostraca_1.Content)(`
-      <section class="flex justify-between items-center gap-8 my-20 p-2 rounded-lg">
+      <section class="flex justify-between items-center gap-8 my-10 p-2 rounded-lg">
       <section class="w-1/3">
-        <h4 class="font-bold my-4">${op.Name} ${entity.Name}</h4>
+        <h4 class="text-lg font-bold my-4">${op.Name} ${entity.Name}</h4>
         <p class="break-words">
         <p class="break-words">
         Loads a single, matching ${entity.name}'s data into its instance.
@@ -300,13 +300,13 @@ const Main = (0, jostraca_1.cmp)(function Main(props) {
         </p>
         <h5 class="my-4 font-bold">Parameters:</h5>
         <ul class="list-disc pl-8 space-y-2">
-          <li class="text-lg"><strong>query</strong>:
+          <li class="font-bold"><strong>query</strong>:
             <span class="italic">required</span> - 
             The query criteria used to identify and load the ${entity.name} data.
           </li>
         </ul>
         <h5 class="my-4 font-bold">Return:</h5>
-        <p class="text-lg"><strong>${entity.Name}</strong> -
+        <p class="font-bold"><strong>${entity.Name}</strong> -
         The ${entity.Name} instance.
       </p>
         </p>
@@ -331,48 +331,6 @@ const Main = (0, jostraca_1.cmp)(function Main(props) {
     (0, jostraca_1.Content)(`
   </div>
   </div>
-   <script>
-        document.addEventListener("DOMContentLoaded", () => {
-        const mainShadowRoot = document.querySelector("main").shadowRoot;
-
-        mainShadowRoot.querySelectorAll("pre code").forEach((block) => Prism.highlightElement(block));
-
-        const prismTooklink = document.createElement('link');
-        prismTooklink.rel = 'stylesheet';
-        prismTooklink.href = 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/toolbar/prism-toolbar.min.css';
-        mainShadowRoot.appendChild(prismTooklink);
-
-
-        mainShadowRoot.querySelectorAll(".side-get-start-sect, .sidebar-section").forEach((el) => {
-          el.addEventListener("click", function () {
-            const targetID = this.getAttribute("data-target")
-            const targetSection = mainShadowRoot.querySelector(targetID);
-
-            if (targetSection) {
-              targetSection.scrollIntoView({ behavior: "smooth" });
-            } 
-          });
-        });
-
-        mainShadowRoot.querySelectorAll(".side-nav-btn, .side-get-start-nav-btn").forEach(button => {
-          button.addEventListener('click', function () {
-            const targetID = this.getAttribute('data-target');
-            const target = mainShadowRoot.querySelector(targetID);
-            const indicator = this.querySelector(".indicator");
-            if (target) {
-              if (target.classList.contains('hidden')) {
-                target.classList.remove('hidden');
-                indicator.textContent = '-';
-              } else {
-                target.classList.add('hidden');
-                indicator.textContent = '+';
-              }
-            } 
-          });
-        });
-        
-      });
-   </script>
 </main>
           `);
 });

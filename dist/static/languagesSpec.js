@@ -41,6 +41,11 @@ exports.languagesSpec = {
 
   console.log('${entity.Name}', ${entity.name})
                `),
+        remove: (op, entity) => (0, jostraca_1.Content)(`
+  await client.${entity.Name}().${op.name}({
+    id: 1
+  })
+               `),
         list: (op, entity) => (0, jostraca_1.Content)(`
   ${entity.name} = await client.${entity.Name}().${op.name}()
   console.log('${entity.Name}', ${entity.name})
@@ -103,6 +108,17 @@ exports.languagesSpec = {
 
   fmt.Printf("${entity.Name} %+v\\n", ${entity.name})
                `),
+        remove: (op, entity) => (0, jostraca_1.Content)(`
+  query := Query{
+    Id: 1
+  }
+
+  _, err := client.${entity.Name}().${op.Name}(query)
+  if err != nil {
+    fmt.Println("Error running ${entity.Name} ${op.Name}:", err)
+    return
+  }
+               `),
         list: (op, entity) => (0, jostraca_1.Content)(`
   ${entity.name}, err := client.${entity.Name}().${op.Name}()
   if err != nil {
@@ -151,6 +167,11 @@ exports.languagesSpec = {
 
   print('${entity.Name}', ${entity.name})
                `),
+        remove: (op, entity) => (0, jostraca_1.Content)(`
+ client.${entity.Name}().${op.name}({
+    "id": 1
+  })
+               `),
         list: (op, entity) => (0, jostraca_1.Content)(`
   ${entity.name} = client.${entity.Name}().${op.name}()
   print('${entity.Name}', ${entity.name})
@@ -197,6 +218,12 @@ exports.languagesSpec = {
 
   print_r("${entity.Name} " . $${entity.name});
                `),
+        remove: (op, entity) => (0, jostraca_1.Content)(`
+  $${entity.name} = new ${entity.Name}($client);
+  $${entity.name}->${op.name}([
+    "id" => 1
+  ]);
+               `),
         list: (op, entity) => (0, jostraca_1.Content)(`
   $${entity.name} = new ${entity.Name}($client);
   $${entity.name} = $${entity.name}->${op.name}();
@@ -241,6 +268,12 @@ exports.languagesSpec = {
   })
 
   puts "${entity.Name} #{${entity.name}}"
+               `),
+        remove: (op, entity) => (0, jostraca_1.Content)(`
+  client.${entity.Name}.${op.name}({
+    id: 1
+  })
+
                `),
         list: (op, entity) => (0, jostraca_1.Content)(`
   ${entity.name} = client.${entity.Name}.${op.name}()
