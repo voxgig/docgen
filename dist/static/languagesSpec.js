@@ -54,7 +54,7 @@ exports.languagesSpec = {
     go: {
         Name: "Go",
         name: "go",
-        install: (model) => `go get ${model.name}`,
+        install: (model) => `go get github.com/${model.name}/${model.name}-sdk`,
         init: (model, option) => {
             (0, jostraca_1.Content)(`
   options := ${model.name}sdk.Options{`);

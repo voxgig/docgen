@@ -53,7 +53,7 @@ export const languagesSpec: Record<string, any> = {
   go: {
     Name: "Go",
     name: "go",
-    install: (model: any) => `go get ${model.name}`,
+    install: (model: any) => `go get github.com/${model.name}/${model.name}-sdk`,
     init: (model: any, option: any) => {
       Content(`
   options := ${model.name}sdk.Options{`)
