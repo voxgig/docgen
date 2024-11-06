@@ -37,6 +37,10 @@ const Index = cmp(function Index(props: any) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/toolbar/prism-toolbar.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/copy-to-clipboard/prism-copy-to-clipboard.min.js"></script>
     <style>
 `)
 
@@ -61,9 +65,8 @@ const Index = cmp(function Index(props: any) {
      </template>
    </header>
 
-   <main>
+   <main class="content space-y-8">
      <template shadowrootmode="open">
-
 `)
 
         Main({})
@@ -83,6 +86,42 @@ const Index = cmp(function Index(props: any) {
         Content(`
      </template>
    </footer>
+   <script>
+        document.addEventListener("DOMContentLoaded", () => {
+        const mainShadowRoot = document.querySelector("main").shadowRoot;
+
+        mainShadowRoot.querySelectorAll("pre code").forEach((block) => Prism.highlightElement(block));
+
+        mainShadowRoot.querySelectorAll(".side-get-start-sect, .sidebar-section").forEach((el) => {
+          el.addEventListener("click", function () {
+            const targetID = this.getAttribute("data-target")
+            const targetSection = mainShadowRoot.querySelector(targetID);
+
+            if (targetSection) {
+              targetSection.scrollIntoView({ behavior: "smooth" });
+            } 
+          });
+        });
+
+        mainShadowRoot.querySelectorAll(".sections-mobile, .side-nav-btn, .side-get-start-nav-btn").forEach(button => {
+          button.addEventListener('click', function () {
+            const targetID = this.getAttribute('data-target');
+            const target = mainShadowRoot.querySelector(targetID);
+            const indicator = this.querySelector(".indicator");
+            if (target) {
+              if (target.classList.contains('hidden')) {
+                target.classList.remove('hidden');
+                indicator.textContent = '-';
+              } else {
+                target.classList.add('hidden');
+                indicator.textContent = '+';
+              }
+            } 
+          });
+        });
+        
+      });
+   </script>
   </body>
 </html>
 `)
