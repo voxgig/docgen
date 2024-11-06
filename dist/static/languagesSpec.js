@@ -21,7 +21,7 @@ exports.languagesSpec = {
         },
         create: (op, entity) => (0, jostraca_1.Content)(`
   ${entity.name} = await client.${entity.Name}().${op.name}({
-    baa: "foo",
+    foo: "baa",
   })
 
   console.log('${entity.Name}', ${entity.name})
@@ -29,7 +29,7 @@ exports.languagesSpec = {
         save: (op, entity) => (0, jostraca_1.Content)(`
   ${entity.name} = await client.${entity.Name}().${op.name}({
     id: 1,
-    baa: "foo",
+    foo: "baa",
   })
 
   console.log('${entity.Name}', ${entity.name})
@@ -70,7 +70,7 @@ exports.languagesSpec = {
         },
         create: (op, entity) => (0, jostraca_1.Content)(`
   data := ${entity.Name}Data{
-    Baa: "foo"
+    Foo: "baa"
   }
 
   ${entity.name}, err := client.${entity.Name}().${op.Name}(data)
@@ -84,7 +84,7 @@ exports.languagesSpec = {
         save: (op, entity) => (0, jostraca_1.Content)(`
   data := ${entity.Name}Data{
     Id: 1,
-    Baa: "foo",
+    Foo: "baa",
   }
 
   ${entity.name}, err := client.${entity.Name}().${op.Name}(data)
@@ -147,7 +147,7 @@ exports.languagesSpec = {
         },
         create: (op, entity) => (0, jostraca_1.Content)(`
   ${entity.name} = client.${entity.Name}().${op.name}(Data(
-    baa: "foo",
+    foo: "baa",
   ))
 
   print('${entity.Name}', ${entity.name})
@@ -155,7 +155,7 @@ exports.languagesSpec = {
         save: (op, entity) => (0, jostraca_1.Content)(`
   ${entity.name} = client.${entity.Name}().${op.name}(Data(
     id = 1,
-    baa = "foo",
+    foo = "baa",
   ))
 
   print('${entity.Name}', ${entity.name})
@@ -196,7 +196,7 @@ exports.languagesSpec = {
         create: (op, entity) => (0, jostraca_1.Content)(`
   $${entity.name} = new ${entity.Name}($client);
   $${entity.name} = $${entity.name}->${op.name}([
-    'baa' => "foo",
+    'foo' => "baa",
   ]);
 
   print_r("${entity.Name} " . $${entity.name});
@@ -205,7 +205,7 @@ exports.languagesSpec = {
   $${entity.name} = new ${entity.Name}($client);
   $${entity.name} = $${entity.name}->${op.name}([
     'id' => 1,
-    'baa' => "foo",
+    'foo' => "baa",
   ]);
 
   print_r("${entity.Name} " . $${entity.name});
@@ -249,7 +249,7 @@ exports.languagesSpec = {
         },
         create: (op, entity) => (0, jostraca_1.Content)(`
   ${entity.name} = client.${entity.Name}.${op.name}({
-    baa: "foo"
+    foo: "baa"
   })
 
   puts "${entity.Name} #{${entity.name}}"
@@ -257,7 +257,7 @@ exports.languagesSpec = {
         save: (op, entity) => (0, jostraca_1.Content)(`
   ${entity.name} = client.${entity.Name}.${op.name}({
     id: 1,
-    baa: "foo",
+    foo: "baa",
   })
 
   puts "${entity.Name} #{${entity.name}}"
