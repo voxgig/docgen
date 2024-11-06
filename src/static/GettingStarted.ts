@@ -7,7 +7,9 @@ const GettingStarted = cmp(function GettingStarted(props: any) {
   const { ctx$ } = props
   const { model } = ctx$
 
-  const { option, build } = model.main.sdk
+  const { option, options, build } = model.main.sdk
+
+  const parsedOptions = option ? option : options
 
   Content(`
 <div class="w-full md:w-3/4 mx-auto p-6 lg:my-20" >
@@ -42,7 +44,7 @@ const GettingStarted = cmp(function GettingStarted(props: any) {
 
 
     <section class="w-full 2xl:w-2/4">
-      <pre class="p-2 rounded-md overflow-x-auto"><code class="language-${spec.name}">`); spec.init(model, option); Content(`</code></pre>
+      <pre class="p-2 rounded-md overflow-x-auto"><code class="language-${spec.name}">`); spec.init(model, parsedOptions); Content(`</code></pre>
       </section
         </section>
       </section>

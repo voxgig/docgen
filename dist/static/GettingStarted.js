@@ -6,7 +6,8 @@ const languagesSpec_1 = require("./languagesSpec");
 const GettingStarted = (0, jostraca_1.cmp)(function GettingStarted(props) {
     const { ctx$ } = props;
     const { model } = ctx$;
-    const { option, build } = model.main.sdk;
+    const { option, options, build } = model.main.sdk;
+    const parsedOptions = option ? option : options;
     (0, jostraca_1.Content)(`
 <div class="w-full md:w-3/4 mx-auto p-6 lg:my-20" >
     <h2 class="text-3xl font-bold my-4">Getting Started</h2>`);
@@ -41,7 +42,7 @@ const GettingStarted = (0, jostraca_1.cmp)(function GettingStarted(props) {
 
     <section class="w-full 2xl:w-2/4">
       <pre class="p-2 rounded-md overflow-x-auto"><code class="language-${spec.name}">`);
-        spec.init(model, option);
+        spec.init(model, parsedOptions);
         (0, jostraca_1.Content)(`</code></pre>
       </section
         </section>
