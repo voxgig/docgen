@@ -31,8 +31,13 @@ const Main = (0, jostraca_1.cmp)(function Main(props) {
 </style>
 
 
-<main class="flex flex-col md:flex-row md:h-screen">`);
+<main class="flex flex-col md:flex-row md:h-screen">
+`);
     (0, Sidebar_1.Sidebar)({ ctx$ });
+    (0, jostraca_1.Content)(`
+<div class="flex flex-col overflow-y-auto p-4 w-full">
+  <h1 class="lg-header text-4xl md:text-5xl break-words font-extrabold text-center tracking-wide my-4 p-10"> ${model.Name} SDK Documentation</h1>
+     `);
     (0, Intro_1.Intro)({ ctx$ });
     (0, GettingStarted_1.GettingStarted)({ ctx$ });
     (0, Entities_1.Entities)({ ctx$ });

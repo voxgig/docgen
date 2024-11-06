@@ -36,10 +36,13 @@ const Main = cmp(function Main(props: any) {
 </style>
 
 
-<main class="flex flex-col md:flex-row md:h-screen">`)
-
+<main class="flex flex-col md:flex-row md:h-screen">
+`)
   Sidebar({ ctx$ })
-
+  Content(`
+<div class="flex flex-col overflow-y-auto p-4 w-full">
+  <h1 class="lg-header text-4xl md:text-5xl break-words font-extrabold text-center tracking-wide my-4 p-10"> ${model.Name} SDK Documentation</h1>
+     `)
   Intro({ ctx$ })
 
   GettingStarted({ ctx$ })
