@@ -140,7 +140,9 @@ const Main = cmp(function Main(props: any) {
       </p>
       </section>
 
-      <pre class="p-2 rounded-md overflow-x-auto"><code class="language-${spec.name}">${spec.install(model)}</code></pre>
+      <section class="w-full 2xl:w-2/4">
+        <pre class="p-2 rounded-md overflow-x-auto"><code class="language-${spec.name}">${spec.install(model)}</code></pre>
+      </section>
       </section>
 
       <section class="flex flex-col 2xl:flex-row justify-between gap-8 items-center mb-20 lg:mb-40 lg:p-2 rounded-lg">
@@ -151,7 +153,10 @@ const Main = cmp(function Main(props: any) {
         </p>
       </section>
 
-      <pre class="p-2 rounded-md overflow-x-auto"><code class="language-${spec.name}">`); spec.init(model, option); Content(`</code></pre>
+
+      <section class="w-full 2xl:w-2/4">
+        <pre class="p-2 rounded-md overflow-x-auto"><code class="language-${spec.name}">`); spec.init(model, option); Content(`</code></pre>
+      </section
           </section>
         </section>
   </section>`)
@@ -203,7 +208,9 @@ const Main = cmp(function Main(props: any) {
         A list with one or more ${entity.Name} instances.
       </p>
       </section>
+      <section class="w-full 2xl:w-2/4">
       <pre class="p-2 rounded-md overflow-x-auto"><code class="language-${spec.name}">`); spec.list(op, entity); Content(`</code></pre>
+      </section>
       </section>
                   `)
         } else if (op.name == "create") {
@@ -228,7 +235,10 @@ const Main = cmp(function Main(props: any) {
         The created ${entity.Name} instance.
       </p>
       </section>
+
+      <section class="w-full 2xl:w-2/4">
       <pre class="p-2 rounded-md overflow-x-auto"><code class="language-${spec.name}">`); spec.create(op, entity); Content(`</code></pre>
+      </section>
       </section>
                   `)
         } else if (op.name == "save") {
@@ -258,7 +268,10 @@ const Main = cmp(function Main(props: any) {
         The updated ${entity.Name} instance.
       </p>
       </section>
-      <pre class="p-2 rounded-md overflow-x-auto"><code class="language-${spec.name}">`); spec.save(op, entity); Content(`</code></pre>
+
+      <section class="w-full 2xl:w-2/4">
+        <pre class="p-2 rounded-md overflow-x-auto"><code class="language-${spec.name}">`); spec.save(op, entity); Content(`</code></pre>
+      </section>
       </section>
                   `)
         } else if (op.name == "remove") {
@@ -283,7 +296,10 @@ const Main = cmp(function Main(props: any) {
       </p>
         </p>
       </section>
+
+      <section class="w-full 2xl:w-2/4">
       <pre class="p-2 rounded-md overflow-x-auto"><code class="language-${spec.name}">`); spec.remove(op, entity); Content(`</code></pre>
+      </section>
       </section>
                   `)
         } else {
@@ -310,7 +326,10 @@ const Main = cmp(function Main(props: any) {
       </p>
         </p>
       </section>
+
+      <section class="w-full 2xl:w-2/4">
       <pre class="p-2 rounded-md overflow-x-auto"><code class="language-${spec.name}">`); spec.load(op, entity); Content(`</code></pre>
+      </section>
       </section>
                   `)
         }

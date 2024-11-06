@@ -133,7 +133,9 @@ const Main = (0, jostraca_1.cmp)(function Main(props) {
       </p>
       </section>
 
-      <pre class="p-2 rounded-md overflow-x-auto"><code class="language-${spec.name}">${spec.install(model)}</code></pre>
+      <section class="w-full 2xl:w-2/4">
+        <pre class="p-2 rounded-md overflow-x-auto"><code class="language-${spec.name}">${spec.install(model)}</code></pre>
+      </section>
       </section>
 
       <section class="flex flex-col 2xl:flex-row justify-between gap-8 items-center mb-20 lg:mb-40 lg:p-2 rounded-lg">
@@ -144,9 +146,12 @@ const Main = (0, jostraca_1.cmp)(function Main(props) {
         </p>
       </section>
 
-      <pre class="p-2 rounded-md overflow-x-auto"><code class="language-${spec.name}">`);
+
+      <section class="w-full 2xl:w-2/4">
+        <pre class="p-2 rounded-md overflow-x-auto"><code class="language-${spec.name}">`);
         spec.init(model, option);
         (0, jostraca_1.Content)(`</code></pre>
+      </section
           </section>
         </section>
   </section>`);
@@ -196,9 +201,11 @@ const Main = (0, jostraca_1.cmp)(function Main(props) {
         A list with one or more ${entity.Name} instances.
       </p>
       </section>
+      <section class="w-full 2xl:w-2/4">
       <pre class="p-2 rounded-md overflow-x-auto"><code class="language-${spec.name}">`);
                     spec.list(op, entity);
                     (0, jostraca_1.Content)(`</code></pre>
+      </section>
       </section>
                   `);
                 }
@@ -224,9 +231,12 @@ const Main = (0, jostraca_1.cmp)(function Main(props) {
         The created ${entity.Name} instance.
       </p>
       </section>
+
+      <section class="w-full 2xl:w-2/4">
       <pre class="p-2 rounded-md overflow-x-auto"><code class="language-${spec.name}">`);
                     spec.create(op, entity);
                     (0, jostraca_1.Content)(`</code></pre>
+      </section>
       </section>
                   `);
                 }
@@ -257,9 +267,12 @@ const Main = (0, jostraca_1.cmp)(function Main(props) {
         The updated ${entity.Name} instance.
       </p>
       </section>
-      <pre class="p-2 rounded-md overflow-x-auto"><code class="language-${spec.name}">`);
+
+      <section class="w-full 2xl:w-2/4">
+        <pre class="p-2 rounded-md overflow-x-auto"><code class="language-${spec.name}">`);
                     spec.save(op, entity);
                     (0, jostraca_1.Content)(`</code></pre>
+      </section>
       </section>
                   `);
                 }
@@ -285,9 +298,12 @@ const Main = (0, jostraca_1.cmp)(function Main(props) {
       </p>
         </p>
       </section>
+
+      <section class="w-full 2xl:w-2/4">
       <pre class="p-2 rounded-md overflow-x-auto"><code class="language-${spec.name}">`);
                     spec.remove(op, entity);
                     (0, jostraca_1.Content)(`</code></pre>
+      </section>
       </section>
                   `);
                 }
@@ -315,9 +331,12 @@ const Main = (0, jostraca_1.cmp)(function Main(props) {
       </p>
         </p>
       </section>
+
+      <section class="w-full 2xl:w-2/4">
       <pre class="p-2 rounded-md overflow-x-auto"><code class="language-${spec.name}">`);
                     spec.load(op, entity);
                     (0, jostraca_1.Content)(`</code></pre>
+      </section>
       </section>
                   `);
                 }
