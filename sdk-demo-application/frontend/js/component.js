@@ -28,7 +28,7 @@ function createForm(config, data_item) {
     if(key == 'id') {
       continue
     }
-    */
+     */
 
     let div = document.createElement('div')
     let value = data_item[key]
@@ -135,10 +135,81 @@ function attachSubmitHandler(form, userHandler) {
   form.addEventListener('submit', handler)
 }
 
+
+function injectDataEditor(data) {
+  let dataEditorDivContainer = document.querySelector('#dataEditor')
+  let formContainer;
+
+  console.log('data: ', data)
+
+  dataEditorDivContainer.innerHTML = ''
+
+  let form = createForm({
+    fields: {
+      'id': { disabled: true },
+      'lastModified': { disabled: true }
+    },
+    op: 'Save', // TODO: ops: ['Save', 'Delete']
+    handler (op, json_data) {
+      console.log('result: ', op, json_data)
+    }
+  }, data)
+
+
+  let div = $create({
+    elem: 'div',
+    children: [
+      $create({
+        elem: 'h1',
+        textContent: 'Editor'
+      }),
+      $create({
+        elem: 'div',
+        id: 'formEditor',
+        children: () => form
+      }),
+      $create({
+        elem: 'h3',
+        textContent: 'Json Viewer'
+      }),
+      $create({
+        elem: 'div',
+        classes: ['terminal'],
+        children: () => JSONDOMViewer(data)
+      })
+    ]
+  })
+  dataEditorDivContainer.appendChild(div)
+
+}
+
+function injectFormDOMViewer(json_data) {
+  let dataEditorDiv = document.querySelector('#dataEditor > div')
+
+  console.log(dataEditorDiv)
+
+  let terminal = $create({
+    elem: 'div',
+    classes: ['terminal'],
+    children: [
+      JSONDOMViewer(json_data)
+    ]
+  })
+
+  dataEditorDiv.appendChild(
+    $create({
+      elem: 'h3',
+      textContent: 'Json Viewer'
+    })
+  )
+  dataEditorDiv.appendChild(terminal)
+
+}
+
 function injectForm(form) {
   let formContainer = document.querySelector('#formEditor')
 
-  // TODO: Find a better way to remove children dynamically
+  // See https://developer.mozilla.org/en-US/docs/Web/API/Element/innerHTML
   formContainer.innerHTML = ''
 
   formContainer.appendChild(form)
@@ -148,11 +219,22 @@ function injectForm(form) {
 async function loadComponents(entity_name) {
 
   let entityTableContainer = document.querySelector('#entityTable')
-  let formEditor = document.querySelector('#formEditor')
+  let dataEditor = document.querySelector('#dataEditor')
 
-  // TODO: Figure the better way to erase the children
   entityTableContainer.innerHTML = ''
-  formEditor.innerHTML = ''
+  dataEditor.innerHTML = ''
+
+  // Default DataEditor Container for now
+  dataEditor.appendChild($create({
+    elem: 'div',
+    children: [
+      $create({
+        elem: 'h1',
+        textContent: 'Editor'
+      })
+    ]
+  }))
+
 
   /*
   <!-- The static HTML presentation of $create: -->
@@ -160,7 +242,7 @@ async function loadComponents(entity_name) {
     <h1>Entity Table</h1>
     <button id="openSidebarEntities" class="openbtn" onclick="openNav()">&#187; Show Entities</button>
   </div>
-  */
+   */
   let entityTable = $create({
     elem: 'div',
     children: [
@@ -181,7 +263,7 @@ async function loadComponents(entity_name) {
             id: 'openSidebarEntities',
             classes: ['openbtn'],
             innerHTML: window.SDK_NAME.ui.navtab.opened 
-              ? "&#171; Hide Entities" : "&#187; Show Entities",
+            ? "&#171; Hide Entities" : "&#187; Show Entities",
             onclick: function() {
               let navopened = window.SDK_NAME.ui.navtab.opened
               if(!navopened) {
@@ -226,21 +308,12 @@ async function loadComponents(entity_name) {
   let table = createTable(header,
     json_out.map(item => ({...item})),
     function (event, item) {
+
       console.log('selected row: ', this)
 
+      // TODO: GET item by id
+      injectDataEditor({ ...item })
       // console.log('item::::', item)
-      let form = createForm({
-        fields: {
-          'id': { disabled: true },
-          'lastModified': { disabled: true }
-        },
-        op: 'Save', // TODO: ops: ['Save', 'Delete']
-        handler (op, data) {
-          console.log('result: ', op, data)
-        }
-      }, item)
-
-      injectForm(form)
 
     }
   )
@@ -275,7 +348,7 @@ async function loadComponents(entity_name) {
 
 
   entityTable.appendChild(div)
-  */
+   */
 
 }
 
@@ -344,7 +417,7 @@ function loadForm(data_item) {
             }
 
           })
-          */
+           */
         ]
 
       }),
@@ -421,6 +494,11 @@ function $create(config) {
   }
 
 
+
+  if(typeof children == 'function') {
+    elem.appendChild(children())
+    return elem
+  }
 
   for(let i = 0; i < children.length; i++) {
     let child = children[i]
