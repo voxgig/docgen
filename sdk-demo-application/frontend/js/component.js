@@ -426,6 +426,7 @@ function $create(config) {
     let child = children[i]
     if(typeof child == 'function') {
       let node = child()
+      // if node is "iterateable"
       if(node[Symbol.iterator] != null) {
         for(let item of node) {
           elem.appendChild(item)
