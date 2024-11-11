@@ -28,7 +28,7 @@ function createForm(config, data_item) {
     if(key == 'id') {
       continue
     }
-     */
+    */
 
     let div = document.createElement('div')
     let value = data_item[key]
@@ -136,11 +136,11 @@ function attachSubmitHandler(form, userHandler) {
 }
 
 
-function injectDataEditor(data) {
+function injectDataEditor(data, handler) {
   let dataEditorDivContainer = document.querySelector('#dataEditor')
   let formContainer;
 
-  console.log('data: ', data)
+  // console.log('data: ', data)
 
   dataEditorDivContainer.innerHTML = ''
 
@@ -150,9 +150,7 @@ function injectDataEditor(data) {
       'lastModified': { disabled: true }
     },
     op: 'Save', // TODO: ops: ['Save', 'Delete']
-    handler (op, json_data) {
-      console.log('result: ', op, json_data)
-    }
+    handler: handler || ((op, json_data) => console.log('result: ', op, json_data))
   }, data)
 
 
@@ -183,29 +181,6 @@ function injectDataEditor(data) {
 
 }
 
-function injectFormDOMViewer(json_data) {
-  let dataEditorDiv = document.querySelector('#dataEditor > div')
-
-  console.log(dataEditorDiv)
-
-  let terminal = $create({
-    elem: 'div',
-    classes: ['terminal'],
-    children: [
-      JSONDOMViewer(json_data)
-    ]
-  })
-
-  dataEditorDiv.appendChild(
-    $create({
-      elem: 'h3',
-      textContent: 'Json Viewer'
-    })
-  )
-  dataEditorDiv.appendChild(terminal)
-
-}
-
 function injectForm(form) {
   let formContainer = document.querySelector('#formEditor')
 
@@ -216,7 +191,7 @@ function injectForm(form) {
 }
 
 
-async function loadComponents(entity_name) {
+async function loadComponents(current_entity) {
 
   let entityTableContainer = document.querySelector('#entityTable')
   let dataEditor = document.querySelector('#dataEditor')
@@ -237,12 +212,12 @@ async function loadComponents(entity_name) {
 
 
   /*
-  <!-- The static HTML presentation of $create: -->
+  <!-- For example, this is the static HTML presentation of $create for the following element: -->
   <div>
     <h1>Entity Table</h1>
     <button id="openSidebarEntities" class="openbtn" onclick="openNav()">&#187; Show Entities</button>
   </div>
-   */
+  */
   let entityTable = $create({
     elem: 'div',
     children: [
@@ -281,6 +256,36 @@ async function loadComponents(entity_name) {
             elem: 'button',
             classes: ['openbtn'],
             textContent: 'Add Entity',
+            onclick: function() {
+              let new_entity = window.SDK_NAME.ui.current_entity.formFields.reduce((acc, item) => {
+                acc[item] = ''
+                return acc
+              }, {})
+
+              console.log('new entity: ', new_entity)
+
+              // TODO: Exclude delete button/op, Only create button
+              injectDataEditor(new_entity, async (op, item) => {
+
+                if(op == 'save') {
+                  let post_item = await fetch(`/api/${SDK_NAME}/${window.SDK_NAME.ui.current_entity.name}/create`, {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                      ...item
+                    })
+                  })
+                  let json_out = await post_item.json()
+                  console.log('post: ', json_out)
+
+
+                }
+
+              })
+
+            }
           })
         ]
       })
@@ -290,12 +295,16 @@ async function loadComponents(entity_name) {
 
   entityTableContainer.appendChild(entityTable)
 
-  let out = await fetch(`/api/${SDK_NAME}/${entity_name}/list`, {
+  let out = await fetch(`/api/${SDK_NAME}/${current_entity.name}/list`, {
     method: 'GET',
+    headers: {
+      'Content-Type': 'application/json'
+    }
   })
 
   let json_out = await out.json()
 
+  // TODO: Explicit transformed header from the model
   let header = json_out[0] != null && Object.keys(json_out[0]).map(key=>({title: key, key}))
 
   // [ { title: ..., key: ..., }, ... ]
@@ -307,12 +316,57 @@ async function loadComponents(entity_name) {
 
   let table = createTable(header,
     json_out.map(item => ({...item})),
-    function (event, item) {
+    async function (event, item) {
 
-      console.log('selected row: ', this)
+      // console.log('selected row: ', this)
 
-      // TODO: GET item by id
-      injectDataEditor({ ...item })
+      console.log('item.id: ', item.id)
+
+      let out = await fetch(`/api/${SDK_NAME}/${window.SDK_NAME.ui.current_entity.name}/load/${item.id}`, {
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        method: 'GET',
+      })
+
+      let load_entity = await out.json()
+
+      console.log('load_entity: ', load_entity)
+
+      injectDataEditor(load_entity, async (op, item) => { 
+        console.log('ddd: ', op, item) // { ...item }
+
+        if(op == 'save') {
+          let put_item = await fetch(`/api/${SDK_NAME}/${window.SDK_NAME.ui.current_entity.name}/save/${item.id}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              ...item
+            })
+          })
+          let json_out = await put_item.json()
+          console.log('put: ', json_out)
+
+
+        } else if(op == 'delete') {
+          let remove_item = await fetch(`/api/${SDK_NAME}/${window.SDK_NAME.ui.current_entity.name}/remove/${item.id}`, {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              ...item
+            })
+          })
+          let json_out = await remove_item.json()
+          console.log('remove: ', json_out)
+        }
+
+      })
+
+
       // console.log('item::::', item)
 
     }
@@ -336,25 +390,14 @@ async function loadComponents(entity_name) {
   )
   entityTable.appendChild(terminal)
 
-  /*
-  let div = document.createElement('div')
-  div.classList.add('terminal')
-
-  let terminal_header = document.createElement('h3')
-  terminal_header.textContent = 'Json Viewer'
-
-  div.appendChild(JSONDOMViewer(json_out))
-  entityTable.appendChild(terminal_header)
-
-
-  entityTable.appendChild(div)
-   */
-
 }
 
+/*
 function loadForm(data_item) {
 
-  /*
+*/
+
+/*
   let data_item = {
     "firstName": "John",
     "lastName": "Doe",
@@ -364,8 +407,9 @@ function loadForm(data_item) {
     "country": "USA",
     lastModified: Date.now()
   }
-   */
+  */
 
+/*
   let config = {
     fields: {
       'lastModified': { disabled: true }
@@ -378,16 +422,41 @@ function loadForm(data_item) {
 
   injectForm(form)
 }
+*/
 
 ;(async function load_root() {
 
   let entities = [
-    { name: 'phonebook', title: 'Phonebook' }, // just capitalized
-    { name: 'client', title: 'Client' }
+    {
+      name: 'phonebook',
+      title: 'Phonebook', // just capitalized
+      // TODO: Transform from model
+      formFields: [
+        'id',
+        'firstName',
+        'lastName',
+        'phoneNumber',
+        'address',
+        'city',
+        'country',
+        'lastModified'
+      ]
+    },
+    {
+      name: 'client',
+      title: 'Client',
+      formFields: [
+        'id',
+        'firstName',
+        'lastName',
+        'phoneNumber',
+        'lastModified'
+      ]
+    }
   ]
 
   console.log(window.SDK_NAME)
-  window.SDK_NAME.ui.current_entity = entities[0].name // DEFAULT
+  window.SDK_NAME.ui.current_entity = entities[0] // DEFAULT
 
   await loadComponents(window.SDK_NAME.ui.current_entity)
 
@@ -417,7 +486,7 @@ function loadForm(data_item) {
             }
 
           })
-           */
+          */
         ]
 
       }),
@@ -429,8 +498,12 @@ function loadForm(data_item) {
           })
 
           switch_entity.addEventListener('click', async function () {
-            console.log(entity.name)
-            window.SDK_NAME.ui.current_entity = entity.name
+            console.log('entity: ', entity)
+
+            window.SDK_NAME.ui.current_entity = entity
+
+            console.log(window.SDK_NAME)
+
             await loadComponents(window.SDK_NAME.ui.current_entity)
           })
 
