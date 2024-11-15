@@ -1,7 +1,7 @@
 import JSONDOMViewer from "./json-dom-viewer.js"
 import createTable from "./DataTable.js"
 
-const SDK_NAME = 'phonebook_sdk'
+const SDK_NAME = 'TrelloSDK'
 
 // TODO: Figure the best way to export this globally
 window.createForm = createForm
@@ -294,8 +294,16 @@ async function loadComponents(current_entity) {
   })
 
   entityTableContainer.appendChild(entityTable)
+  
+  const query_entries = Object.entries(current_entity.op.list.query)
+  const query = query_entries.reduce((acc, entry, i) => {
+    acc += entry[0] + '=' + entry[1].default
+    if(i < query_entries.length-1) acc += '&'
+    
+    return acc
+  }, '')
 
-  let out = await fetch(`/api/${SDK_NAME}/${current_entity.name}/list`, {
+  let out = await fetch(`/api/${SDK_NAME}/${current_entity.name}/list?${query}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json'
@@ -305,7 +313,7 @@ async function loadComponents(current_entity) {
   let json_out = await out.json()
 
   // TODO: Explicit transformed header from the model
-  let header = json_out[0] != null && Object.keys(json_out[0]).map(key=>({title: key, key}))
+  let header = json_out[0] != null && Object.keys(json_out[0].data).map(key=>({title: key, key}))
 
   // [ { title: ..., key: ..., }, ... ]
 
@@ -315,7 +323,7 @@ async function loadComponents(current_entity) {
   // loadForm(json_out[0] || {})
 
   let table = createTable(header,
-    json_out.map(item => ({...item})),
+    json_out.map(item => item.data),
     async function (event, item) {
 
       // console.log('selected row: ', this)
@@ -428,8 +436,22 @@ function loadForm(data_item) {
 
   let entities = [
     {
-      name: 'phonebook',
-      title: 'Phonebook', // just capitalized
+      name: 'board',
+      title: 'Board', // just capitalized
+      
+      // TODO: Transform from model
+      op: {
+        list: {
+          query: {
+            idMember: { 
+              type: String,
+              // HARDCODED - make a query button/form
+              default: 'me'
+            }
+          }
+        }
+      },
+      
       // TODO: Transform from model
       formFields: [
         'id',
@@ -443,8 +465,22 @@ function loadForm(data_item) {
       ]
     },
     {
-      name: 'client',
-      title: 'Client',
+      name: 'list',
+      title: 'List',
+      
+      // TODO: Transform from model
+      op: {
+        list: {
+          query: {
+            idBoard: { 
+              type: String,
+              // HARDCODED - make a query button/form
+              default: '6735f4225f8fbbd10bba2da0'
+            }
+          }
+        }
+      },
+      
       formFields: [
         'id',
         'firstName',

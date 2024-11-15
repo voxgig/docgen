@@ -4,7 +4,6 @@
 
 body {
 	display: grid;
-	overflow: auto;
 	/*
 	height: 100%;
 	width: 100%;
@@ -32,6 +31,10 @@ body {
 
 .container {
 	display: flex;
+	/*
+	display: grid;
+	grid-template-columns: 1fr 1fr 1fr;
+	*/
 	height: 85vh;
 	/* height: 100%; */
 	/* overflow: hidden; */
@@ -75,6 +78,18 @@ tr:nth-child(even) {
 
 tr:hover {
 	background-color: #f1f1f1;
+}
+
+table {
+    /* table-layout: fixed; */
+    width: 100%;
+    border:1px solid;
+    margin-top:20px;
+    border-collapse: collapse;
+}
+td {
+    min-width: 250px;
+    border:1px solid;
 }
 
 .edit-btn, .save-btn {

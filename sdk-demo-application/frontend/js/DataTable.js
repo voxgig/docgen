@@ -87,6 +87,14 @@ function createTable(header, data, rowClick = function() {}) {
   div.style.maxWidth = '100%'
   div.style.overflow = 'auto'
 
+  /*
+      background: #fff;
+    border-radius: 5px;
+    */
+  div.style.display = 'grid';
+  div.style.gridTemplateColumns = 'repeat(auto-fit, 20em)'
+  div.style.overflowX = 'scroll'
+
   div.appendChild(table)
 
   return div

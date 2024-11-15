@@ -1,1 +1,1 @@
-curl -v -X GET "http://127.0.0.1:8000/api/phonebook_sdk/phonebook/list" | json
+curl -v "http://127.0.0.1:8000/api/TrelloSDK/board/list?idMember=me" | json
