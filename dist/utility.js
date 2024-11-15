@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.requirePath = exports.resolvePath = void 0;
 const node_path_1 = __importDefault(require("node:path"));
+// TODO: move to @voxgig/util as duplicated with @voxgig/sdkgen
 const resolvePath = (ctx$, path) => {
     const fullpath = node_path_1.default.join(ctx$.folder, '..', 'dist', path);
     return fullpath;
@@ -12,15 +13,17 @@ const resolvePath = (ctx$, path) => {
 exports.resolvePath = resolvePath;
 const requirePath = (ctx$, path, flags) => {
     const fullpath = resolvePath(ctx$, path);
-    const ignore = null == flags?.ignore ? true : flags.ignore;
+    const ignore = null == flags?.ignore ? false : flags.ignore;
     try {
         return require(fullpath);
     }
     catch (err) {
-        if (!ignore) {
+        if (ignore) {
+            ctx$.log.warn({ point: 'require-missing', path, note: path });
+        }
+        else {
             throw err;
         }
-        console.warn('MISSING: ', path);
     }
 };
 exports.requirePath = requirePath;

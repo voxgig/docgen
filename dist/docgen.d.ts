@@ -1,4 +1,5 @@
 import * as JostracaModule from 'jostraca';
+import { Pino } from '@voxgig/util';
 import { Index } from './static/Index';
 import { Main } from './static/Main';
 type DocGenOptions = {
@@ -13,6 +14,7 @@ type DocGenOptions = {
     meta?: {
         name: string;
     };
+    pino?: ReturnType<typeof Pino>;
 };
 declare const Jostraca: typeof JostracaModule.Jostraca;
 declare function DocGen(opts: DocGenOptions): {

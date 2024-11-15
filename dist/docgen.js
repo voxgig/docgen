@@ -38,26 +38,18 @@ exports.Jostraca = Jostraca;
 function DocGen(opts) {
     const fs = opts.fs || Fs;
     const folder = opts.folder || '.';
-    const def = opts.def || 'def.yml';
+    // const def = opts.def || 'def.yml'
     const jostraca = Jostraca();
     async function generate(spec) {
         const { model, config } = spec;
-        // console.log('DOCGEN.config', config)
         let Root = spec.root;
         if (null == Root) {
             clear(config.root);
             const rootModule = require(config.root);
             Root = rootModule.Root;
         }
-        // console.log('DOCGEN Root', Root)
         const opts = { fs, folder, meta: { spec } };
-        try {
-            await jostraca.generate(opts, () => Root({ model }));
-        }
-        catch (err) {
-            console.log('DOCGEN ERROR: ', err);
-            throw err;
-        }
+        await jostraca.generate(opts, () => Root({ model }));
     }
     async function prepare(spec, ctx) {
         return await (0, prepare_openapi_1.PrepareOpenAPI)(spec, ctx);
@@ -67,19 +59,23 @@ function DocGen(opts) {
     };
 }
 DocGen.makeBuild = async function (opts) {
-    // console.log('DocGen.makeBuild', opts)
-    const docgen = DocGen(opts);
+    let docgen = undefined;
     const config = {
         root: opts.root,
-        def: opts.def,
+        def: opts.def || 'no-def',
         kind: 'openapi-3',
-        model: opts.model ? (opts.model.folder + '/api.jsonic') : undefined,
+        model: opts.model ? (opts.model.folder + '/api.jsonic') : 'no-model',
         meta: opts.meta || {},
         entity: opts.model ? opts.model.entity : undefined,
     };
     return async function build(model, build) {
-        // TODO: voxgig model needs to handle errors from here
-        return docgen.generate({ model, build, config });
+        if (null == docgen) {
+            docgen = DocGen({
+                ...opts,
+                pino: build.log,
+            });
+        }
+        await docgen.generate({ model, build, config });
     };
 };
 // Adapted from https://github.com/sindresorhus/import-fresh - Thanks!

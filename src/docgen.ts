@@ -5,6 +5,8 @@ import * as Fs from 'node:fs'
 
 import * as JostracaModule from 'jostraca'
 
+import { prettyPino, Pino } from '@voxgig/util'
+
 import { Index } from './static/Index'
 import { Main } from './static/Main'
 
@@ -23,6 +25,7 @@ type DocGenOptions = {
   meta?: {
     name: string
   }
+  pino?: ReturnType<typeof Pino>
 }
 
 
@@ -32,14 +35,11 @@ const { Jostraca } = JostracaModule
 function DocGen(opts: DocGenOptions) {
   const fs = opts.fs || Fs
   const folder = opts.folder || '.'
-  const def = opts.def || 'def.yml'
+  // const def = opts.def || 'def.yml'
   const jostraca = Jostraca()
-
 
   async function generate(spec: any) {
     const { model, config } = spec
-
-    // console.log('DOCGEN.config', config)
 
     let Root = spec.root
 
@@ -49,17 +49,9 @@ function DocGen(opts: DocGenOptions) {
       Root = rootModule.Root
     }
 
-    // console.log('DOCGEN Root', Root)
-
     const opts = { fs, folder, meta: { spec } }
 
-    try {
-      await jostraca.generate(opts, () => Root({ model }))
-    }
-    catch (err: any) {
-      console.log('DOCGEN ERROR: ', err)
-      throw err
-    }
+    await jostraca.generate(opts, () => Root({ model }))
   }
 
 
@@ -76,22 +68,27 @@ function DocGen(opts: DocGenOptions) {
 
 
 DocGen.makeBuild = async function(opts: DocGenOptions) {
-  // console.log('DocGen.makeBuild', opts)
-
-  const docgen = DocGen(opts)
+  let docgen: any = undefined
 
   const config = {
     root: opts.root,
-    def: opts.def,
+    def: opts.def || 'no-def',
     kind: 'openapi-3',
-    model: opts.model ? (opts.model.folder + '/api.jsonic') : undefined,
+    model: opts.model ? (opts.model.folder + '/api.jsonic') : 'no-model',
     meta: opts.meta || {},
     entity: opts.model ? opts.model.entity : undefined,
   }
 
   return async function build(model: any, build: any) {
-    // TODO: voxgig model needs to handle errors from here
-    return docgen.generate({ model, build, config })
+    if (null == docgen) {
+
+      docgen = DocGen({
+        ...opts,
+        pino: build.log,
+      })
+    }
+
+    await docgen.generate({ model, build, config })
   }
 }
 
