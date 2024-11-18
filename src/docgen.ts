@@ -38,8 +38,16 @@ function DocGen(opts: DocGenOptions) {
   // const def = opts.def || 'def.yml'
   const jostraca = Jostraca()
 
+  const pino = prettyPino('sdkgen', opts)
+  const log = pino.child({ cmp: 'docgen' })
+
+
   async function generate(spec: any) {
+    const start = Date.now()
     const { model, config } = spec
+
+    log.info({ point: 'generate-start', start })
+    log.debug({ point: 'generate-spec', spec })
 
     let Root = spec.root
 
@@ -49,9 +57,11 @@ function DocGen(opts: DocGenOptions) {
       Root = rootModule.Root
     }
 
-    const opts = { fs, folder, meta: { spec } }
+    const opts = { fs, folder, log: log.child({ cmp: 'jostraca' }), meta: { spec } }
 
     await jostraca.generate(opts, () => Root({ model }))
+
+    log.info({ point: 'generate-end' })
   }
 
 

@@ -28,6 +28,7 @@ exports.Jostraca = exports.Main = exports.Index = exports.Inject = exports.Fragm
 exports.DocGen = DocGen;
 const Fs = __importStar(require("node:fs"));
 const JostracaModule = __importStar(require("jostraca"));
+const util_1 = require("@voxgig/util");
 const Index_1 = require("./static/Index");
 Object.defineProperty(exports, "Index", { enumerable: true, get: function () { return Index_1.Index; } });
 const Main_1 = require("./static/Main");
@@ -40,16 +41,22 @@ function DocGen(opts) {
     const folder = opts.folder || '.';
     // const def = opts.def || 'def.yml'
     const jostraca = Jostraca();
+    const pino = (0, util_1.prettyPino)('sdkgen', opts);
+    const log = pino.child({ cmp: 'docgen' });
     async function generate(spec) {
+        const start = Date.now();
         const { model, config } = spec;
+        log.info({ point: 'generate-start', start });
+        log.debug({ point: 'generate-spec', spec });
         let Root = spec.root;
         if (null == Root) {
             clear(config.root);
             const rootModule = require(config.root);
             Root = rootModule.Root;
         }
-        const opts = { fs, folder, meta: { spec } };
+        const opts = { fs, folder, log: log.child({ cmp: 'jostraca' }), meta: { spec } };
         await jostraca.generate(opts, () => Root({ model }));
+        log.info({ point: 'generate-end' });
     }
     async function prepare(spec, ctx) {
         return await (0, prepare_openapi_1.PrepareOpenAPI)(spec, ctx);
