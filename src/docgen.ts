@@ -105,6 +105,13 @@ DocGen.makeBuild = async function(opts: DocGenOptions) {
       })
     }
 
+    // TEMPORARY FIX:  TODO: apidef should be it's own action, same as sdkgen and docgen
+    const apidef = ApiDef({
+      pino: build.log,
+    })
+
+    await apidef.generate(config)
+
     await docgen.generate({ model, build, config })
   }
 }
