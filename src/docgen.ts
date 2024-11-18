@@ -5,6 +5,8 @@ import * as Fs from 'node:fs'
 
 import * as JostracaModule from 'jostraca'
 
+import { prettyPino, Pino } from '@voxgig/util'
+
 import { Index } from './static/Index'
 import { Main } from './static/Main'
 
@@ -28,6 +30,7 @@ type DocGenOptions = {
   meta?: {
     name: string
   }
+  pino?: ReturnType<typeof Pino>
 }
 
 
@@ -37,14 +40,19 @@ const { Jostraca } = JostracaModule
 function DocGen(opts: DocGenOptions) {
   const fs = opts.fs || Fs
   const folder = opts.folder || '.'
-  const def = opts.def || 'def.yml'
+  // const def = opts.def || 'def.yml'
   const jostraca = Jostraca()
+
+  const pino = prettyPino('sdkgen', opts)
+  const log = pino.child({ cmp: 'docgen' })
 
 
   async function generate(spec: any) {
+    const start = Date.now()
     const { model, config } = spec
 
-    // console.log('DOCGEN.config', config)
+    log.info({ point: 'generate-start', start })
+    log.debug({ point: 'generate-spec', spec })
 
     let Root = spec.root
 
@@ -54,17 +62,11 @@ function DocGen(opts: DocGenOptions) {
       Root = rootModule.Root
     }
 
-    // console.log('DOCGEN Root', Root)
+    const opts = { fs, folder, log: log.child({ cmp: 'jostraca' }), meta: { spec } }
 
-    const opts = { fs, folder, meta: { spec } }
+    await jostraca.generate(opts, () => Root({ model }))
 
-    try {
-      await jostraca.generate(opts, () => Root({ model }))
-    }
-    catch (err: any) {
-      console.log('DOCGEN ERROR: ', err)
-      throw err
-    }
+    log.info({ point: 'generate-end' })
   }
 
 
@@ -81,30 +83,29 @@ function DocGen(opts: DocGenOptions) {
 
 
 DocGen.makeBuild = async function(opts: DocGenOptions) {
-  // console.log('DocGen.makeBuild', opts)
 
-  let docgen = DocGen(opts)
+  let docgen: any = undefined
 
   const config: any = {
     root: opts.root,
-    def: opts.def,
+    def: opts.def || 'no-def',
     kind: 'openapi-3',
-    model: opts.model ? (opts.model.folder + '/api.jsonic') : undefined,
+    model: opts.model ? (opts.model.folder + '/api.jsonic') : 'no-model',
     meta: opts.meta || {},
     entity: opts.model ? opts.model.entity : undefined,
   }
 
 
-  return async function build(model: any, build: any, ctx: any) {
-    // TEMPORARY FIX:  TODO: apidef should be it's own action, same as sdkgen and docgen
-    const apidef = ApiDef({
-      pino: build.log,
-    })
+  return async function build(model: any, build: any) {
+    if (null == docgen) {
 
-    await apidef.generate(config)
+      docgen = DocGen({
+        ...opts,
+        pino: build.log,
+      })
+    }
 
-    // TODO: voxgig model needs to handle errors from here
-    return docgen.generate({ model, build, config })
+    await docgen.generate({ model, build, config })
   }
 }
 

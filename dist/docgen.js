@@ -28,6 +28,7 @@ exports.Jostraca = exports.Main = exports.Index = exports.Inject = exports.Fragm
 exports.DocGen = DocGen;
 const Fs = __importStar(require("node:fs"));
 const JostracaModule = __importStar(require("jostraca"));
+const util_1 = require("@voxgig/util");
 const Index_1 = require("./static/Index");
 Object.defineProperty(exports, "Index", { enumerable: true, get: function () { return Index_1.Index; } });
 const Main_1 = require("./static/Main");
@@ -38,26 +39,24 @@ exports.Jostraca = Jostraca;
 function DocGen(opts) {
     const fs = opts.fs || Fs;
     const folder = opts.folder || '.';
-    const def = opts.def || 'def.yml';
+    // const def = opts.def || 'def.yml'
     const jostraca = Jostraca();
+    const pino = (0, util_1.prettyPino)('sdkgen', opts);
+    const log = pino.child({ cmp: 'docgen' });
     async function generate(spec) {
+        const start = Date.now();
         const { model, config } = spec;
-        // console.log('DOCGEN.config', config)
+        log.info({ point: 'generate-start', start });
+        log.debug({ point: 'generate-spec', spec });
         let Root = spec.root;
         if (null == Root) {
             clear(config.root);
             const rootModule = require(config.root);
             Root = rootModule.Root;
         }
-        // console.log('DOCGEN Root', Root)
-        const opts = { fs, folder, meta: { spec } };
-        try {
-            await jostraca.generate(opts, () => Root({ model }));
-        }
-        catch (err) {
-            console.log('DOCGEN ERROR: ', err);
-            throw err;
-        }
+        const opts = { fs, folder, log: log.child({ cmp: 'jostraca' }), meta: { spec } };
+        await jostraca.generate(opts, () => Root({ model }));
+        log.info({ point: 'generate-end' });
     }
     async function prepare(spec, ctx) {
         return await (0, prepare_openapi_1.PrepareOpenAPI)(spec, ctx);
@@ -67,19 +66,23 @@ function DocGen(opts) {
     };
 }
 DocGen.makeBuild = async function (opts) {
-    // console.log('DocGen.makeBuild', opts)
-    const docgen = DocGen(opts);
+    let docgen = undefined;
     const config = {
         root: opts.root,
-        def: opts.def,
+        def: opts.def || 'no-def',
         kind: 'openapi-3',
-        model: opts.model ? (opts.model.folder + '/api.jsonic') : undefined,
+        model: opts.model ? (opts.model.folder + '/api.jsonic') : 'no-model',
         meta: opts.meta || {},
         entity: opts.model ? opts.model.entity : undefined,
     };
     return async function build(model, build) {
-        // TODO: voxgig model needs to handle errors from here
-        return docgen.generate({ model, build, config });
+        if (null == docgen) {
+            docgen = DocGen({
+                ...opts,
+                pino: build.log,
+            });
+        }
+        await docgen.generate({ model, build, config });
     };
 };
 // Adapted from https://github.com/sindresorhus/import-fresh - Thanks!
