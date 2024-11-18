@@ -46,7 +46,7 @@
   },
   "dependencies": {
     "@redocly/openapi-core": "^1.25.7",
-    "@voxgig/apidef": "^0.2.0",
-    "jostraca": "^0.7.7"
+    "@voxgig/apidef": "^1.1.1",
+    "jostraca": "^0.8.1"
   }
 }

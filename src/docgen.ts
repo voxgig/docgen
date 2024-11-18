@@ -8,7 +8,12 @@ import * as JostracaModule from 'jostraca'
 import { Index } from './static/Index'
 import { Main } from './static/Main'
 
+// Sample App
+import { SampleApp } from './sample_app/SampleApp'
+
 import { PrepareOpenAPI } from './prepare-openapi'
+
+import { ApiDef } from '@voxgig/apidef'
 
 
 type DocGenOptions = {
@@ -78,9 +83,9 @@ function DocGen(opts: DocGenOptions) {
 DocGen.makeBuild = async function(opts: DocGenOptions) {
   // console.log('DocGen.makeBuild', opts)
 
-  const docgen = DocGen(opts)
+  let docgen = DocGen(opts)
 
-  const config = {
+  const config: any = {
     root: opts.root,
     def: opts.def,
     kind: 'openapi-3',
@@ -89,7 +94,15 @@ DocGen.makeBuild = async function(opts: DocGenOptions) {
     entity: opts.model ? opts.model.entity : undefined,
   }
 
-  return async function build(model: any, build: any) {
+
+  return async function build(model: any, build: any, ctx: any) {
+    // TEMPORARY FIX:  TODO: apidef should be it's own action, same as sdkgen and docgen
+    const apidef = ApiDef({
+      pino: build.log,
+    })
+
+    await apidef.generate(config)
+
     // TODO: voxgig model needs to handle errors from here
     return docgen.generate({ model, build, config })
   }
@@ -162,6 +175,7 @@ export const Inject: Component = JostracaModule.Inject
 export {
   Index,
   Main,
+  SampleApp,
 
   Jostraca,
   DocGen,
