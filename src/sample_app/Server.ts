@@ -85,6 +85,7 @@ app.get('/api/${SDK_NAME}/${entity_name.toLowerCase()}/${op_key}', async (req, r
             Content(`
   try {
     let list = await client.${camelify(entity_name)}().list(req.query)
+    list = list.map(item => item.data)
     res.status(200)
     return res.send(JSON.stringify(list))
   } catch(err) {

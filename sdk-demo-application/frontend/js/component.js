@@ -1,139 +1,267 @@
+import { $create } from "./Utils.js"
+
 import JSONDOMViewer from "./json-dom-viewer.js"
 import createTable from "./DataTable.js"
+
+import { createForm } from './Editor.js'
 
 const SDK_NAME = 'TrelloSDK'
 
 // TODO: Figure the best way to export this globally
 window.createForm = createForm
 
-function createForm(config, data_item) {
-  let form = document.createElement('form')
-
-  const { fields = {}, op = 'Create' } = config
-  const handler = config.handler || (() => {})
-
-
-  if(data_item.id != null) {
-    form.dataset.id = data_item.id
-  }
-  // form.classList.add('ford-grid')
-
-  form.style.display = 'grid'
-  // TODO: Should come from config
-  form.style.gridTemplateColumns = '1fr '.repeat(2).trim()
-  form.style.gap = '1em'
-
-  for(let key in data_item) {
-    /*
-    if(key == 'id') {
-      continue
-    }
-    */
-
-    let div = document.createElement('div')
-    let value = data_item[key]
-
-    // TODO: Dynamically build the style
-    div.classList.add('form-group')
-
-    let label = document.createElement('label')
-    let input = document.createElement('input')
-
-    // TODO: password, email, tel, etc.
-    input.type = 'text'
-
-    // NOTE: NEEDED for FormData
-    input.name = key
-    input.id = key
-
-    let field_options = fields[key]
-    if(field_options) {
-      if(field_options.disabled) {
-        input.disabled = true
-        input.style.backgroundColor = '#ccc'
-      }
-    }
-
-    label.textContent = key
-    input.defaultValue = value != null && value || ''
-
-    div.appendChild(label)
-    div.appendChild(input)
-
-    form.appendChild(div)
-
-  }
-
-  let div_button = $create({
-    elem: 'div',
-    classes: [ 'form-group' ],
-    style: {
-      display: 'grid',
-      gridColumn: '1 / -1',
-      gap: '1em',
-      // TODO: Depending on the number of operations - usually save and delete
-      gridTemplateColumns: '1fr 1fr'
+window[SDK_NAME].fields = {}
+window[SDK_NAME].fields.editables = {
+  'board': {
+    "closed": { // required but NOT indicated by the SWAGGER
+      "type": "string",
+      "values": ["true", "false"]
     },
-    children: [
-      $create({
-        elem: 'button',
-        textContent: op,
-        // onclick: () => console.log('op: ', op),
-        props: {
-          type: 'submit',
-          dataset: {
-            'op': op.toLowerCase()
-          }
+    "desc": {
+      "type": "string",
+      "length": {
+        "min": 0,
+        "max": 16384
+      }
+    },
+    "idBoardSource": {
+      "type": "string",
+      "description": "The id of the board to copy into the new board"
+    },
+    "idOrganization": {
+      "type": "string",
+      "description": "The id or name of the organization to add the board to"
+    },
+    "keepFromSource": {
+      "type": "string",
+      "description": "Components of the source board to copy"
+    },
+    "labelNames": {
+      "blue": {
+        "type": "string",
+        "length": {
+          "min": 0,
+          "max": 16384
         }
-      }),
-      $create({
-        elem: 'button',
-        textContent: 'Delete',
-        // NOTE: ONLY For DELETE
-        style: {
-          backgroundColor: '#dd1010'
-        },
-        props: {
-          type: 'submit',
-          dataset: {
-            'op': 'Delete'.toLowerCase()
-          }
+      },
+      "green": {
+        "type": "string",
+        "length": {
+          "min": 0,
+          "max": 16384
         }
-      })
-    ]
-  })
-
-  form.appendChild(div_button)
-
-  attachSubmitHandler(form, handler)
-
-  return form
-}
-
-function attachSubmitHandler(form, userHandler) {
-
-  const formToJSON = (form) => {
-    const data = new FormData(form)
-    // console.log(form, data)
-    let result = {}
-    let data_keys = data.keys()
-    for(let key of data_keys) {
-      result[key] = data.get(key)
+      },
+      "orange": {
+        "type": "string",
+        "length": {
+          "min": 0,
+          "max": 16384
+        }
+      },
+      "purple": {
+        "type": "string",
+        "length": {
+          "min": 0,
+          "max": 16384
+        }
+      },
+      "red": {
+        "type": "string",
+        "length": {
+          "min": 0,
+          "max": 16384
+        }
+      },
+      "yellow": {
+        "type": "string",
+        "length": {
+          "min": 0,
+          "max": 16384
+        }
+      }
+    },
+    "name": {
+      "type": "string",
+      "length": {
+        "min": 1,
+        "max": 16384
+      }
+    },
+    "powerUps": {
+      "type": "string",
+      "values": ["all", "calendar", "cardAging", "recap", "voting"]
+    },
+    "prefs": {
+      "background": {
+        "type": "string",
+        "description": "A standard background name, or the id of a custom background"
+      },
+      "calendarFeedEnabled": {
+        "type": "string",
+        "values": ["true", "false"]
+      },
+      "cardAging": {
+        "type": "string",
+        "values": ["pirate", "regular"]
+      },
+      "cardCovers": {
+        "type": "string",
+        "values": ["true", "false"]
+      },
+      "comments": {
+        "type": "string",
+        "values": ["disabled", "members", "observers", "org", "public"]
+      },
+      "invitations": {
+        "type": "string",
+        "values": ["admins", "members"]
+      },
+      "permissionLevel": {
+        "type": "string",
+        "values": ["org", "private", "public"]
+      },
+      "selfJoin": {
+        "type": "string",
+        "values": ["true", "false"]
+      },
+      "voting": {
+        "type": "string",
+        "values": ["disabled", "members", "observers", "org", "public"]
+      }
+    },
+    "prefs_background": {
+      "type": "string",
+      "length": {
+        "min": 0,
+        "max": 16384
+      }
+    },
+    "prefs_cardAging": {
+      "type": "string",
+      "values": ["pirate", "regular"]
+    },
+    "prefs_cardCovers": {
+      "type": "string",
+      "values": ["true", "false"]
+    },
+    "prefs_comments": {
+      "type": "string",
+      "values": ["disabled", "members", "observers", "org", "public"]
+    },
+    "prefs_invitations": {
+      "type": "string",
+      "values": ["admins", "members"]
+    },
+    "prefs_permissionLevel": {
+      "type": "string",
+      "values": ["org", "private", "public"]
+    },
+    "prefs_selfJoin": {
+      "type": "string",
+      "values": ["true", "false"]
+    },
+    "prefs_voting": {
+      "type": "string",
+      "values": ["disabled", "members", "observers", "org", "public"]
+    },
+    "subscribed": {
+      "type": "string",
+      "values": ["true", "false"]
     }
-    return result
+  },
+  "list": {
+    "closed": {
+      "type": "string",
+      "values": ["true", "false"]
+    },
+    "idBoard": {
+      "type": "string",
+      "description": "id of the board that the list should be added to"
+    },
+    "idListSource": {
+      "type": "string",
+      "description": "The id of the list to copy into a new list"
+    },
+    "name": {
+      "type": "string",
+      "length": {
+        "min": 1,
+        "max": 16384
+      }
+    },
+    "pos": {
+      "type": "string",
+      "values": ["top", "bottom"],
+      "description": "A position. 'top', 'bottom', or a positive number"
+    },
+    "subscribed": {
+      "type": "string",
+      "values": ["true", "false"]
+    }
   }
 
-  const handler = async (event) => {
-    event.preventDefault()
-    const result = formToJSON(event.target)
-
-    result.id = form.dataset.id != null ? form.dataset.id : ''
-
-    await userHandler(event.submitter.dataset.op || '', result)
-  }
-
-  form.addEventListener('submit', handler)
 }
+
+let entities = [
+  {
+    name: 'board',
+    title: 'Board', // just capitalized
+
+    // TODO: Transform from model
+    op: {
+      list: {
+        query: {
+          idMember: { 
+            type: String,
+            // HARDCODED - make a query button/form
+            default: 'me'
+          }
+        }
+      }
+    },
+
+    // TODO: Transform from model
+    formFields: [
+      'id',
+      'firstName',
+      'lastName',
+      'phoneNumber',
+      'address',
+      'city',
+      'country',
+      'lastModified'
+    ]
+  },
+  {
+    name: 'list',
+    title: 'List',
+
+    // TODO: Transform from model
+    op: {
+      list: {
+        query: {
+          idBoard: { 
+            type: String,
+            // HARDCODED - make a query button/form
+            default: '6735f4225f8fbbd10bba2da0'
+          }
+        }
+      }
+    },
+
+    formFields: [
+      'id',
+      'firstName',
+      'lastName',
+      'phoneNumber',
+      'lastModified'
+    ]
+  }
+]
+
+console.log(SDK_NAME, window[SDK_NAME])
+window[SDK_NAME].ui.current_entity = entities[0] // DEFAULT
+
 
 
 function injectDataEditor(data, handler) {
@@ -147,7 +275,9 @@ function injectDataEditor(data, handler) {
   let form = createForm({
     fields: {
       'id': { disabled: true },
-      'lastModified': { disabled: true }
+      'lastModified': { disabled: true },
+      editables: window[SDK_NAME].fields.editables[
+        window[SDK_NAME].ui.current_entity.name]
     },
     op: 'Save', // TODO: ops: ['Save', 'Delete']
     handler: handler || ((op, json_data) => console.log('result: ', op, json_data))
@@ -217,7 +347,7 @@ async function loadComponents(current_entity) {
     <h1>Entity Table</h1>
     <button id="openSidebarEntities" class="openbtn" onclick="openNav()">&#187; Show Entities</button>
   </div>
-  */
+   */
   let entityTable = $create({
     elem: 'div',
     children: [
@@ -237,18 +367,18 @@ async function loadComponents(current_entity) {
             elem: 'button',
             id: 'openSidebarEntities',
             classes: ['openbtn'],
-            innerHTML: window.SDK_NAME.ui.navtab.opened 
+            innerHTML: window[SDK_NAME].ui.navtab.opened 
             ? "&#171; Hide Entities" : "&#187; Show Entities",
             onclick: function() {
-              let navopened = window.SDK_NAME.ui.navtab.opened
+              let navopened = window[SDK_NAME].ui.navtab.opened
               if(!navopened) {
                 SideNav.style.width = "25vh"
                 this.innerHTML = "&#171; Hide Entities"
-                window.SDK_NAME.ui.navtab.opened = true
+                window[SDK_NAME].ui.navtab.opened = true
               } else {
                 SideNav.style.width = '0'
                 this.innerHTML = "&#187; Show Entities"
-                window.SDK_NAME.ui.navtab.opened = false
+                window[SDK_NAME].ui.navtab.opened = false
               }
             }
           }),
@@ -257,7 +387,7 @@ async function loadComponents(current_entity) {
             classes: ['openbtn'],
             textContent: 'Add Entity',
             onclick: function() {
-              let new_entity = window.SDK_NAME.ui.current_entity.formFields.reduce((acc, item) => {
+              let new_entity = window[SDK_NAME].ui.current_entity.formFields.reduce((acc, item) => {
                 acc[item] = ''
                 return acc
               }, {})
@@ -268,7 +398,7 @@ async function loadComponents(current_entity) {
               injectDataEditor(new_entity, async (op, item) => {
 
                 if(op == 'save') {
-                  let post_item = await fetch(`/api/${SDK_NAME}/${window.SDK_NAME.ui.current_entity.name}/create`, {
+                  let post_item = await fetch(`/api/${SDK_NAME}/${window[SDK_NAME].ui.current_entity.name}/create`, {
                     method: 'POST',
                     headers: {
                       'Content-Type': 'application/json'
@@ -294,12 +424,12 @@ async function loadComponents(current_entity) {
   })
 
   entityTableContainer.appendChild(entityTable)
-  
+
   const query_entries = Object.entries(current_entity.op.list.query)
   const query = query_entries.reduce((acc, entry, i) => {
     acc += entry[0] + '=' + entry[1].default
     if(i < query_entries.length-1) acc += '&'
-    
+
     return acc
   }, '')
 
@@ -313,7 +443,7 @@ async function loadComponents(current_entity) {
   let json_out = await out.json()
 
   // TODO: Explicit transformed header from the model
-  let header = json_out[0] != null && Object.keys(json_out[0].data).map(key=>({title: key, key}))
+  let header = json_out[0] != null && Object.keys(json_out[0]).map(key=>({title: key, key}))
 
   // [ { title: ..., key: ..., }, ... ]
 
@@ -323,14 +453,14 @@ async function loadComponents(current_entity) {
   // loadForm(json_out[0] || {})
 
   let table = createTable(header,
-    json_out.map(item => item.data),
+    json_out, // .map(item => item.data), // backend or frontend processing?
     async function (event, item) {
 
       // console.log('selected row: ', this)
 
       console.log('item.id: ', item.id)
 
-      let out = await fetch(`/api/${SDK_NAME}/${window.SDK_NAME.ui.current_entity.name}/load/${item.id}`, {
+      let out = await fetch(`/api/${SDK_NAME}/${window[SDK_NAME].ui.current_entity.name}/load/${item.id}`, {
         headers: {
           'Content-Type': 'application/json'
         },
@@ -345,7 +475,7 @@ async function loadComponents(current_entity) {
         console.log('ddd: ', op, item) // { ...item }
 
         if(op == 'save') {
-          let put_item = await fetch(`/api/${SDK_NAME}/${window.SDK_NAME.ui.current_entity.name}/save/${item.id}`, {
+          let put_item = await fetch(`/api/${SDK_NAME}/${window[SDK_NAME].ui.current_entity.name}/save/${item.id}`, {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json'
@@ -359,7 +489,7 @@ async function loadComponents(current_entity) {
 
 
         } else if(op == 'delete') {
-          let remove_item = await fetch(`/api/${SDK_NAME}/${window.SDK_NAME.ui.current_entity.name}/remove/${item.id}`, {
+          let remove_item = await fetch(`/api/${SDK_NAME}/${window[SDK_NAME].ui.current_entity.name}/remove/${item.id}`, {
             method: 'DELETE',
             headers: {
               'Content-Type': 'application/json'
@@ -403,7 +533,7 @@ async function loadComponents(current_entity) {
 /*
 function loadForm(data_item) {
 
-*/
+ */
 
 /*
   let data_item = {
@@ -415,7 +545,7 @@ function loadForm(data_item) {
     "country": "USA",
     lastModified: Date.now()
   }
-  */
+ */
 
 /*
   let config = {
@@ -430,71 +560,11 @@ function loadForm(data_item) {
 
   injectForm(form)
 }
-*/
+ */
 
 ;(async function load_root() {
 
-  let entities = [
-    {
-      name: 'board',
-      title: 'Board', // just capitalized
-      
-      // TODO: Transform from model
-      op: {
-        list: {
-          query: {
-            idMember: { 
-              type: String,
-              // HARDCODED - make a query button/form
-              default: 'me'
-            }
-          }
-        }
-      },
-      
-      // TODO: Transform from model
-      formFields: [
-        'id',
-        'firstName',
-        'lastName',
-        'phoneNumber',
-        'address',
-        'city',
-        'country',
-        'lastModified'
-      ]
-    },
-    {
-      name: 'list',
-      title: 'List',
-      
-      // TODO: Transform from model
-      op: {
-        list: {
-          query: {
-            idBoard: { 
-              type: String,
-              // HARDCODED - make a query button/form
-              default: '6735f4225f8fbbd10bba2da0'
-            }
-          }
-        }
-      },
-      
-      formFields: [
-        'id',
-        'firstName',
-        'lastName',
-        'phoneNumber',
-        'lastModified'
-      ]
-    }
-  ]
-
-  console.log(window.SDK_NAME)
-  window.SDK_NAME.ui.current_entity = entities[0] // DEFAULT
-
-  await loadComponents(window.SDK_NAME.ui.current_entity)
+  await loadComponents(window[SDK_NAME].ui.current_entity)
 
   let sideNav = $create({
     elem: 'div',
@@ -509,8 +579,8 @@ function loadForm(data_item) {
             elem: 'h2',
             textContent: 'Entities'
           }),
-          /*
           // TODO: access parent by "this.prior" feature
+          /*
           $create({
             elem: 'span',
             innerHTML: '&#171;',
@@ -522,7 +592,7 @@ function loadForm(data_item) {
             }
 
           })
-          */
+           */
         ]
 
       }),
@@ -536,11 +606,11 @@ function loadForm(data_item) {
           switch_entity.addEventListener('click', async function () {
             console.log('entity: ', entity)
 
-            window.SDK_NAME.ui.current_entity = entity
+            window[SDK_NAME].ui.current_entity = entity
 
-            console.log(window.SDK_NAME)
+            console.log(window[SDK_NAME])
 
-            await loadComponents(window.SDK_NAME.ui.current_entity)
+            await loadComponents(window[SDK_NAME].ui.current_entity)
           })
 
           yield switch_entity
@@ -558,74 +628,3 @@ function loadForm(data_item) {
   split_side_bar.appendChild(sideNav)
 
 })();
-
-function $create(config) {
-  const {
-    classes = [], 
-    style = {},
-    children = [],
-    props = {}
-  } = config
-
-  let elem = document.createElement(config.elem || 'div')
-
-  config.id != null && (elem.id = config.id)
-  config.textContent != null
-    && (elem.textContent = config.textContent)
-
-  Object.assign(elem.style, style)
-
-  for(let prop in props) {
-    if(prop == 'dataset') {
-      let dataset = props[prop]
-      for(let set_key in dataset) {
-        elem.dataset[set_key] = dataset[set_key]
-      }
-    } else {
-      elem[prop] = props[prop]
-    }
-  }
-
-  for(let i = 0; i < classes.length; i++) {
-    let cssClass = config.classes[i]
-    elem.classList.add(cssClass)
-  }
-
-  if(typeof config.onclick == 'function') {
-    elem.addEventListener('click', config.onclick)
-  }
-
-  // NOTE: innerHTML take priority over children
-  // TODO: Unless it is actually a String ( &233; )
-  if(config.innerHTML != null) {
-    elem.innerHTML = config.innerHTML
-    return elem
-  }
-
-
-
-  if(typeof children == 'function') {
-    elem.appendChild(children())
-    return elem
-  }
-
-  for(let i = 0; i < children.length; i++) {
-    let child = children[i]
-    if(typeof child == 'function') {
-      let node = child()
-      // if node is "iterateable"
-      if(node[Symbol.iterator] != null) {
-        for(let item of node) {
-          elem.appendChild(item)
-        }
-      } else {
-        elem.appendChild(node)
-      }
-    } else {
-      elem.appendChild(child)
-    }
-  }
-
-  return elem
-
-}

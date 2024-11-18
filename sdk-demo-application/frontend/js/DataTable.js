@@ -90,7 +90,9 @@ function createTable(header, data, rowClick = function() {}) {
   /*
       background: #fff;
     border-radius: 5px;
-    */
+  */
+
+  // See: https://medium.com/evodeck/responsive-data-tables-with-css-grid-3c58ecf04723
   div.style.display = 'grid';
   div.style.gridTemplateColumns = 'repeat(auto-fit, 20em)'
   div.style.overflowX = 'scroll'

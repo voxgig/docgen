@@ -69,7 +69,7 @@ for(const entity_name in entities) {
         try {
           let list = await client[cap(entity_name)]().list(req.query)
           res.status(200)
-          return res.send(JSON.stringify(list))
+          return res.send(JSON.stringify(list.map(item => item.data)))
         } catch(err) {
           res.status(400)
           res.send(JSON.stringify("error occured"))
@@ -93,7 +93,7 @@ for(const entity_name in entities) {
           let item = await client[cap(entity_name)]().load({ id, }) 
           console.log('load item: ', item)
           res.status(200)
-          return res.send(JSON.stringify(item))
+          return res.send(JSON.stringify(item.data ? item.data : item))
         } catch(err) {
           res.status(400)
           res.send(JSON.stringify("error occured"))

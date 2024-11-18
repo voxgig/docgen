@@ -3,7 +3,12 @@
   <head>
     <link rel="stylesheet" href="css/styles.css">
     <script>
-      window.SDK_NAME = {
+    
+      // Define everything under the SDK namespace
+      const SDK_NAME = 'TrelloSDK'
+      
+      window[SDK_NAME] = {
+      	      fields: {},
               ui: {
 		      current_entity: {},
                       navtab: {
