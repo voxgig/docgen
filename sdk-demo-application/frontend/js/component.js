@@ -15,190 +15,382 @@ window[SDK_NAME].fields = {}
 // TODO: Separate editables for both create and save but usually the fields added in POST are the same for PUT for most Swaggers.
 window[SDK_NAME].fields.editables = {
   'board': {
-    "closed": { // required but NOT indicated by the SWAGGER
-      "type": "string",
-      "values": ["true", "false"]
-    },
-    "desc": {
-      "type": "string",
-      "length": {
-        "min": 0,
-        "max": 16384
-      }
-    },
-    "idBoardSource": {
-      "type": "string",
-      "description": "The id of the board to copy into the new board"
-    },
-    "idOrganization": {
-      "type": "string",
-      "description": "The id or name of the organization to add the board to"
-    },
-    "keepFromSource": {
-      "type": "string",
-      "description": "Components of the source board to copy"
-    },
-    "labelNames": {
-      "blue": {
-        "type": "string",
-        "length": {
-          "min": 0,
-          "max": 16384
-        }
-      },
-      "green": {
-        "type": "string",
-        "length": {
-          "min": 0,
-          "max": 16384
-        }
-      },
-      "orange": {
-        "type": "string",
-        "length": {
-          "min": 0,
-          "max": 16384
-        }
-      },
-      "purple": {
-        "type": "string",
-        "length": {
-          "min": 0,
-          "max": 16384
-        }
-      },
-      "red": {
-        "type": "string",
-        "length": {
-          "min": 0,
-          "max": 16384
-        }
-      },
-      "yellow": {
-        "type": "string",
-        "length": {
-          "min": 0,
-          "max": 16384
-        }
-      }
-    },
-    "name": {
-      "type": "string",
-      "length": {
-        "min": 1,
-        "max": 16384
-      }
-    },
-    "powerUps": {
-      "type": "string",
-      "values": ["all", "calendar", "cardAging", "recap", "voting"]
-    },
-    "prefs": {
-      "background": {
-        "type": "string",
-        "description": "A standard background name, or the id of a custom background"
-      },
-      "calendarFeedEnabled": {
+    "post": {
+      "closed": { // required but NOT indicated by the SWAGGER
         "type": "string",
         "values": ["true", "false"]
       },
-      "cardAging": {
+      "desc": {
+        "type": "string",
+        "length": {
+          "min": 0,
+          "max": 16384
+        }
+      },
+      "idBoardSource": {
+        "type": "string",
+        "description": "The id of the board to copy into the new board"
+      },
+      "idOrganization": {
+        "type": "string",
+        "description": "The id or name of the organization to add the board to"
+      },
+      "keepFromSource": {
+        "type": "string",
+        "description": "Components of the source board to copy"
+      },
+      "labelNames": {
+        "blue": {
+          "type": "string",
+          "length": {
+            "min": 0,
+            "max": 16384
+          }
+        },
+        "green": {
+          "type": "string",
+          "length": {
+            "min": 0,
+            "max": 16384
+          }
+        },
+        "orange": {
+          "type": "string",
+          "length": {
+            "min": 0,
+            "max": 16384
+          }
+        },
+        "purple": {
+          "type": "string",
+          "length": {
+            "min": 0,
+            "max": 16384
+          }
+        },
+        "red": {
+          "type": "string",
+          "length": {
+            "min": 0,
+            "max": 16384
+          }
+        },
+        "yellow": {
+          "type": "string",
+          "length": {
+            "min": 0,
+            "max": 16384
+          }
+        }
+      },
+      "name": {
+        "type": "string",
+        "length": {
+          "min": 1,
+          "max": 16384
+        }
+      },
+      "powerUps": {
+        "type": "string",
+        "values": ["all", "calendar", "cardAging", "recap", "voting"]
+      },
+      "prefs": {
+        "background": {
+          "type": "string",
+          "description": "A standard background name, or the id of a custom background"
+        },
+        "calendarFeedEnabled": {
+          "type": "string",
+          "values": ["true", "false"]
+        },
+        "cardAging": {
+          "type": "string",
+          "values": ["pirate", "regular"]
+        },
+        "cardCovers": {
+          "type": "string",
+          "values": ["true", "false"]
+        },
+        "comments": {
+          "type": "string",
+          "values": ["disabled", "members", "observers", "org", "public"]
+        },
+        "invitations": {
+          "type": "string",
+          "values": ["admins", "members"]
+        },
+        "permissionLevel": {
+          "type": "string",
+          "values": ["org", "private", "public"]
+        },
+        "selfJoin": {
+          "type": "string",
+          "values": ["true", "false"]
+        },
+        "voting": {
+          "type": "string",
+          "values": ["disabled", "members", "observers", "org", "public"]
+        }
+      },
+      "prefs_background": {
+        "type": "string",
+        "length": {
+          "min": 0,
+          "max": 16384
+        }
+      },
+      "prefs_cardAging": {
         "type": "string",
         "values": ["pirate", "regular"]
       },
-      "cardCovers": {
+      "prefs_cardCovers": {
         "type": "string",
         "values": ["true", "false"]
       },
-      "comments": {
+      "prefs_comments": {
         "type": "string",
         "values": ["disabled", "members", "observers", "org", "public"]
       },
-      "invitations": {
+      "prefs_invitations": {
         "type": "string",
         "values": ["admins", "members"]
       },
-      "permissionLevel": {
+      "prefs_permissionLevel": {
         "type": "string",
         "values": ["org", "private", "public"]
       },
-      "selfJoin": {
+      "prefs_selfJoin": {
         "type": "string",
         "values": ["true", "false"]
       },
-      "voting": {
+      "prefs_voting": {
         "type": "string",
         "values": ["disabled", "members", "observers", "org", "public"]
+      },
+      "subscribed": {
+        "type": "string",
+        "values": ["true", "false"]
       }
     },
-    "prefs_background": {
-      "type": "string",
-      "length": {
-        "min": 0,
-        "max": 16384
+    "put": {
+      "closed": { // required but NOT indicated by the SWAGGER
+        "type": "string",
+        "values": ["true", "false"]
+      },
+      "desc": {
+        "type": "string",
+        "length": {
+          "min": 0,
+          "max": 16384
+        }
+      },
+      "idBoardSource": {
+        "type": "string",
+        "description": "The id of the board to copy into the new board"
+      },
+      "idOrganization": {
+        "type": "string",
+        "description": "The id or name of the organization to add the board to"
+      },
+      "keepFromSource": {
+        "type": "string",
+        "description": "Components of the source board to copy"
+      },
+      "labelNames": {
+        "blue": {
+          "type": "string",
+          "length": {
+            "min": 0,
+            "max": 16384
+          }
+        },
+        "green": {
+          "type": "string",
+          "length": {
+            "min": 0,
+            "max": 16384
+          }
+        },
+        "orange": {
+          "type": "string",
+          "length": {
+            "min": 0,
+            "max": 16384
+          }
+        },
+        "purple": {
+          "type": "string",
+          "length": {
+            "min": 0,
+            "max": 16384
+          }
+        },
+        "red": {
+          "type": "string",
+          "length": {
+            "min": 0,
+            "max": 16384
+          }
+        },
+        "yellow": {
+          "type": "string",
+          "length": {
+            "min": 0,
+            "max": 16384
+          }
+        }
+      },
+      "name": {
+        "type": "string",
+        "length": {
+          "min": 1,
+          "max": 16384
+        }
+      },
+      "powerUps": {
+        "type": "string",
+        "values": ["all", "calendar", "cardAging", "recap", "voting"]
+      },
+      "prefs": {
+        "background": {
+          "type": "string",
+          "description": "A standard background name, or the id of a custom background"
+        },
+        "calendarFeedEnabled": {
+          "type": "string",
+          "values": ["true", "false"]
+        },
+        "cardAging": {
+          "type": "string",
+          "values": ["pirate", "regular"]
+        },
+        "cardCovers": {
+          "type": "string",
+          "values": ["true", "false"]
+        },
+        "comments": {
+          "type": "string",
+          "values": ["disabled", "members", "observers", "org", "public"]
+        },
+        "invitations": {
+          "type": "string",
+          "values": ["admins", "members"]
+        },
+        "permissionLevel": {
+          "type": "string",
+          "values": ["org", "private", "public"]
+        },
+        "selfJoin": {
+          "type": "string",
+          "values": ["true", "false"]
+        },
+        "voting": {
+          "type": "string",
+          "values": ["disabled", "members", "observers", "org", "public"]
+        }
+      },
+      "prefs_background": {
+        "type": "string",
+        "length": {
+          "min": 0,
+          "max": 16384
+        }
+      },
+      "prefs_cardAging": {
+        "type": "string",
+        "values": ["pirate", "regular"]
+      },
+      "prefs_cardCovers": {
+        "type": "string",
+        "values": ["true", "false"]
+      },
+      "prefs_comments": {
+        "type": "string",
+        "values": ["disabled", "members", "observers", "org", "public"]
+      },
+      "prefs_invitations": {
+        "type": "string",
+        "values": ["admins", "members"]
+      },
+      "prefs_permissionLevel": {
+        "type": "string",
+        "values": ["org", "private", "public"]
+      },
+      "prefs_selfJoin": {
+        "type": "string",
+        "values": ["true", "false"]
+      },
+      "prefs_voting": {
+        "type": "string",
+        "values": ["disabled", "members", "observers", "org", "public"]
+      },
+      "subscribed": {
+        "type": "string",
+        "values": ["true", "false"]
       }
     },
-    "prefs_cardAging": {
-      "type": "string",
-      "values": ["pirate", "regular"]
-    },
-    "prefs_cardCovers": {
-      "type": "string",
-      "values": ["true", "false"]
-    },
-    "prefs_comments": {
-      "type": "string",
-      "values": ["disabled", "members", "observers", "org", "public"]
-    },
-    "prefs_invitations": {
-      "type": "string",
-      "values": ["admins", "members"]
-    },
-    "prefs_permissionLevel": {
-      "type": "string",
-      "values": ["org", "private", "public"]
-    },
-    "prefs_selfJoin": {
-      "type": "string",
-      "values": ["true", "false"]
-    },
-    "prefs_voting": {
-      "type": "string",
-      "values": ["disabled", "members", "observers", "org", "public"]
-    },
-    "subscribed": {
-      "type": "string",
-      "values": ["true", "false"]
-    }
   },
+
   "list": {
-    "closed": {
-      "type": "string",
-      "values": ["true", "false"]
-    },
-    "idBoard": {
-      "type": "string",
-      "description": "id of the board that the list should be added to"
-    },
-    "idListSource": {
-      "type": "string",
-      "description": "The id of the list to copy into a new list"
-    },
-    "name": {
-      "type": "string",
-      "length": {
-        "min": 1,
-        "max": 16384
+    "post": {
+      "closed": {
+        "type": "string",
+        "values": ["true", "false"]
+      },
+      "idBoard": {
+        "type": "string",
+        "description": "id of the board that the list should be added to"
+      },
+      "idListSource": {
+        "type": "string",
+        "description": "The id of the list to copy into a new list"
+      },
+      "name": {
+        "type": "string",
+        "length": {
+          "min": 1,
+          "max": 16384
+        }
+      },
+      "pos": {
+        "type": "string",
+        "values": ["top", "bottom"],
+        "description": "A position. 'top', 'bottom', or a positive number"
+      },
+      "subscribed": {
+        "type": "string",
+        "values": ["true", "false"]
       }
     },
-    "pos": {
-      "type": "string",
-      "values": ["top", "bottom"],
-      "description": "A position. 'top', 'bottom', or a positive number"
-    },
-    "subscribed": {
-      "type": "string",
-      "values": ["true", "false"]
+    "put": {
+      "closed": {
+        "type": "string",
+        "values": ["true", "false"]
+      },
+      "idBoard": {
+        "type": "string",
+        "description": "id of the board that the list should be added to"
+      },
+      "idListSource": {
+        "type": "string",
+        "description": "The id of the list to copy into a new list"
+      },
+      "name": {
+        "type": "string",
+        "length": {
+          "min": 1,
+          "max": 16384
+        }
+      },
+      "pos": {
+        "type": "string",
+        "values": ["top", "bottom"],
+        "description": "A position. 'top', 'bottom', or a positive number"
+      },
+      "subscribed": {
+        "type": "string",
+        "values": ["true", "false"]
+      }
     }
   }
 
@@ -224,7 +416,7 @@ let entities = [
     },
 
     // TODO: Transform from model
-    formFields: Object.keys(window[SDK_NAME].fields.editables['board'])
+    formFields: Object.keys(window[SDK_NAME].fields.editables['board'].post)
   },
   {
     name: 'list',
@@ -245,7 +437,7 @@ let entities = [
       // remove: {}
     },
 
-    formFields: Object.keys(window[SDK_NAME].fields.editables['list'])
+    formFields: Object.keys(window[SDK_NAME].fields.editables['list'].post)
   }
 ]
 
@@ -257,7 +449,7 @@ window[SDK_NAME].ui.current_entity = entities[0] // DEFAULT
 function injectDataEditor(data, op, handler) {
   let dataEditorDivContainer = document.querySelector('#dataEditor')
   let formContainer;
-  
+
   op = op[0].toUpperCase() + op.slice(1)
 
   // console.log('data: ', data)
@@ -269,7 +461,7 @@ function injectDataEditor(data, op, handler) {
       'id': { disabled: true },
       'lastModified': { disabled: true },
       editables: window[SDK_NAME].fields.editables[
-        window[SDK_NAME].ui.current_entity.name]
+        window[SDK_NAME].ui.current_entity.name].put
     },
     op, // TODO: ops: ['Save', 'Delete']
     handler: handler || ((op, json_data) => console.log('result: ', op, json_data)),
@@ -402,7 +594,7 @@ async function loadComponents(current_entity) {
                   })
                   let json_out = await post_item.json()
                   console.log('post: ', json_out)
-                  
+
                   // TODO: more efficient solution // add to a table
                   await loadComponents(window[SDK_NAME].ui.current_entity)
 
@@ -427,7 +619,7 @@ async function loadComponents(current_entity) {
 
     return acc
   }, '')
-  
+
   query = query == '' ? '' : '?' + query
 
   let out = await fetch(`/api/${SDK_NAME}/${current_entity.name}/list${query}`, {
@@ -498,7 +690,7 @@ async function loadComponents(current_entity) {
           let json_out = await remove_item.json()
           console.log('remove: ', json_out)
         }
-        
+
         // TODO: more efficient solution // add to a table
         await loadComponents(window[SDK_NAME].ui.current_entity)
 
