@@ -12,7 +12,7 @@ window.createForm = createForm
 
 window[SDK_NAME].fields = {}
 
-// TODO: Separate editables for both create and save but usually the fields added in POST are the same for PUT for most Swagger.
+// TODO: Separate editables for both create and save but usually the fields added in POST are the same for PUT for most Swaggers.
 window[SDK_NAME].fields.editables = {
   'board': {
     "closed": { // required but NOT indicated by the SWAGGER
