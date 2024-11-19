@@ -60,6 +60,8 @@ function $create(config) {
       } else {
         elem.appendChild(node)
       }
+    } else if(child == null) {
+      continue
     } else {
       elem.appendChild(child)
     }

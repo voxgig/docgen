@@ -170,7 +170,7 @@ app.post('/api/${SDK_NAME}/${entity_name.toLowerCase()}/${op_key}', async (req, 
     // delete body.prefs
     // delete body.labelNames
     
-    console.log('CREATE', id, body)
+    console.log('CREATE', body)
     
     let item = await client.${camelify(entity_name)}().create({ ...body })
     

@@ -1,12 +1,24 @@
 import { $create } from './Utils.js'
 
+function capitalize(s) {
+  return s[0].toUpperCase() + s.slice(1)
+}
+
 function createForm(config, data_item) {
   let form = document.createElement('form')
 
-  const { fields = {}, op = 'Create' } = config
+  let {
+    fields = {},
+    op = 'create',
+    del_enabled
+  } = config
+
   const handler = config.handler || (() => {})
 
   const { editables = {} } = fields
+
+
+  op = op.toLowerCase()
 
 
   if(data_item.id != null) {
@@ -56,7 +68,7 @@ function createForm(config, data_item) {
       }
     }
 
-    if((key in data_item) && !(key in editables)) {
+    if(!(key in editables)) {
       input.disabled = true
       input.style.backgroundColor = '#ccc'
     }
@@ -90,34 +102,35 @@ function createForm(config, data_item) {
       gridColumn: '1 / -1',
       gap: '1em',
       // TODO: Depending on the number of operations - usually save and delete
-      gridTemplateColumns: '1fr 1fr'
+      gridTemplateColumns: op == 'create' ? '1fr' : '1fr 1fr'
     },
     children: [
       $create({
         elem: 'button',
-        textContent: op,
+        textContent: capitalize(op),
         // onclick: () => console.log('op: ', op),
         props: {
           type: 'submit',
           dataset: {
-            'op': op.toLowerCase()
+            'op': op
           }
         }
       }),
-      $create({
+      (op != 'create' ? $create({
         elem: 'button',
         textContent: 'Delete',
         // NOTE: ONLY For DELETE
         style: {
-          backgroundColor: '#dd1010'
+          backgroundColor: del_enabled ? '#dd1010' : '#e78383',
+          pointerEvents: del_enabled ? 'all' : 'none'
         },
         props: {
           type: 'submit',
           dataset: {
-            'op': 'Delete'.toLowerCase()
+            'op': 'delete'
           }
         }
-      })
+      }) : null )
     ]
   })
 
@@ -146,6 +159,13 @@ function attachSubmitHandler(form, userHandler) {
     const result = formToJSON(event.target)
 
     result.id = form.dataset.id != null ? form.dataset.id : ''
+
+    // TODO: NOTE THIS MAY BE SWAGGER/CASE SPECIFIC
+    for(let key in result) {
+      if(result[key] == '' || result[key] == null) {
+        delete result[key]
+      }
+    }
 
     await userHandler(event.submitter.dataset.op || '', result)
   }

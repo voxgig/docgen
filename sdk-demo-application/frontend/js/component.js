@@ -11,6 +11,8 @@ const SDK_NAME = 'TrelloSDK'
 window.createForm = createForm
 
 window[SDK_NAME].fields = {}
+
+// TODO: Separate editables for both create and save but usually the fields added in POST are the same for PUT for most Swagger.
 window[SDK_NAME].fields.editables = {
   'board': {
     "closed": { // required but NOT indicated by the SWAGGER
@@ -217,20 +219,12 @@ let entities = [
             default: 'me'
           }
         }
-      }
+      },
+      remove: {}
     },
 
     // TODO: Transform from model
-    formFields: [
-      'id',
-      'firstName',
-      'lastName',
-      'phoneNumber',
-      'address',
-      'city',
-      'country',
-      'lastModified'
-    ]
+    formFields: Object.keys(window[SDK_NAME].fields.editables['board'])
   },
   {
     name: 'list',
@@ -246,16 +240,12 @@ let entities = [
             default: '6735f4225f8fbbd10bba2da0'
           }
         }
-      }
+      },
+      // If not found here, it is considered "UNSUPPORTED"
+      // remove: {}
     },
 
-    formFields: [
-      'id',
-      'firstName',
-      'lastName',
-      'phoneNumber',
-      'lastModified'
-    ]
+    formFields: Object.keys(window[SDK_NAME].fields.editables['list'])
   }
 ]
 
@@ -264,9 +254,11 @@ window[SDK_NAME].ui.current_entity = entities[0] // DEFAULT
 
 
 
-function injectDataEditor(data, handler) {
+function injectDataEditor(data, op, handler) {
   let dataEditorDivContainer = document.querySelector('#dataEditor')
   let formContainer;
+  
+  op = op[0].toUpperCase() + op.slice(1)
 
   // console.log('data: ', data)
 
@@ -279,8 +271,9 @@ function injectDataEditor(data, handler) {
       editables: window[SDK_NAME].fields.editables[
         window[SDK_NAME].ui.current_entity.name]
     },
-    op: 'Save', // TODO: ops: ['Save', 'Delete']
-    handler: handler || ((op, json_data) => console.log('result: ', op, json_data))
+    op, // TODO: ops: ['Save', 'Delete']
+    handler: handler || ((op, json_data) => console.log('result: ', op, json_data)),
+    del_enabled: !!window[SDK_NAME].ui.current_entity.op.remove
   }, data)
 
 
@@ -395,9 +388,9 @@ async function loadComponents(current_entity) {
               console.log('new entity: ', new_entity)
 
               // TODO: Exclude delete button/op, Only create button
-              injectDataEditor(new_entity, async (op, item) => {
+              injectDataEditor(new_entity, 'create', async (op, item) => {
 
-                if(op == 'save') {
+                if(op == 'create') {
                   let post_item = await fetch(`/api/${SDK_NAME}/${window[SDK_NAME].ui.current_entity.name}/create`, {
                     method: 'POST',
                     headers: {
@@ -471,7 +464,7 @@ async function loadComponents(current_entity) {
 
       console.log('load_entity: ', load_entity)
 
-      injectDataEditor(load_entity, async (op, item) => { 
+      injectDataEditor(load_entity, 'save', async (op, item) => { 
         console.log('ddd: ', op, item) // { ...item }
 
         if(op == 'save') {
