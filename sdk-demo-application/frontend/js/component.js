@@ -420,15 +420,17 @@ async function loadComponents(current_entity) {
 
   entityTableContainer.appendChild(entityTable)
 
-  const query_entries = Object.entries(current_entity.op.list.query)
-  const query = query_entries.reduce((acc, entry, i) => {
+  const query_entries = Object.entries(current_entity.op.list.query || {})
+  let query = query_entries.reduce((acc, entry, i) => {
     acc += entry[0] + '=' + entry[1].default
     if(i < query_entries.length-1) acc += '&'
 
     return acc
   }, '')
+  
+  query = query == '' ? '' : '?' + query
 
-  let out = await fetch(`/api/${SDK_NAME}/${current_entity.name}/list?${query}`, {
+  let out = await fetch(`/api/${SDK_NAME}/${current_entity.name}/list${query}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json'
