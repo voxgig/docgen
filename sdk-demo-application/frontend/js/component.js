@@ -402,7 +402,9 @@ async function loadComponents(current_entity) {
                   })
                   let json_out = await post_item.json()
                   console.log('post: ', json_out)
-
+                  
+                  // TODO: more efficient solution // add to a table
+                  await loadComponents(window[SDK_NAME].ui.current_entity)
 
                 }
 
@@ -494,6 +496,9 @@ async function loadComponents(current_entity) {
           let json_out = await remove_item.json()
           console.log('remove: ', json_out)
         }
+        
+        // TODO: more efficient solution // add to a table
+        await loadComponents(window[SDK_NAME].ui.current_entity)
 
       })
 
