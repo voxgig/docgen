@@ -10,7 +10,8 @@ function createForm(config, data_item) {
   let {
     fields = {},
     op = 'create',
-    del_enabled
+    del_enabled,
+    save_enabled,
   } = config
 
   const handler = config.handler || (() => {})
@@ -108,7 +109,10 @@ function createForm(config, data_item) {
       $create({
         elem: 'button',
         textContent: capitalize(op),
-        // onclick: () => console.log('op: ', op),
+        style: {
+          filter: save_enabled ? 'none': 'brightness(1.5)',
+          pointerEvents: save_enabled ? 'all' : 'none'
+        },
         props: {
           type: 'submit',
           dataset: {
@@ -121,7 +125,8 @@ function createForm(config, data_item) {
         textContent: 'Delete',
         // NOTE: ONLY For DELETE
         style: {
-          backgroundColor: del_enabled ? '#dd1010' : '#e78383',
+          backgroundColor: '#dd1010',
+          filter: del_enabled ? 'none': 'brightness(1.5)',
           pointerEvents: del_enabled ? 'all' : 'none'
         },
         props: {

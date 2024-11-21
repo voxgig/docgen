@@ -403,6 +403,8 @@ let entities = [
 
     // TODO: Transform from model
     op: {
+      save: {},
+      create: {},
       list: {
         query: {
           idMember: { 
@@ -424,6 +426,8 @@ let entities = [
 
     // TODO: Transform from model
     op: {
+      save: {},
+      create: {},
       list: {
         query: {
           idBoard: { 
@@ -465,7 +469,8 @@ function injectDataEditor(data, op, handler) {
     },
     op, // TODO: ops: ['Save', 'Delete']
     handler: handler || ((op, json_data) => console.log('result: ', op, json_data)),
-    del_enabled: !!window[SDK_NAME].ui.current_entity.op.remove
+    del_enabled: !!window[SDK_NAME].ui.current_entity.op.remove,
+    save_enabled: !!window[SDK_NAME].ui.current_entity.op.save
   }, data)
 
 
@@ -644,6 +649,7 @@ async function loadComponents(current_entity) {
   let table = createTable(header,
     json_out, // .map(item => item.data), // backend or frontend processing?
     async function (event, item) {
+      
 
       // console.log('selected row: ', this)
 
