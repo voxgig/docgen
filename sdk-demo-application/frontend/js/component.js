@@ -653,16 +653,34 @@ async function loadComponents(current_entity) {
 
       // console.log('selected row: ', this)
 
+
       console.log('item.id: ', item.id)
+      
+      let load_entity
+      
+      if(window[SDK_NAME].ui.datatable.load == 'data') {
+         // TODO: Fix Object Object bug as now the item nested objects are strings from the data-set so the content aren't lost. Should we JSON.stringify in both cases: stringify everything and pass it around, in other words?
+        let entity = { ...item }
+        /*
+        for(let key in entity) {
+          if(key.endsWith('_json')) {
+            entity[key] = JSON.parse(entity[key])
+          }
+        }
+        */
+        load_entity = entity
+      } else if(window[SDK_NAME].ui.datatable.load == 'network') {
+        let out = await fetch(`/api/${SDK_NAME}/${window[SDK_NAME].ui.current_entity.name}/load/${item.id}`, {
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          method: 'GET',
+        })
+        load_entity = await out.json()
+      
+      }
 
-      let out = await fetch(`/api/${SDK_NAME}/${window[SDK_NAME].ui.current_entity.name}/load/${item.id}`, {
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        method: 'GET',
-      })
 
-      let load_entity = await out.json()
 
       console.log('load_entity: ', load_entity)
 

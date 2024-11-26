@@ -54,7 +54,13 @@ function createTable(header, data, rowClick = function() {}) {
 
       // TODO: Try to come up with a more efficient way since entry[key] is basically stored in the td.textContent
       // See: https://developer.mozilla.org/en-US/docs/Web/API/DOMStringMap
-      tbr.dataset[key] = entry[key]
+        
+      if(typeof entry[key] == 'object' && entry[key] != null) {
+        // key + '_json'
+        tbr.dataset[key] = JSON.stringify(entry[key])
+      } else {
+        tbr.dataset[key] = entry[key]
+      }
 
       td.textContent = entry[key]
 

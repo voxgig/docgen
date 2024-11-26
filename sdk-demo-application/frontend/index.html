@@ -10,10 +10,14 @@
       window[SDK_NAME] = {
       	      fields: {},
               ui: {
-		      current_entity: {},
+		                  current_entity: {},
                       navtab: {
                               opened: false,
+                      },
+                      datatable: {
+                              'load': 'network', // 'load': 'data' loads dynamically from the table, bypassing the GET entity
                       }
+
               }
             }
 
