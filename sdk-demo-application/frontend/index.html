@@ -1,0 +1,48 @@
+
+<html>
+  <head>
+    <link rel="stylesheet" href="css/styles.css">
+    <script>
+    
+      // Define everything under the SDK namespace
+      const SDK_NAME = 'TrelloSDK'
+      
+      window[SDK_NAME] = {
+      	      fields: {},
+              ui: {
+		                  current_entity: {},
+                      navtab: {
+                              opened: false,
+                      },
+                      datatable: {
+                              'load': 'network', // 'load': 'data' loads dynamically from the table, bypassing the GET entity
+                      }
+
+              }
+            }
+
+    </script>
+    <script type="module" src="js/main.js"></script>
+  </head>
+  <body>
+    <div class="tab-header">
+      <img src="https://avatars.githubusercontent.com/u/33902825?s=200&v=4" alt="Logo">
+      <nav class="tab-nav">
+        <a href="#">About</a>
+        <a href="#">Services</a>
+        <a href="#">Contact</a>
+      </nav>
+    </div>
+    <div class="container">
+      <div id="sidebar" class="split"></div>
+      <div id="entityTable" class="split"></div>
+      <div id="dataEditor" class="split">
+        <div>
+          <h1>Editor</h1>
+          <div id="formEditor"></div>
+        </div>
+      </div>
+    </div>
+
+  </body>
+</html>

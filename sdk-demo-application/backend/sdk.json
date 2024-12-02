@@ -1,0 +1,1919 @@
+{
+  "name": "trello",
+  "main": {
+    "sdk": {
+      "build": {
+        "js": {
+          "title": "JavaScript",
+          "module": {
+            "name": "$ModuleName"
+          },
+          "option": {
+            "endpoint": {
+              "kind": "String",
+              "short": "Trello API URL",
+              "name": "endpoint",
+              "publish": true
+            },
+            "apikey": {
+              "kind": "String",
+              "short": "Trello API Key",
+              "name": "apikey",
+              "publish": true
+            },
+            "fetch": {
+              "kind": "Any",
+              "publish": false,
+              "name": "fetch"
+            }
+          },
+          "name": "js"
+        },
+        "rb": {
+          "title": "Ruby",
+          "module": {
+            "name": "$ModuleName"
+          },
+          "option": {
+            "endpoint": {
+              "kind": "String",
+              "short": "Trello API URL",
+              "name": "endpoint",
+              "publish": true
+            },
+            "apikey": {
+              "kind": "String",
+              "short": "Trello API Key",
+              "name": "apikey",
+              "publish": true
+            },
+            "fetch": {
+              "kind": "Any",
+              "publish": false,
+              "name": "fetch"
+            }
+          },
+          "name": "rb"
+        },
+        "py": {
+          "title": "Python",
+          "extension": "py",
+          "module": {
+            "name": "$ModuleName"
+          },
+          "option": {
+            "endpoint": {
+              "kind": "String",
+              "short": "Trello API URL",
+              "name": "endpoint",
+              "publish": true
+            },
+            "apikey": {
+              "kind": "String",
+              "short": "Trello API Key",
+              "name": "apikey",
+              "publish": true
+            },
+            "fetch": {
+              "kind": "Any",
+              "publish": false,
+              "name": "fetch"
+            }
+          },
+          "name": "py"
+        },
+        "php": {
+          "title": "PHP",
+          "module": {
+            "name": "$ModuleName"
+          },
+          "option": {
+            "endpoint": {
+              "kind": "String",
+              "short": "Trello API URL",
+              "name": "endpoint",
+              "publish": true
+            },
+            "apikey": {
+              "kind": "String",
+              "short": "Trello API Key",
+              "name": "apikey",
+              "publish": true
+            },
+            "fetch": {
+              "kind": "Any",
+              "publish": false,
+              "name": "fetch"
+            }
+          },
+          "name": "php"
+        },
+        "go": {
+          "title": "Go",
+          "module": {
+            "name": "$ModuleName"
+          },
+          "option": {
+            "endpoint": {
+              "kind": "String",
+              "short": "Trello API URL",
+              "name": "endpoint",
+              "publish": true
+            },
+            "apikey": {
+              "kind": "String",
+              "short": "Trello API Key",
+              "name": "apikey",
+              "publish": true
+            },
+            "fetch": {
+              "kind": "Any",
+              "publish": false,
+              "name": "fetch"
+            }
+          },
+          "name": "go"
+        }
+      },
+      "test": {
+        "quick": {
+          "entity": {
+            "name": "foo"
+          }
+        }
+      },
+      "entity": {
+        "board": {
+          "op": {
+            "create": {
+              "path": "/boards",
+              "method": "post",
+              "param": {},
+              "query": {
+                "body": {
+                  "required": true,
+                  "name": "body",
+                  "Name": "Body",
+                  "NAME": "BODY",
+                  "type": "object",
+                  "Type": "Object",
+                  "TYPE": "OBJECT"
+                },
+                "key": {
+                  "required": true,
+                  "name": "key",
+                  "Name": "Key",
+                  "NAME": "KEY",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "token": {
+                  "required": true,
+                  "name": "token",
+                  "Name": "Token",
+                  "NAME": "TOKEN",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                }
+              },
+              "name": "create",
+              "Name": "Create",
+              "NAME": "CREATE"
+            },
+            "load": {
+              "path": "/boards/{idBoard}",
+              "method": "get",
+              "param": {
+                "idBoard": {
+                  "required": true,
+                  "name": "idboard",
+                  "Name": "IdBoard",
+                  "NAME": "IDBOARD",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                }
+              },
+              "query": {
+                "actions": {
+                  "required": false,
+                  "name": "actions",
+                  "Name": "Actions",
+                  "NAME": "ACTIONS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "actions_entities": {
+                  "required": false,
+                  "name": "actions_entities",
+                  "Name": "Actions_entities",
+                  "NAME": "ACTIONS_ENTITIES",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "actions_display": {
+                  "required": false,
+                  "name": "actions_display",
+                  "Name": "Actions_display",
+                  "NAME": "ACTIONS_DISPLAY",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "actions_format": {
+                  "required": false,
+                  "name": "actions_format",
+                  "Name": "Actions_format",
+                  "NAME": "ACTIONS_FORMAT",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "actions_since": {
+                  "required": false,
+                  "name": "actions_since",
+                  "Name": "Actions_since",
+                  "NAME": "ACTIONS_SINCE",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "actions_limit": {
+                  "required": false,
+                  "name": "actions_limit",
+                  "Name": "Actions_limit",
+                  "NAME": "ACTIONS_LIMIT",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "action_fields": {
+                  "required": false,
+                  "name": "action_fields",
+                  "Name": "Action_fields",
+                  "NAME": "ACTION_FIELDS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "action_member": {
+                  "required": false,
+                  "name": "action_member",
+                  "Name": "Action_member",
+                  "NAME": "ACTION_MEMBER",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "action_member_fields": {
+                  "required": false,
+                  "name": "action_member_fields",
+                  "Name": "Action_member_fields",
+                  "NAME": "ACTION_MEMBER_FIELDS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "action_memberCreator": {
+                  "required": false,
+                  "name": "action_membercreator",
+                  "Name": "Action_memberCreator",
+                  "NAME": "ACTION_MEMBERCREATOR",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "action_memberCreator_fields": {
+                  "required": false,
+                  "name": "action_membercreator_fields",
+                  "Name": "Action_memberCreator_fields",
+                  "NAME": "ACTION_MEMBERCREATOR_FIELDS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "cards": {
+                  "required": false,
+                  "name": "cards",
+                  "Name": "Cards",
+                  "NAME": "CARDS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "card_fields": {
+                  "required": false,
+                  "name": "card_fields",
+                  "Name": "Card_fields",
+                  "NAME": "CARD_FIELDS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "card_attachments": {
+                  "required": false,
+                  "name": "card_attachments",
+                  "Name": "Card_attachments",
+                  "NAME": "CARD_ATTACHMENTS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "card_attachment_fields": {
+                  "required": false,
+                  "name": "card_attachment_fields",
+                  "Name": "Card_attachment_fields",
+                  "NAME": "CARD_ATTACHMENT_FIELDS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "card_checklists": {
+                  "required": false,
+                  "name": "card_checklists",
+                  "Name": "Card_checklists",
+                  "NAME": "CARD_CHECKLISTS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "card_stickers": {
+                  "required": false,
+                  "name": "card_stickers",
+                  "Name": "Card_stickers",
+                  "NAME": "CARD_STICKERS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "boardStars": {
+                  "required": false,
+                  "name": "boardstars",
+                  "Name": "BoardStars",
+                  "NAME": "BOARDSTARS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "labels": {
+                  "required": false,
+                  "name": "labels",
+                  "Name": "Labels",
+                  "NAME": "LABELS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "label_fields": {
+                  "required": false,
+                  "name": "label_fields",
+                  "Name": "Label_fields",
+                  "NAME": "LABEL_FIELDS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "labels_limit": {
+                  "required": false,
+                  "name": "labels_limit",
+                  "Name": "Labels_limit",
+                  "NAME": "LABELS_LIMIT",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "lists": {
+                  "required": false,
+                  "name": "lists",
+                  "Name": "Lists",
+                  "NAME": "LISTS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "list_fields": {
+                  "required": false,
+                  "name": "list_fields",
+                  "Name": "List_fields",
+                  "NAME": "LIST_FIELDS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "memberships": {
+                  "required": false,
+                  "name": "memberships",
+                  "Name": "Memberships",
+                  "NAME": "MEMBERSHIPS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "memberships_member": {
+                  "required": false,
+                  "name": "memberships_member",
+                  "Name": "Memberships_member",
+                  "NAME": "MEMBERSHIPS_MEMBER",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "memberships_member_fields": {
+                  "required": false,
+                  "name": "memberships_member_fields",
+                  "Name": "Memberships_member_fields",
+                  "NAME": "MEMBERSHIPS_MEMBER_FIELDS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "members": {
+                  "required": false,
+                  "name": "members",
+                  "Name": "Members",
+                  "NAME": "MEMBERS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "member_fields": {
+                  "required": false,
+                  "name": "member_fields",
+                  "Name": "Member_fields",
+                  "NAME": "MEMBER_FIELDS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "membersInvited": {
+                  "required": false,
+                  "name": "membersinvited",
+                  "Name": "MembersInvited",
+                  "NAME": "MEMBERSINVITED",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "membersInvited_fields": {
+                  "required": false,
+                  "name": "membersinvited_fields",
+                  "Name": "MembersInvited_fields",
+                  "NAME": "MEMBERSINVITED_FIELDS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "checklists": {
+                  "required": false,
+                  "name": "checklists",
+                  "Name": "Checklists",
+                  "NAME": "CHECKLISTS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "checklist_fields": {
+                  "required": false,
+                  "name": "checklist_fields",
+                  "Name": "Checklist_fields",
+                  "NAME": "CHECKLIST_FIELDS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "organization": {
+                  "required": false,
+                  "name": "organization",
+                  "Name": "Organization",
+                  "NAME": "ORGANIZATION",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "organization_fields": {
+                  "required": false,
+                  "name": "organization_fields",
+                  "Name": "Organization_fields",
+                  "NAME": "ORGANIZATION_FIELDS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "organization_memberships": {
+                  "required": false,
+                  "name": "organization_memberships",
+                  "Name": "Organization_memberships",
+                  "NAME": "ORGANIZATION_MEMBERSHIPS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "myPrefs": {
+                  "required": false,
+                  "name": "myprefs",
+                  "Name": "MyPrefs",
+                  "NAME": "MYPREFS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "fields": {
+                  "required": false,
+                  "name": "fields",
+                  "Name": "Fields",
+                  "NAME": "FIELDS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "key": {
+                  "required": true,
+                  "name": "key",
+                  "Name": "Key",
+                  "NAME": "KEY",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "token": {
+                  "required": true,
+                  "name": "token",
+                  "Name": "Token",
+                  "NAME": "TOKEN",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                }
+              },
+              "name": "load",
+              "Name": "Load",
+              "NAME": "LOAD"
+            },
+            "save": {
+              "path": "/boards/{idBoard}",
+              "method": "put",
+              "param": {
+                "idBoard": {
+                  "required": true,
+                  "name": "idboard",
+                  "Name": "IdBoard",
+                  "NAME": "IDBOARD",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                }
+              },
+              "query": {
+                "body": {
+                  "required": true,
+                  "name": "body",
+                  "Name": "Body",
+                  "NAME": "BODY",
+                  "type": "object",
+                  "Type": "Object",
+                  "TYPE": "OBJECT"
+                },
+                "key": {
+                  "required": true,
+                  "name": "key",
+                  "Name": "Key",
+                  "NAME": "KEY",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "token": {
+                  "required": true,
+                  "name": "token",
+                  "Name": "Token",
+                  "NAME": "TOKEN",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                }
+              },
+              "name": "save",
+              "Name": "Save",
+              "NAME": "SAVE"
+            },
+            "remove": {
+              "path": "/boards/{idBoard}",
+              "method": "delete",
+              "param": {},
+              "query": {},
+              "name": "remove",
+              "Name": "Remove",
+              "NAME": "REMOVE"
+            },
+            "list": {
+              "path": "/members/{idMember}/boards",
+              "method": "get",
+              "param": {
+                "idMember": {
+                  "required": true,
+                  "name": "idmember",
+                  "Name": "IdMember",
+                  "NAME": "IDMEMBER",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                }
+              },
+              "query": {
+                "filter": {
+                  "required": false,
+                  "name": "filter",
+                  "Name": "Filter",
+                  "NAME": "FILTER",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "fields": {
+                  "required": false,
+                  "name": "fields",
+                  "Name": "Fields",
+                  "NAME": "FIELDS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "actions": {
+                  "required": false,
+                  "name": "actions",
+                  "Name": "Actions",
+                  "NAME": "ACTIONS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "actions_entities": {
+                  "required": false,
+                  "name": "actions_entities",
+                  "Name": "Actions_entities",
+                  "NAME": "ACTIONS_ENTITIES",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "actions_limit": {
+                  "required": false,
+                  "name": "actions_limit",
+                  "Name": "Actions_limit",
+                  "NAME": "ACTIONS_LIMIT",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "actions_format": {
+                  "required": false,
+                  "name": "actions_format",
+                  "Name": "Actions_format",
+                  "NAME": "ACTIONS_FORMAT",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "actions_since": {
+                  "required": false,
+                  "name": "actions_since",
+                  "Name": "Actions_since",
+                  "NAME": "ACTIONS_SINCE",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "action_fields": {
+                  "required": false,
+                  "name": "action_fields",
+                  "Name": "Action_fields",
+                  "NAME": "ACTION_FIELDS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "memberships": {
+                  "required": false,
+                  "name": "memberships",
+                  "Name": "Memberships",
+                  "NAME": "MEMBERSHIPS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "organization": {
+                  "required": false,
+                  "name": "organization",
+                  "Name": "Organization",
+                  "NAME": "ORGANIZATION",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "organization_fields": {
+                  "required": false,
+                  "name": "organization_fields",
+                  "Name": "Organization_fields",
+                  "NAME": "ORGANIZATION_FIELDS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "lists": {
+                  "required": false,
+                  "name": "lists",
+                  "Name": "Lists",
+                  "NAME": "LISTS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "key": {
+                  "required": true,
+                  "name": "key",
+                  "Name": "Key",
+                  "NAME": "KEY",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "token": {
+                  "required": true,
+                  "name": "token",
+                  "Name": "Token",
+                  "NAME": "TOKEN",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                }
+              },
+              "name": "list",
+              "Name": "List",
+              "NAME": "LIST"
+            }
+          },
+          "field": {},
+          "cmd": {},
+          "name": "board",
+          "Name": "Board",
+          "NAME": "BOARD",
+          "publish": true
+        },
+        "list": {
+          "op": {
+            "create": {
+              "path": "/lists",
+              "method": "post",
+              "param": {},
+              "query": {
+                "body": {
+                  "required": true,
+                  "name": "body",
+                  "Name": "Body",
+                  "NAME": "BODY",
+                  "type": "object",
+                  "Type": "Object",
+                  "TYPE": "OBJECT"
+                },
+                "key": {
+                  "required": true,
+                  "name": "key",
+                  "Name": "Key",
+                  "NAME": "KEY",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "token": {
+                  "required": true,
+                  "name": "token",
+                  "Name": "Token",
+                  "NAME": "TOKEN",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                }
+              },
+              "name": "create",
+              "Name": "Create",
+              "NAME": "CREATE"
+            },
+            "load": {
+              "path": "/lists/{idList}",
+              "method": "get",
+              "param": {
+                "idList": {
+                  "required": true,
+                  "name": "idlist",
+                  "Name": "IdList",
+                  "NAME": "IDLIST",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                }
+              },
+              "query": {
+                "cards": {
+                  "required": false,
+                  "name": "cards",
+                  "Name": "Cards",
+                  "NAME": "CARDS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "card_fields": {
+                  "required": false,
+                  "name": "card_fields",
+                  "Name": "Card_fields",
+                  "NAME": "CARD_FIELDS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "board": {
+                  "required": false,
+                  "name": "board",
+                  "Name": "Board",
+                  "NAME": "BOARD",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "board_fields": {
+                  "required": false,
+                  "name": "board_fields",
+                  "Name": "Board_fields",
+                  "NAME": "BOARD_FIELDS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "fields": {
+                  "required": false,
+                  "name": "fields",
+                  "Name": "Fields",
+                  "NAME": "FIELDS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "key": {
+                  "required": true,
+                  "name": "key",
+                  "Name": "Key",
+                  "NAME": "KEY",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "token": {
+                  "required": true,
+                  "name": "token",
+                  "Name": "Token",
+                  "NAME": "TOKEN",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                }
+              },
+              "name": "load",
+              "Name": "Load",
+              "NAME": "LOAD"
+            },
+            "save": {
+              "path": "/lists/{idList}",
+              "method": "put",
+              "param": {
+                "idList": {
+                  "required": true,
+                  "name": "idlist",
+                  "Name": "IdList",
+                  "NAME": "IDLIST",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                }
+              },
+              "query": {
+                "body": {
+                  "required": true,
+                  "name": "body",
+                  "Name": "Body",
+                  "NAME": "BODY",
+                  "type": "object",
+                  "Type": "Object",
+                  "TYPE": "OBJECT"
+                },
+                "key": {
+                  "required": true,
+                  "name": "key",
+                  "Name": "Key",
+                  "NAME": "KEY",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "token": {
+                  "required": true,
+                  "name": "token",
+                  "Name": "Token",
+                  "NAME": "TOKEN",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                }
+              },
+              "name": "save",
+              "Name": "Save",
+              "NAME": "SAVE"
+            },
+            "list": {
+              "path": "/boards/{idBoard}/lists",
+              "method": "get",
+              "param": {
+                "idBoard": {
+                  "required": true,
+                  "name": "idboard",
+                  "Name": "IdBoard",
+                  "NAME": "IDBOARD",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                }
+              },
+              "query": {
+                "cards": {
+                  "required": false,
+                  "name": "cards",
+                  "Name": "Cards",
+                  "NAME": "CARDS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "card_fields": {
+                  "required": false,
+                  "name": "card_fields",
+                  "Name": "Card_fields",
+                  "NAME": "CARD_FIELDS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "filter": {
+                  "required": false,
+                  "name": "filter",
+                  "Name": "Filter",
+                  "NAME": "FILTER",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "fields": {
+                  "required": false,
+                  "name": "fields",
+                  "Name": "Fields",
+                  "NAME": "FIELDS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "key": {
+                  "required": true,
+                  "name": "key",
+                  "Name": "Key",
+                  "NAME": "KEY",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "token": {
+                  "required": true,
+                  "name": "token",
+                  "Name": "Token",
+                  "NAME": "TOKEN",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                }
+              },
+              "name": "list",
+              "Name": "List",
+              "NAME": "LIST"
+            }
+          },
+          "field": {},
+          "cmd": {},
+          "name": "list",
+          "Name": "List",
+          "NAME": "LIST",
+          "publish": true
+        }
+      },
+      "option": {
+        "endpoint": {
+          "kind": "String",
+          "short": "Trello API URL",
+          "name": "endpoint",
+          "publish": true
+        },
+        "apikey": {
+          "kind": "String",
+          "short": "Trello API Key",
+          "name": "apikey",
+          "publish": true
+        },
+        "fetch": {
+          "kind": "Any",
+          "publish": false,
+          "name": "fetch"
+        }
+      },
+      "feature": {}
+    },
+    "api": {
+      "entity": {
+        "board": {
+          "op": {
+            "create": {
+              "path": "/boards",
+              "method": "post",
+              "param": {},
+              "query": {
+                "body": {
+                  "required": true,
+                  "name": "body",
+                  "Name": "Body",
+                  "NAME": "BODY",
+                  "type": "object",
+                  "Type": "Object",
+                  "TYPE": "OBJECT"
+                },
+                "key": {
+                  "required": true,
+                  "name": "key",
+                  "Name": "Key",
+                  "NAME": "KEY",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "token": {
+                  "required": true,
+                  "name": "token",
+                  "Name": "Token",
+                  "NAME": "TOKEN",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                }
+              },
+              "name": "create",
+              "Name": "Create",
+              "NAME": "CREATE"
+            },
+            "load": {
+              "path": "/boards/{idBoard}",
+              "method": "get",
+              "param": {
+                "idBoard": {
+                  "required": true,
+                  "name": "idboard",
+                  "Name": "IdBoard",
+                  "NAME": "IDBOARD",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                }
+              },
+              "query": {
+                "actions": {
+                  "required": false,
+                  "name": "actions",
+                  "Name": "Actions",
+                  "NAME": "ACTIONS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "actions_entities": {
+                  "required": false,
+                  "name": "actions_entities",
+                  "Name": "Actions_entities",
+                  "NAME": "ACTIONS_ENTITIES",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "actions_display": {
+                  "required": false,
+                  "name": "actions_display",
+                  "Name": "Actions_display",
+                  "NAME": "ACTIONS_DISPLAY",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "actions_format": {
+                  "required": false,
+                  "name": "actions_format",
+                  "Name": "Actions_format",
+                  "NAME": "ACTIONS_FORMAT",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "actions_since": {
+                  "required": false,
+                  "name": "actions_since",
+                  "Name": "Actions_since",
+                  "NAME": "ACTIONS_SINCE",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "actions_limit": {
+                  "required": false,
+                  "name": "actions_limit",
+                  "Name": "Actions_limit",
+                  "NAME": "ACTIONS_LIMIT",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "action_fields": {
+                  "required": false,
+                  "name": "action_fields",
+                  "Name": "Action_fields",
+                  "NAME": "ACTION_FIELDS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "action_member": {
+                  "required": false,
+                  "name": "action_member",
+                  "Name": "Action_member",
+                  "NAME": "ACTION_MEMBER",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "action_member_fields": {
+                  "required": false,
+                  "name": "action_member_fields",
+                  "Name": "Action_member_fields",
+                  "NAME": "ACTION_MEMBER_FIELDS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "action_memberCreator": {
+                  "required": false,
+                  "name": "action_membercreator",
+                  "Name": "Action_memberCreator",
+                  "NAME": "ACTION_MEMBERCREATOR",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "action_memberCreator_fields": {
+                  "required": false,
+                  "name": "action_membercreator_fields",
+                  "Name": "Action_memberCreator_fields",
+                  "NAME": "ACTION_MEMBERCREATOR_FIELDS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "cards": {
+                  "required": false,
+                  "name": "cards",
+                  "Name": "Cards",
+                  "NAME": "CARDS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "card_fields": {
+                  "required": false,
+                  "name": "card_fields",
+                  "Name": "Card_fields",
+                  "NAME": "CARD_FIELDS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "card_attachments": {
+                  "required": false,
+                  "name": "card_attachments",
+                  "Name": "Card_attachments",
+                  "NAME": "CARD_ATTACHMENTS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "card_attachment_fields": {
+                  "required": false,
+                  "name": "card_attachment_fields",
+                  "Name": "Card_attachment_fields",
+                  "NAME": "CARD_ATTACHMENT_FIELDS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "card_checklists": {
+                  "required": false,
+                  "name": "card_checklists",
+                  "Name": "Card_checklists",
+                  "NAME": "CARD_CHECKLISTS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "card_stickers": {
+                  "required": false,
+                  "name": "card_stickers",
+                  "Name": "Card_stickers",
+                  "NAME": "CARD_STICKERS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "boardStars": {
+                  "required": false,
+                  "name": "boardstars",
+                  "Name": "BoardStars",
+                  "NAME": "BOARDSTARS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "labels": {
+                  "required": false,
+                  "name": "labels",
+                  "Name": "Labels",
+                  "NAME": "LABELS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "label_fields": {
+                  "required": false,
+                  "name": "label_fields",
+                  "Name": "Label_fields",
+                  "NAME": "LABEL_FIELDS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "labels_limit": {
+                  "required": false,
+                  "name": "labels_limit",
+                  "Name": "Labels_limit",
+                  "NAME": "LABELS_LIMIT",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "lists": {
+                  "required": false,
+                  "name": "lists",
+                  "Name": "Lists",
+                  "NAME": "LISTS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "list_fields": {
+                  "required": false,
+                  "name": "list_fields",
+                  "Name": "List_fields",
+                  "NAME": "LIST_FIELDS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "memberships": {
+                  "required": false,
+                  "name": "memberships",
+                  "Name": "Memberships",
+                  "NAME": "MEMBERSHIPS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "memberships_member": {
+                  "required": false,
+                  "name": "memberships_member",
+                  "Name": "Memberships_member",
+                  "NAME": "MEMBERSHIPS_MEMBER",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "memberships_member_fields": {
+                  "required": false,
+                  "name": "memberships_member_fields",
+                  "Name": "Memberships_member_fields",
+                  "NAME": "MEMBERSHIPS_MEMBER_FIELDS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "members": {
+                  "required": false,
+                  "name": "members",
+                  "Name": "Members",
+                  "NAME": "MEMBERS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "member_fields": {
+                  "required": false,
+                  "name": "member_fields",
+                  "Name": "Member_fields",
+                  "NAME": "MEMBER_FIELDS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "membersInvited": {
+                  "required": false,
+                  "name": "membersinvited",
+                  "Name": "MembersInvited",
+                  "NAME": "MEMBERSINVITED",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "membersInvited_fields": {
+                  "required": false,
+                  "name": "membersinvited_fields",
+                  "Name": "MembersInvited_fields",
+                  "NAME": "MEMBERSINVITED_FIELDS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "checklists": {
+                  "required": false,
+                  "name": "checklists",
+                  "Name": "Checklists",
+                  "NAME": "CHECKLISTS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "checklist_fields": {
+                  "required": false,
+                  "name": "checklist_fields",
+                  "Name": "Checklist_fields",
+                  "NAME": "CHECKLIST_FIELDS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "organization": {
+                  "required": false,
+                  "name": "organization",
+                  "Name": "Organization",
+                  "NAME": "ORGANIZATION",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "organization_fields": {
+                  "required": false,
+                  "name": "organization_fields",
+                  "Name": "Organization_fields",
+                  "NAME": "ORGANIZATION_FIELDS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "organization_memberships": {
+                  "required": false,
+                  "name": "organization_memberships",
+                  "Name": "Organization_memberships",
+                  "NAME": "ORGANIZATION_MEMBERSHIPS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "myPrefs": {
+                  "required": false,
+                  "name": "myprefs",
+                  "Name": "MyPrefs",
+                  "NAME": "MYPREFS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "fields": {
+                  "required": false,
+                  "name": "fields",
+                  "Name": "Fields",
+                  "NAME": "FIELDS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "key": {
+                  "required": true,
+                  "name": "key",
+                  "Name": "Key",
+                  "NAME": "KEY",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "token": {
+                  "required": true,
+                  "name": "token",
+                  "Name": "Token",
+                  "NAME": "TOKEN",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                }
+              },
+              "name": "load",
+              "Name": "Load",
+              "NAME": "LOAD"
+            },
+            "save": {
+              "path": "/boards/{idBoard}",
+              "method": "put",
+              "param": {
+                "idBoard": {
+                  "required": true,
+                  "name": "idboard",
+                  "Name": "IdBoard",
+                  "NAME": "IDBOARD",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                }
+              },
+              "query": {
+                "body": {
+                  "required": true,
+                  "name": "body",
+                  "Name": "Body",
+                  "NAME": "BODY",
+                  "type": "object",
+                  "Type": "Object",
+                  "TYPE": "OBJECT"
+                },
+                "key": {
+                  "required": true,
+                  "name": "key",
+                  "Name": "Key",
+                  "NAME": "KEY",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "token": {
+                  "required": true,
+                  "name": "token",
+                  "Name": "Token",
+                  "NAME": "TOKEN",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                }
+              },
+              "name": "save",
+              "Name": "Save",
+              "NAME": "SAVE"
+            },
+            "remove": {
+              "path": "/boards/{idBoard}",
+              "method": "delete",
+              "param": {},
+              "query": {},
+              "name": "remove",
+              "Name": "Remove",
+              "NAME": "REMOVE"
+            },
+            "list": {
+              "path": "/members/{idMember}/boards",
+              "method": "get",
+              "param": {
+                "idMember": {
+                  "required": true,
+                  "name": "idmember",
+                  "Name": "IdMember",
+                  "NAME": "IDMEMBER",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                }
+              },
+              "query": {
+                "filter": {
+                  "required": false,
+                  "name": "filter",
+                  "Name": "Filter",
+                  "NAME": "FILTER",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "fields": {
+                  "required": false,
+                  "name": "fields",
+                  "Name": "Fields",
+                  "NAME": "FIELDS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "actions": {
+                  "required": false,
+                  "name": "actions",
+                  "Name": "Actions",
+                  "NAME": "ACTIONS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "actions_entities": {
+                  "required": false,
+                  "name": "actions_entities",
+                  "Name": "Actions_entities",
+                  "NAME": "ACTIONS_ENTITIES",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "actions_limit": {
+                  "required": false,
+                  "name": "actions_limit",
+                  "Name": "Actions_limit",
+                  "NAME": "ACTIONS_LIMIT",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "actions_format": {
+                  "required": false,
+                  "name": "actions_format",
+                  "Name": "Actions_format",
+                  "NAME": "ACTIONS_FORMAT",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "actions_since": {
+                  "required": false,
+                  "name": "actions_since",
+                  "Name": "Actions_since",
+                  "NAME": "ACTIONS_SINCE",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "action_fields": {
+                  "required": false,
+                  "name": "action_fields",
+                  "Name": "Action_fields",
+                  "NAME": "ACTION_FIELDS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "memberships": {
+                  "required": false,
+                  "name": "memberships",
+                  "Name": "Memberships",
+                  "NAME": "MEMBERSHIPS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "organization": {
+                  "required": false,
+                  "name": "organization",
+                  "Name": "Organization",
+                  "NAME": "ORGANIZATION",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "organization_fields": {
+                  "required": false,
+                  "name": "organization_fields",
+                  "Name": "Organization_fields",
+                  "NAME": "ORGANIZATION_FIELDS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "lists": {
+                  "required": false,
+                  "name": "lists",
+                  "Name": "Lists",
+                  "NAME": "LISTS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "key": {
+                  "required": true,
+                  "name": "key",
+                  "Name": "Key",
+                  "NAME": "KEY",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "token": {
+                  "required": true,
+                  "name": "token",
+                  "Name": "Token",
+                  "NAME": "TOKEN",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                }
+              },
+              "name": "list",
+              "Name": "List",
+              "NAME": "LIST"
+            }
+          },
+          "field": {},
+          "cmd": {},
+          "name": "board",
+          "Name": "Board",
+          "NAME": "BOARD"
+        },
+        "list": {
+          "op": {
+            "create": {
+              "path": "/lists",
+              "method": "post",
+              "param": {},
+              "query": {
+                "body": {
+                  "required": true,
+                  "name": "body",
+                  "Name": "Body",
+                  "NAME": "BODY",
+                  "type": "object",
+                  "Type": "Object",
+                  "TYPE": "OBJECT"
+                },
+                "key": {
+                  "required": true,
+                  "name": "key",
+                  "Name": "Key",
+                  "NAME": "KEY",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "token": {
+                  "required": true,
+                  "name": "token",
+                  "Name": "Token",
+                  "NAME": "TOKEN",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                }
+              },
+              "name": "create",
+              "Name": "Create",
+              "NAME": "CREATE"
+            },
+            "load": {
+              "path": "/lists/{idList}",
+              "method": "get",
+              "param": {
+                "idList": {
+                  "required": true,
+                  "name": "idlist",
+                  "Name": "IdList",
+                  "NAME": "IDLIST",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                }
+              },
+              "query": {
+                "cards": {
+                  "required": false,
+                  "name": "cards",
+                  "Name": "Cards",
+                  "NAME": "CARDS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "card_fields": {
+                  "required": false,
+                  "name": "card_fields",
+                  "Name": "Card_fields",
+                  "NAME": "CARD_FIELDS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "board": {
+                  "required": false,
+                  "name": "board",
+                  "Name": "Board",
+                  "NAME": "BOARD",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "board_fields": {
+                  "required": false,
+                  "name": "board_fields",
+                  "Name": "Board_fields",
+                  "NAME": "BOARD_FIELDS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "fields": {
+                  "required": false,
+                  "name": "fields",
+                  "Name": "Fields",
+                  "NAME": "FIELDS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "key": {
+                  "required": true,
+                  "name": "key",
+                  "Name": "Key",
+                  "NAME": "KEY",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "token": {
+                  "required": true,
+                  "name": "token",
+                  "Name": "Token",
+                  "NAME": "TOKEN",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                }
+              },
+              "name": "load",
+              "Name": "Load",
+              "NAME": "LOAD"
+            },
+            "save": {
+              "path": "/lists/{idList}",
+              "method": "put",
+              "param": {
+                "idList": {
+                  "required": true,
+                  "name": "idlist",
+                  "Name": "IdList",
+                  "NAME": "IDLIST",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                }
+              },
+              "query": {
+                "body": {
+                  "required": true,
+                  "name": "body",
+                  "Name": "Body",
+                  "NAME": "BODY",
+                  "type": "object",
+                  "Type": "Object",
+                  "TYPE": "OBJECT"
+                },
+                "key": {
+                  "required": true,
+                  "name": "key",
+                  "Name": "Key",
+                  "NAME": "KEY",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "token": {
+                  "required": true,
+                  "name": "token",
+                  "Name": "Token",
+                  "NAME": "TOKEN",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                }
+              },
+              "name": "save",
+              "Name": "Save",
+              "NAME": "SAVE"
+            },
+            "list": {
+              "path": "/boards/{idBoard}/lists",
+              "method": "get",
+              "param": {
+                "idBoard": {
+                  "required": true,
+                  "name": "idboard",
+                  "Name": "IdBoard",
+                  "NAME": "IDBOARD",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                }
+              },
+              "query": {
+                "cards": {
+                  "required": false,
+                  "name": "cards",
+                  "Name": "Cards",
+                  "NAME": "CARDS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "card_fields": {
+                  "required": false,
+                  "name": "card_fields",
+                  "Name": "Card_fields",
+                  "NAME": "CARD_FIELDS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "filter": {
+                  "required": false,
+                  "name": "filter",
+                  "Name": "Filter",
+                  "NAME": "FILTER",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "fields": {
+                  "required": false,
+                  "name": "fields",
+                  "Name": "Fields",
+                  "NAME": "FIELDS",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "key": {
+                  "required": true,
+                  "name": "key",
+                  "Name": "Key",
+                  "NAME": "KEY",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                },
+                "token": {
+                  "required": true,
+                  "name": "token",
+                  "Name": "Token",
+                  "NAME": "TOKEN",
+                  "type": "string",
+                  "Type": "String",
+                  "TYPE": "STRING"
+                }
+              },
+              "name": "list",
+              "Name": "List",
+              "NAME": "LIST"
+            }
+          },
+          "field": {},
+          "cmd": {},
+          "name": "list",
+          "Name": "List",
+          "NAME": "LIST"
+        }
+      },
+      "name": "trello",
+      "Name": "Trello",
+      "NAME": "TRELLO"
+    },
+    "def": {
+      "desc": "This document describes the REST API of Trello as published by Trello.com.\n - <a href='https://trello.com/docs/index.html' target='_blank'>Official Documentation</a>\n - <a href='https://trello.com/docs/api' target='_blank'>The HTML pages that were scraped in order to generate this specification.</a>"
+    }
+  }
+}
