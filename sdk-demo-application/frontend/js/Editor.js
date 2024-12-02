@@ -109,10 +109,10 @@ function createForm(config, data_item) {
       $create({
         elem: 'button',
         textContent: capitalize(op),
-        style: {
+        style: op != 'create' ? {
           filter: save_enabled ? 'none': 'brightness(1.5)',
           pointerEvents: save_enabled ? 'all' : 'none'
-        },
+        } : {},
         props: {
           type: 'submit',
           dataset: {
