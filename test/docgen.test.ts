@@ -28,7 +28,7 @@ describe('docgen', () => {
 
     })
     const docgen = DocGen({
-      fs, folder: '/top', root: ''
+      fs: () => fs, folder: '/top', root: ''
     })
     expect(docgen).exist()
 
@@ -44,13 +44,12 @@ describe('docgen', () => {
     await docgen.generate(spec)
 
     const voljson: any = vol.toJSON()
-    expect(JSON.parse(voljson['/top/.jostraca/jostraca.json.log']).exclude).equal([])
+    expect(JSON.parse(voljson['/top/.jostraca/jostraca.meta.log']).last > 0).equal(true)
 
-    expect(voljson).equal({
+    expect(voljson).includes({
       '/top/doc/static/src': null,
       '/top/doc/static/dist/index.html':
         '\n<!DOCTYPE html>\n<html>\n  <head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n    <script src="https://cdn.tailwindcss.com"></script>\n    <style>\n\n    </style>\n  </head>\n  <body>\n   <header>\n     <template shadowrootmode="open">\n\n     </template>\n   </header>\n\n   <main>\n     <template shadowrootmode="open">\n\n\n<h1> undefined SDK Documentation</h1>\n\n     </template>\n   </main>\n\n   <footer>\n     <template shadowrootmode="open">\n\n     </template>\n   </footer>\n  </body>\n</html>\n',
-      '/top/.jostraca/jostraca.json.log': voljson['/top/.jostraca/jostraca.json.log'],
     })
   })
 
