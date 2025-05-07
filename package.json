@@ -1,6 +1,6 @@
 {
   "name": "@voxgig/docgen",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "main": "dist/docgen.js",
   "type": "commonjs",
   "types": "dist/docgen.d.ts",
@@ -37,7 +37,7 @@
   "devDependencies": {
     "@hapi/code": "^9.0.3",
     "@types/js-yaml": "^4.0.9",
-    "@types/node": "22.15.12",
+    "@types/node": "22.15.15",
     "esbuild": "^0.25.4",
     "json-schema-to-ts": "^3.1.1",
     "memfs": "^4.17.1",
