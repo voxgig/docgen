@@ -10,7 +10,12 @@ import { prettyPino, Pino } from '@voxgig/util'
 import { Index } from './static/Index'
 import { Main } from './static/Main'
 
+// Sample App
+import { SampleApp } from './sample_app/SampleApp'
+
 import { PrepareOpenAPI } from './prepare-openapi'
+
+import { ApiDef } from '@voxgig/apidef'
 
 
 type DocGenOptions = {
@@ -78,9 +83,10 @@ function DocGen(opts: DocGenOptions) {
 
 
 DocGen.makeBuild = async function(opts: DocGenOptions) {
+
   let docgen: any = undefined
 
-  const config = {
+  const config: any = {
     root: opts.root,
     def: opts.def || 'no-def',
     kind: 'openapi-3',
@@ -88,6 +94,7 @@ DocGen.makeBuild = async function(opts: DocGenOptions) {
     meta: opts.meta || {},
     entity: opts.model ? opts.model.entity : undefined,
   }
+
 
   return async function build(model: any, build: any) {
     if (null == docgen) {
@@ -97,6 +104,13 @@ DocGen.makeBuild = async function(opts: DocGenOptions) {
         pino: build.log,
       })
     }
+
+    // TEMPORARY FIX:  TODO: apidef should be it's own action, same as sdkgen and docgen
+    const apidef = ApiDef({
+      pino: build.log,
+    })
+
+    await apidef.generate(config)
 
     await docgen.generate({ model, build, config })
   }
@@ -169,6 +183,7 @@ export const Inject: Component = JostracaModule.Inject
 export {
   Index,
   Main,
+  SampleApp,
 
   Jostraca,
   DocGen,
