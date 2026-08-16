@@ -7,9 +7,6 @@ import * as JostracaModule from 'jostraca'
 
 import { prettyPino, Pino } from '@voxgig/util'
 
-import { Index } from './static/Index'
-import { Main } from './static/Main'
-
 import { PrepareOpenAPI } from './prepare-openapi'
 
 
@@ -167,9 +164,6 @@ export const Inject: Component = JostracaModule.Inject
 
 
 export {
-  Index,
-  Main,
-
   Jostraca,
   DocGen,
 }

@@ -1,0 +1,9 @@
+{
+  "sdkgen": { "package": 1 },
+  "name": "@voxgig/docgen",
+  "version": "0.9.0",
+  "engines": { "sdkgen": ">=3.4" },
+  "provides": {
+    "docs": ["apidocs"]
+  }
+}

@@ -1,0 +1,35 @@
+# apidocs — a static documentation site for an API and its generated SDKs.
+#
+# Installed with `voxgig-sdkgen docs add @voxgig/docgen/apidocs`. See
+# @voxgig/sdkgen docs/design/sdkgen-packages.md §20.
+#
+# The site is built with mkdocs-material. That is a deliberate choice, and
+# the reason is not taste: an MDX-based engine parses `{` as an expression
+# and `<tag` as JSX in prose, and the text this site interpolates includes
+# the API's OWN description fields — `info.summary`, entity descriptions —
+# which belong to whoever wrote the OpenAPI document. Under CommonMark that
+# text is inert; under MDX a consumer's site build breaks because of their
+# own spec. mkdocs is also what Backstage TechDocs runs, so a later
+# catalogue item inherits this emitter.
+main: kit: docs: apidocs: {
+  title: 'API documentation site'
+
+  base: 'BASE'
+
+  # Out of tree is the NORMAL case for a documentation site: it usually has
+  # its own repo, and in-tree it would collide with the SDK repo's own
+  # README and CI workflows. Left unset here so an install is in-tree and
+  # harmless; a project points it somewhere with
+  # `main: kit: docs: apidocs: output: path: '../my-docs-site'`.
+  output: path: ''
+
+  # Site identity. A project sets these in its OWN model (model/sdk.aontu),
+  # never here — this file is overwritten by the next `docs add`.
+  site: {
+    # Where the built site is published, for mkdocs' `site_url`.
+    url: *'' | string
+
+    # Extra nav sections, appended after the generated ones.
+    extra: *[] | [&: {}]
+  }
+}

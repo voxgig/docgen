@@ -34,15 +34,11 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Jostraca = exports.Main = exports.Index = exports.Inject = exports.Fragment = exports.Copy = exports.Content = exports.File = exports.Folder = exports.Project = exports.getx = exports.get = exports.vmap = exports.cmap = exports.select = exports.kebabify = exports.camelify = exports.snakify = exports.each = exports.names = exports.cmp = void 0;
+exports.Jostraca = exports.Inject = exports.Fragment = exports.Copy = exports.Content = exports.File = exports.Folder = exports.Project = exports.getx = exports.get = exports.vmap = exports.cmap = exports.select = exports.kebabify = exports.camelify = exports.snakify = exports.each = exports.names = exports.cmp = void 0;
 exports.DocGen = DocGen;
 const Fs = __importStar(require("node:fs"));
 const JostracaModule = __importStar(require("jostraca"));
 const util_1 = require("@voxgig/util");
-const Index_1 = require("./static/Index");
-Object.defineProperty(exports, "Index", { enumerable: true, get: function () { return Index_1.Index; } });
-const Main_1 = require("./static/Main");
-Object.defineProperty(exports, "Main", { enumerable: true, get: function () { return Main_1.Main; } });
 const prepare_openapi_1 = require("./prepare-openapi");
 const { Jostraca } = JostracaModule;
 exports.Jostraca = Jostraca;
