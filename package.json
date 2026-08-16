@@ -4,11 +4,14 @@
   "main": "dist/docgen.js",
   "type": "commonjs",
   "types": "dist/docgen.d.ts",
-  "description": "Voxgig SDK Generator.",
+  "description": "Voxgig Documentation Generator \u2014 an sdkgen package supplying documentation targets.",
   "homepage": "https://github.com/voxgig/voxgig-docgen",
   "keywords": [
     "voxgig",
-    "docgen"
+    "docgen",
+    "sdkgen-package",
+    "openapi",
+    "documentation"
   ],
   "author": "Richard Rodger (http://richardrodger.com)",
   "repository": {
@@ -29,6 +32,8 @@
   },
   "license": "MIT",
   "files": [
+    ".sdk",
+    "sdkgen-package.json",
     "model",
     "src",
     "dist",
@@ -44,10 +49,11 @@
     "typescript": "^5.8.3"
   },
   "peerDependencies": {
-    "aontu": ">=0",
     "@redocly/openapi-core": ">=1",
     "@voxgig/apidef": ">=1",
+    "@voxgig/sdkgen": ">=3.4",
     "@voxgig/util": ">=0",
+    "aontu": ">=0",
     "jostraca": ">=0",
     "pino": ">=9",
     "pino-pretty": ">=13"

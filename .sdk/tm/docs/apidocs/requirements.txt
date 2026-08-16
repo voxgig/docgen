@@ -1,0 +1,5 @@
+# Build dependencies for this documentation site.
+#
+#   pip install -r requirements.txt
+#   mkdocs serve
+mkdocs-material>=9.5

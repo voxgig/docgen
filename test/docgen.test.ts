@@ -1,90 +1,241 @@
+// @voxgig/docgen as an SDKGEN PACKAGE.
+//
+// docgen supplies documentation ITEMS; @voxgig/sdkgen supplies the `docs`
+// kind that installs and generates them. So what this suite can check on its
+// own is the package's own shape — the manifest against the disk, and every
+// item's model file — which is exactly what a consumer's `package add`
+// validates before it writes anything.
+//
+// The end-to-end proof (install into a project, generate, clean `doctor`)
+// belongs to whoever has sdkgen present: `voxgig-sdkgen package check .`
+// followed by `package add` in a real project. It is not duplicated here,
+// because a copy of it that could not run the real installer would be
+// testing a mock.
 
 import { test, describe } from 'node:test'
-import { expect } from '@hapi/code'
+import { equal, ok, deepEqual } from 'node:assert'
 
-import { Aontu } from 'aontu'
-import { memfs } from 'memfs'
-
-
-import { cmp, each, Project, Folder, File, Content } from 'jostraca'
-
-import {
-  DocGen,
-} from '../'
+import Fs from 'node:fs'
+import Path from 'node:path'
+import { spawnSync } from 'node:child_process'
 
 
-import {
-  Index
-} from '../dist/static/Index'
+const ROOT = Path.resolve(__dirname, '..')
+const SDK = Path.join(ROOT, '.sdk')
+
+const manifest = JSON.parse(
+  Fs.readFileSync(Path.join(ROOT, 'sdkgen-package.json'), 'utf8'))
 
 
+// Every COMMITTED file under `.sdk`, as tarball-style relative paths.
+//
+// Tracked rather than "whatever is on disk": an untracked local file is not
+// part of the package, and demanding npm ship one would be a red build for
+// somebody's scratch file.
+function sdkFiles(): string[] {
+  const res = spawnSync('git', ['ls-files', '.sdk'], {
+    cwd: ROOT, encoding: 'utf8',
+  })
 
-describe('docgen', () => {
+  equal(res.status, 0, 'git ls-files failed: ' + res.stderr)
 
-  test('happy', async () => {
-    expect(DocGen).exist()
+  return res.stdout.split('\n').filter((p: string) => '' !== p).sort()
+}
 
-    const { fs, vol } = memfs({
 
-    })
-    const docgen = DocGen({
-      fs: () => fs, folder: '/top', root: ''
-    })
-    expect(docgen).exist()
+describe('sdkgen package', () => {
 
-    const root = makeRoot()
-    const model = makeModel()
-    // console.log('MODEL', model)
-
-    const spec = {
-      model,
-      root
-    }
-
-    await docgen.generate(spec)
-
-    const voljson: any = vol.toJSON()
-    expect(JSON.parse(voljson['/top/.jostraca/jostraca.meta.log']).last > 0).equal(true)
-
-    expect(voljson).includes({
-      '/top/doc/static/src': null,
-      '/top/doc/static/dist/index.html':
-        '\n<!DOCTYPE html>\n<html>\n  <head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n    <script src="https://cdn.tailwindcss.com"></script>\n    <style>\n\n    </style>\n  </head>\n  <body>\n   <header>\n     <template shadowrootmode="open">\n\n     </template>\n   </header>\n\n   <main>\n     <template shadowrootmode="open">\n\n\n<h1> undefined SDK Documentation</h1>\n\n     </template>\n   </main>\n\n   <footer>\n     <template shadowrootmode="open">\n\n     </template>\n   </footer>\n  </body>\n</html>\n',
-    })
+  test('the manifest declares a package of the schema sdkgen knows', () => {
+    equal(manifest.sdkgen.package, 1)
+    equal(manifest.name, '@voxgig/docgen')
+    ok(null != manifest.provides.docs, 'no docs items provided')
   })
 
 
-  function makeModel() {
-    return Aontu(`
-test: true
+  test('the manifest version matches package.json', () => {
+    // `package list` shows the MANIFEST's version, and `package update`
+    // compares against the source on disk — so two versions that disagree
+    // make a consumer's report a lie.
+    const pkg = JSON.parse(
+      Fs.readFileSync(Path.join(ROOT, 'package.json'), 'utf8'))
 
-name: 'foo'
-
-main: sdk: &: { name: .$KEY }
-
-main: sdk: js: {}
-
-main: sdk: python: {}
-
-main: sdk: java: {}
+    equal(manifest.version, pkg.version)
+  })
 
 
-main: doc: folder: name: 'doc'
+  test('npm ships the package content', () => {
+    // A manifest npm does not publish makes an installed package that
+    // `package add` refuses.
+    const pkg = JSON.parse(
+      Fs.readFileSync(Path.join(ROOT, 'package.json'), 'utf8'))
 
-`).gen()
-  }
+    ok(pkg.files.includes('.sdk'), 'files omits .sdk')
+    ok(pkg.files.includes('sdkgen-package.json'), 'files omits the manifest')
+  })
 
 
-  function makeRoot() {
-    return cmp(function Root(props: any) {
-      const { model, ctx$ } = props
-      ctx$.model = model
+  test('every .sdk file on disk survives packing', () => {
+    // A package is what npm PUBLISHES, not what the repo holds, and the two
+    // differ in ways that no amount of `files` fixes. npm keeps its own
+    // always-excluded list, and `.gitignore` is on it: a template file of
+    // that name works perfectly from a checkout and is simply absent for
+    // everyone who installs from the registry. That is how the site's
+    // ignore file shipped as a template and reached nobody.
+    //
+    // npm is ASKED rather than restated. A copy of npm's exclusion rules
+    // here would be a second place to keep them right, and this codebase's
+    // recurring defect is precisely the rule written twice.
+    const res = spawnSync('npm', ['pack', '--dry-run', '--json'], {
+      cwd: ROOT, encoding: 'utf8', shell: true,
+    })
 
-      Project({ model, folder: model.main.doc.folder.name }, () => {
-        Index({})
+    equal(res.status, 0, 'npm pack failed: ' + res.stderr)
+
+    const packed = new Set<string>(
+      JSON.parse(res.stdout)[0].files.map((f: any) => f.path))
+
+    const tracked = sdkFiles()
+
+    ok(0 < tracked.length, 'no .sdk files found — this cannot pass vacuously')
+
+    const missing = tracked.filter((p: string) => !packed.has(p))
+
+    deepEqual(missing, [],
+      'these .sdk files are not in the npm tarball, so an installed ' +
+      'package does not have them — generate them from a component ' +
+      'instead: ' + missing.join(', '))
+  })
+
+
+  test('the manifest requires an sdkgen that HAS the docs kind', () => {
+    // `>=3.4` accepted every published sdkgen, and none of them can install
+    // a docs item — the kind landed after 3.4.8. A consumer on 3.4.7 would
+    // have got a confusing failure from `package add` instead of the clear
+    // refusal `engines` exists to give.
+    //
+    // 3.4.9 is a FLOOR, not a guess at the release number: whatever sdkgen
+    // cuts next off main is at least that, and 3.5.0 satisfies it too.
+    //
+    // The npm `peerDependencies` range deliberately still says `>=3.4`.
+    // npm resolves that against the registry, so naming an unpublished
+    // version there fails `npm ci` with ETARGET — for this repo's own CI
+    // and for anyone installing docgen. It gets raised in the commit that
+    // follows sdkgen's release; `engines` is the gate that actually runs,
+    // because `package add` reads it.
+    const [major, minor, patch] =
+      String(manifest.engines.sdkgen).replace(/^[^\d]*/, '')
+        .split('.').map(Number)
+
+    ok(3 < major || (3 === major && (4 < minor || (4 === minor && 9 <= patch))),
+      'engines.sdkgen is ' + manifest.engines.sdkgen +
+      ', which admits an sdkgen without the docs kind')
+  })
+
+
+  for (const name of manifest.provides.docs) {
+
+    describe('docs item: ' + name, () => {
+
+      test('everything the kind requires is on disk', () => {
+        ok(Fs.existsSync(Path.join(SDK, 'model', 'docs', name + '.aontu')),
+          'no model file')
+
+        const cmpdir = Path.join(SDK, 'src', 'cmp', 'docs', name)
+        ok(Fs.statSync(cmpdir).isDirectory(), 'no component tree')
+
+        // Dispatched by convention: `cmp/docs/<n>/Main_<n>`.
+        ok(Fs.existsSync(Path.join(cmpdir, 'Main_' + name + '.ts')),
+          'no Main_' + name)
       })
+
+
+      test('the model file declares its own name', () => {
+        // The file is installed and included under its OWN name, so anything
+        // it declares under another name is unreachable — the mistake made
+        // when an item is copied from another as a starting point.
+        //
+        // Checked as TEXT, deliberately. COMPILING it is `voxgig-sdkgen
+        // package check`'s job, and that is not squeamishness: this package
+        // pins no aontu, a consumer compiles with the one SDKGEN ships, and
+        // whichever version npm resolves here has different call semantics
+        // (0.28 faults on the options shape newer ones require). A compile
+        // against the wrong aontu proves nothing about the consumer, and
+        // fails for reasons that are not the author's.
+        const src = Fs.readFileSync(
+          Path.join(SDK, 'model', 'docs', name + '.aontu'), 'utf8')
+
+        ok(new RegExp('main: kit: docs: ' + name + ':').test(src),
+          'declares no `main: kit: docs: ' + name + ':` block')
+      })
+
+
+      test('the model file keeps the provenance anchor', () => {
+        // The anchor is where `docs add` writes where this copy came from.
+        // Without it the installed item records nothing, and `package
+        // update` can never find its source again.
+        const src = Fs.readFileSync(
+          Path.join(SDK, 'model', 'docs', name + '.aontu'), 'utf8')
+
+        ok(/^[ \t]*base: 'BASE'[ \t]*$/m.test(src), "no `base: 'BASE'` line")
+      })
+
+
+      test('every setting the model offers is READ by the item', () => {
+        // `site.extra` was declared, documented as "appended after the
+        // generated ones", and never read by anything: a project that set it
+        // got silence, with no way to tell whether its value was wrong or
+        // the feature absent. An option that does nothing is worse than an
+        // option that is not there.
+        //
+        // The check is TEXT over the item's own components, which is coarse
+        // — it proves the name is mentioned, not that it is honoured. That
+        // is the right coarseness for a guard: it cannot pass vacuously (a
+        // setting nobody reads has its name nowhere), and when it fails it
+        // names the setting.
+        const src = Fs.readFileSync(
+          Path.join(SDK, 'model', 'docs', name + '.aontu'), 'utf8')
+
+        // The `site:` block's own keys, one indent level in.
+        const block = /^\s*site:\s*\{\s*$([\s\S]*?)^\s*\}\s*$/m.exec(src)
+        ok(null != block, 'no `site: {` block to check')
+
+        const settings = (block as RegExpExecArray)[1].split('\n')
+          .map((line: string) => /^\s{4}([A-Za-z_$][\w$]*):/.exec(line))
+          .filter((m) => null != m)
+          .map((m) => (m as RegExpExecArray)[1])
+
+        ok(0 < settings.length, 'found no settings — the regex has drifted')
+
+        const cmpdir = Path.join(SDK, 'src', 'cmp', 'docs', name)
+        const code = Fs.readdirSync(cmpdir)
+          .map((f: string) => Fs.readFileSync(Path.join(cmpdir, f), 'utf8'))
+          .join('\n')
+
+        const unread = settings.filter((s: string) =>
+          !new RegExp('\\b' + s + '\\b').test(code))
+
+        deepEqual(unread, [],
+          'declared in the model and read by nothing: ' + unread.join(', '))
+      })
+
+
+      test('no model file uses a slash comment', () => {
+        // aontu takes `#` comments only, and a consumer compiles under a
+        // parser configured to reject `//` — the mistake that once shipped
+        // seven broken targets in sdkgen itself.
+        const src = Fs.readFileSync(
+          Path.join(SDK, 'model', 'docs', name + '.aontu'), 'utf8')
+
+        const bad = src.split('\n')
+          .map((line, i) => ({ line: i + 1, text: line }))
+          .filter(({ text }) =>
+            /(^|\s)(\/\/|\/\*)/.test(
+              text.replace(/'[^']*'|"[^"]*"/g, '').split('#')[0]))
+
+        deepEqual(bad, [])
+      })
+
     })
   }
 
 })
-
