@@ -9,6 +9,15 @@ import { cmp, File, Content } from '@voxgig/sdkgen'
 import { yamlString } from './utility_apidocs'
 
 
+// One nav line, indented for a section. BOTH halves are quoted: the title
+// because it is often the API author's own words, and the path because it is
+// built from a name out of the same document — a colon in either silently
+// remaps the entry to something mkdocs cannot find.
+function navEntry(title: any, page: any): string {
+  return '      - ' + yamlString(title) + ': ' + yamlString(page)
+}
+
+
 const Nav = cmp(function Nav(props: any) {
   const { model, docs, entities, targets, features } = props
 
@@ -55,24 +64,55 @@ const Nav = cmp(function Nav(props: any) {
     if (0 < entities.length) {
       lines.push('  - API:')
       for (const entity of entities) {
-        lines.push('      - ' + yamlString(entity.Name || entity.name) +
-          ': api/' + entity.name + '.md')
+        lines.push(navEntry(entity.Name || entity.name,
+          'api/' + entity.name + '.md'))
       }
     }
 
     if (0 < targets.length) {
       lines.push('  - SDKs:')
       for (const target of targets) {
-        lines.push('      - ' + yamlString(target.title || target.name) +
-          ': sdks/' + target.name + '.md')
+        lines.push(navEntry(target.title || target.name,
+          'sdks/' + target.name + '.md'))
       }
     }
 
     if (0 < features.length) {
       lines.push('  - Features:')
       for (const feature of features) {
-        lines.push('      - ' + yamlString(feature.title || feature.name) +
-          ': features/' + feature.name + '.md')
+        lines.push(navEntry(feature.title || feature.name,
+          'features/' + feature.name + '.md'))
+      }
+    }
+
+    // The project's OWN entries, last: `site.extra`, for pages written by
+    // hand beside the generated ones.
+    //
+    // Accepting a setting and never reading it is worse than not offering it.
+    // The model documented `extra` from the first commit, so a project that
+    // set it got silence — and no way to tell whether its value was wrong or
+    // the feature absent.
+    //
+    // The model narrows an entry to a page or a ONE-LEVEL section, which is
+    // what makes this emittable without a YAML library.
+    for (const entry of (docs?.site?.extra ?? [])) {
+      const title = String(entry?.title ?? '')
+
+      if ('' === title) {
+        continue
+      }
+
+      const items = (entry?.items ?? []).filter((item: any) =>
+        '' !== String(item?.title ?? '') && '' !== String(item?.page ?? ''))
+
+      if (0 < items.length) {
+        lines.push('  - ' + yamlString(title) + ':')
+        for (const item of items) {
+          lines.push(navEntry(item.title, item.page))
+        }
+      }
+      else if ('' !== String(entry?.page ?? '')) {
+        lines.push('  - ' + yamlString(title) + ': ' + yamlString(entry.page))
       }
     }
 

@@ -29,7 +29,28 @@ main: kit: docs: apidocs: {
     # Where the built site is published, for mkdocs' `site_url`.
     url: *'' | string
 
-    # Extra nav sections, appended after the generated ones.
-    extra: *[] | [&: {}]
+    # Extra nav entries, appended after the generated ones — for pages a
+    # project writes by hand alongside the generated site.
+    #
+    #   extra: [
+    #     { title: 'Guides', page: 'guides/index.md' }
+    #     { title: 'Support', items: [{ title: 'FAQ', page: 'faq.md' }] }
+    #   ]
+    #
+    # A CONCRETE shape rather than free-form YAML, and deliberately so: this
+    # package writes mkdocs.yml by hand and pins no YAML library, so it can
+    # only emit what it is able to quote safely. One level of nesting is what
+    # an mkdocs nav SECTION is, and is as far as this goes.
+    #
+    # `page` is relative to the site's `docs/` directory, the same as the
+    # generated entries.
+    extra: *[] | [&: {
+      title: string
+      page: *'' | string
+      items: *[] | [&: {
+        title: string
+        page: string
+      }]
+    }]
   }
 }

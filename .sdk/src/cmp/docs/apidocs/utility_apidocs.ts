@@ -75,20 +75,43 @@ function opNames(entity: any): string[] {
 }
 
 
+// EVERY character a line break can be spelled as.
+//
+// `\n` is the one that gets remembered, and it is not the only one. A JSON
+// string — which is what an OpenAPI document is made of — can carry a bare
+// `\r`, and PyYAML (what mkdocs parses with) also breaks lines on NEL, LS and
+// PS. Any of them inside a single-quoted scalar ends the scalar's line and
+// makes the rest of it something else, so a spec containing `a\r---\rtext`
+// produces an `mkdocs.yml` that will not load.
+//
+// One pattern, used by both sanitizers below, because "what counts as a line
+// break" is a single fact and this codebase has a habit of writing a rule
+// twice and then only fixing one copy. Written as ESCAPES: NEL, LS and PS are
+// invisible in an editor, and a reviewer cannot check a character they cannot
+// see. A RUN collapses to one space, so a blank line in spec prose does not
+// become two.
+const BREAK_RE = /(?:\r\n|[\r\n\u0085\u2028\u2029])+/g
+
+
 // mkdocs' YAML is written by hand here rather than through a YAML library,
 // because this package has no runtime dependencies and the values are known.
 // Anything interpolated into it goes through this: a value from the API's own
-// spec can contain a colon, a quote or a newline, and any of the three ends
+// spec can contain a colon, a quote or a line break, and any of the three ends
 // the document early or changes its meaning.
 function yamlString(value: any): string {
-  return "'" + String(value ?? '').replace(/'/g, "''").replace(/\n/g, ' ') + "'"
+  return "'" + String(value ?? '')
+    .replace(/'/g, "''")
+    .replace(BREAK_RE, ' ') + "'"
 }
 
 
 // The same job for Markdown TABLE CELLS: a pipe in spec text would otherwise
-// add a column, and a newline would end the row.
+// add a column, and a line break would end the row.
 function cell(value: any): string {
-  return String(value ?? '').replace(/\|/g, '\\|').replace(/\n+/g, ' ').trim()
+  return String(value ?? '')
+    .replace(/\|/g, '\\|')
+    .replace(BREAK_RE, ' ')
+    .trim()
 }
 
 

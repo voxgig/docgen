@@ -27,6 +27,7 @@ import {
 } from '@voxgig/sdkgen'
 
 import { Nav } from './Nav_apidocs'
+import { Gitignore } from './Gitignore_apidocs'
 import { IndexPage } from './IndexPage_apidocs'
 import { EntityPage } from './EntityPage_apidocs'
 import { SdkPage } from './SdkPage_apidocs'
@@ -62,6 +63,10 @@ const Main = cmp(function Main(props: any) {
   Copy({ from: 'tm/docs/' + docs.name, exclude: [/mkdocs\.yml$/] })
 
   Nav({ model, docs, entities, targets, features })
+
+  // `.gitignore` is generated rather than templated because npm never
+  // publishes a file of that name — see Gitignore_apidocs.
+  Gitignore({})
 
   Folder({ name: 'docs' }, () => {
     IndexPage({ model, docs, entities, targets })

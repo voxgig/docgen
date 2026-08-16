@@ -17,6 +17,7 @@ import { equal, ok, deepEqual } from 'node:assert'
 
 import Fs from 'node:fs'
 import Path from 'node:path'
+import { spawnSync } from 'node:child_process'
 
 
 const ROOT = Path.resolve(__dirname, '..')
@@ -24,6 +25,22 @@ const SDK = Path.join(ROOT, '.sdk')
 
 const manifest = JSON.parse(
   Fs.readFileSync(Path.join(ROOT, 'sdkgen-package.json'), 'utf8'))
+
+
+// Every COMMITTED file under `.sdk`, as tarball-style relative paths.
+//
+// Tracked rather than "whatever is on disk": an untracked local file is not
+// part of the package, and demanding npm ship one would be a red build for
+// somebody's scratch file.
+function sdkFiles(): string[] {
+  const res = spawnSync('git', ['ls-files', '.sdk'], {
+    cwd: ROOT, encoding: 'utf8',
+  })
+
+  equal(res.status, 0, 'git ls-files failed: ' + res.stderr)
+
+  return res.stdout.split('\n').filter((p: string) => '' !== p).sort()
+}
 
 
 describe('sdkgen package', () => {
@@ -54,6 +71,64 @@ describe('sdkgen package', () => {
 
     ok(pkg.files.includes('.sdk'), 'files omits .sdk')
     ok(pkg.files.includes('sdkgen-package.json'), 'files omits the manifest')
+  })
+
+
+  test('every .sdk file on disk survives packing', () => {
+    // A package is what npm PUBLISHES, not what the repo holds, and the two
+    // differ in ways that no amount of `files` fixes. npm keeps its own
+    // always-excluded list, and `.gitignore` is on it: a template file of
+    // that name works perfectly from a checkout and is simply absent for
+    // everyone who installs from the registry. That is how the site's
+    // ignore file shipped as a template and reached nobody.
+    //
+    // npm is ASKED rather than restated. A copy of npm's exclusion rules
+    // here would be a second place to keep them right, and this codebase's
+    // recurring defect is precisely the rule written twice.
+    const res = spawnSync('npm', ['pack', '--dry-run', '--json'], {
+      cwd: ROOT, encoding: 'utf8', shell: true,
+    })
+
+    equal(res.status, 0, 'npm pack failed: ' + res.stderr)
+
+    const packed = new Set<string>(
+      JSON.parse(res.stdout)[0].files.map((f: any) => f.path))
+
+    const tracked = sdkFiles()
+
+    ok(0 < tracked.length, 'no .sdk files found — this cannot pass vacuously')
+
+    const missing = tracked.filter((p: string) => !packed.has(p))
+
+    deepEqual(missing, [],
+      'these .sdk files are not in the npm tarball, so an installed ' +
+      'package does not have them — generate them from a component ' +
+      'instead: ' + missing.join(', '))
+  })
+
+
+  test('the manifest requires an sdkgen that HAS the docs kind', () => {
+    // `>=3.4` accepted every published sdkgen, and none of them can install
+    // a docs item — the kind landed after 3.4.8. A consumer on 3.4.7 would
+    // have got a confusing failure from `package add` instead of the clear
+    // refusal `engines` exists to give.
+    //
+    // 3.4.9 is a FLOOR, not a guess at the release number: whatever sdkgen
+    // cuts next off main is at least that, and 3.5.0 satisfies it too.
+    //
+    // The npm `peerDependencies` range deliberately still says `>=3.4`.
+    // npm resolves that against the registry, so naming an unpublished
+    // version there fails `npm ci` with ETARGET — for this repo's own CI
+    // and for anyone installing docgen. It gets raised in the commit that
+    // follows sdkgen's release; `engines` is the gate that actually runs,
+    // because `package add` reads it.
+    const [major, minor, patch] =
+      String(manifest.engines.sdkgen).replace(/^[^\d]*/, '')
+        .split('.').map(Number)
+
+    ok(3 < major || (3 === major && (4 < minor || (4 === minor && 9 <= patch))),
+      'engines.sdkgen is ' + manifest.engines.sdkgen +
+      ', which admits an sdkgen without the docs kind')
   })
 
 
@@ -102,6 +177,45 @@ describe('sdkgen package', () => {
           Path.join(SDK, 'model', 'docs', name + '.aontu'), 'utf8')
 
         ok(/^[ \t]*base: 'BASE'[ \t]*$/m.test(src), "no `base: 'BASE'` line")
+      })
+
+
+      test('every setting the model offers is READ by the item', () => {
+        // `site.extra` was declared, documented as "appended after the
+        // generated ones", and never read by anything: a project that set it
+        // got silence, with no way to tell whether its value was wrong or
+        // the feature absent. An option that does nothing is worse than an
+        // option that is not there.
+        //
+        // The check is TEXT over the item's own components, which is coarse
+        // — it proves the name is mentioned, not that it is honoured. That
+        // is the right coarseness for a guard: it cannot pass vacuously (a
+        // setting nobody reads has its name nowhere), and when it fails it
+        // names the setting.
+        const src = Fs.readFileSync(
+          Path.join(SDK, 'model', 'docs', name + '.aontu'), 'utf8')
+
+        // The `site:` block's own keys, one indent level in.
+        const block = /^\s*site:\s*\{\s*$([\s\S]*?)^\s*\}\s*$/m.exec(src)
+        ok(null != block, 'no `site: {` block to check')
+
+        const settings = (block as RegExpExecArray)[1].split('\n')
+          .map((line: string) => /^\s{4}([A-Za-z_$][\w$]*):/.exec(line))
+          .filter((m) => null != m)
+          .map((m) => (m as RegExpExecArray)[1])
+
+        ok(0 < settings.length, 'found no settings — the regex has drifted')
+
+        const cmpdir = Path.join(SDK, 'src', 'cmp', 'docs', name)
+        const code = Fs.readdirSync(cmpdir)
+          .map((f: string) => Fs.readFileSync(Path.join(cmpdir, f), 'utf8'))
+          .join('\n')
+
+        const unread = settings.filter((s: string) =>
+          !new RegExp('\\b' + s + '\\b').test(code))
+
+        deepEqual(unread, [],
+          'declared in the model and read by nothing: ' + unread.join(', '))
       })
 
 
