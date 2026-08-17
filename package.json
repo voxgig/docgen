@@ -1,10 +1,10 @@
 {
   "name": "@voxgig/docgen",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "main": "dist/docgen.js",
   "type": "commonjs",
   "types": "dist/docgen.d.ts",
-  "description": "Voxgig Documentation Generator \u2014 an sdkgen package supplying documentation targets.",
+  "description": "Voxgig Documentation Generator — an sdkgen package supplying documentation targets.",
   "homepage": "https://github.com/voxgig/voxgig-docgen",
   "keywords": [
     "voxgig",
