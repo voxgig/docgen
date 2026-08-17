@@ -1,0 +1,58 @@
+# Publishes @voxgig/docgen to npm on a `v*` tag push, via GitHub OIDC
+# Trusted Publishing — no NPM_TOKEN secret. The `id-token: write`
+# permission lets npm exchange a GitHub OIDC token for a short-lived
+# publish credential, and provenance is attached automatically.
+#
+# The trusted publisher must be registered on npmjs.com for
+# voxgig/docgen against THIS filename (publish.yml); renaming this file
+# breaks publishing until the npm-side config is updated to match.
+#
+# Unlike sdkgen, whose npm package root is ts/, this package IS the repo
+# root, so no working-directory is set.
+#
+# Release flow: `npm run repo-bump`, commit, then push a v* tag.
+
+name: publish
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  publish:
+    name: npm publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24.x
+          registry-url: 'https://registry.npmjs.org'
+
+      # Trusted publishing requires npm >= 11.5.1.
+      - name: Use a trusted-publishing capable npm
+        run: npm install -g npm@latest
+
+      # The tag is what triggers a publish, and npm will not let a version
+      # number be reused — so a tag that disagrees with package.json costs a
+      # version to find out. A second here, rather than a wasted number.
+      - name: Tag matches package.json version
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          PKG=$(node -p "require('./package.json').version")
+          test "$TAG" = "$PKG" || { echo "tag v$TAG != package.json $PKG"; exit 1; }
+
+      # package-lock.json is committed here, so ci is safe and reproducible.
+      - run: npm ci
+      - run: npm run build
+      - run: npm test
+
+      - name: Publish to npm
+        run: npm publish --access public

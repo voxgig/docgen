@@ -99,7 +99,19 @@ function sdkFiles() {
             cwd: ROOT, encoding: 'utf8', shell: true,
         });
         (0, node_assert_1.equal)(res.status, 0, 'npm pack failed: ' + res.stderr);
-        const packed = new Set(JSON.parse(res.stdout)[0].files.map((f) => f.path));
+        // TWO SHAPES, because npm changed this output: it used to be an ARRAY
+        // of package objects and is now an OBJECT KEYED BY PACKAGE NAME. Either
+        // is one package here, so take the first entry whichever way it came.
+        //
+        // The old spelling (`[0].files`) reads `undefined.files` against the new
+        // npm and fails with a TypeError that says nothing about packing. CI
+        // could not see it — the runner uses the npm bundled with Node 24, which
+        // still emits the array — while a developer on npm 12 hit it every run,
+        // and so would any publish job that upgrades npm before testing.
+        const out = JSON.parse(res.stdout);
+        const report = Array.isArray(out) ? out[0] : Object.values(out)[0];
+        (0, node_assert_1.ok)(null != report?.files, 'npm pack --json: unrecognised output shape');
+        const packed = new Set(report.files.map((f) => f.path));
         const tracked = sdkFiles();
         (0, node_assert_1.ok)(0 < tracked.length, 'no .sdk files found — this cannot pass vacuously');
         const missing = tracked.filter((p) => !packed.has(p));
