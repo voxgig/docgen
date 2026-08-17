@@ -7,8 +7,7 @@
 # voxgig/docgen against THIS filename (publish.yml); renaming this file
 # breaks publishing until the npm-side config is updated to match.
 #
-# Unlike sdkgen, whose npm package root is ts/, this package IS the repo
-# root, so no working-directory is set.
+# The npm package lives in ts/, as sdkgen's does, so all steps run there.
 #
 # Release flow: `npm run repo-bump`, commit, then push a v* tag.
 
@@ -27,6 +26,9 @@ jobs:
     permissions:
       id-token: write
       contents: read
+    defaults:
+      run:
+        working-directory: ts
 
     steps:
       - uses: actions/checkout@v7

@@ -85,6 +85,32 @@ function sdkFiles(): string[] {
 
 describe('sdkgen package', () => {
 
+  // The npm package root is ts/, and npm ships nothing from above it — so
+  // README.md and LICENSE exist twice: canonically at the repo root, where
+  // GitHub and a reader look, and mirrored here, which is the only copy the
+  // registry ever sees. @voxgig/sdkgen's npm page has no README at all
+  // because it made this same move and the file did not follow.
+  //
+  // `make sync-docs` refreshes the mirror and `make check-docs` guards it,
+  // but CI runs npm rather than make, so the guard has to live here too.
+  // Skipped when the root copy is absent: an INSTALLED package is a ts/ with
+  // no repo above it, and this suite must not fail there.
+  test('the mirrored root files are up to date', () => {
+    for (const name of ['README.md', 'LICENSE']) {
+      const root = Path.join(ROOT, '..', name)
+
+      if (!Fs.existsSync(root)) {
+        continue
+      }
+
+      equal(
+        Fs.readFileSync(Path.join(ROOT, name), 'utf8'),
+        Fs.readFileSync(root, 'utf8'),
+        name + ' differs from the repo root copy — run: make sync-docs')
+    }
+  })
+
+
   test('the manifest declares a package of the schema sdkgen knows', () => {
     equal(manifest.sdkgen.package, 1)
     equal(manifest.name, '@voxgig/docgen')
