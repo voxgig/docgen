@@ -42,22 +42,22 @@
     "node": ">=24"
   },
   "devDependencies": {
-    "@hapi/code": "^9.0.3",
-    "@types/js-yaml": "^4.0.9",
-    "@types/node": "24.13.3",
-    "esbuild": "^0.25.5",
-    "json-schema-to-ts": "^3.1.1",
-    "memfs": "^4.17.2",
-    "typescript": "^5.8.3"
+    "@hapi/code": "9.0.3",
+    "@types/js-yaml": "4.0.9",
+    "@types/node": "26.2.0",
+    "esbuild": "0.28.2",
+    "json-schema-to-ts": "3.1.1",
+    "memfs": "4.68.1",
+    "typescript": "7.0.2"
   },
   "peerDependencies": {
-    "@redocly/openapi-core": ">=1",
-    "@voxgig/apidef": ">=1",
+    "@redocly/openapi-core": ">=2",
+    "@voxgig/apidef": ">=7",
     "@voxgig/sdkgen": ">=3.5.0",
-    "@voxgig/util": ">=0",
-    "aontu": ">=0",
-    "jostraca": ">=0",
-    "pino": ">=9",
+    "@voxgig/util": ">=0.5",
+    "aontu": ">=0.52",
+    "jostraca": ">=0.33",
+    "pino": ">=10",
     "pino-pretty": ">=13"
   }
 }

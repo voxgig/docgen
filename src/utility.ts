@@ -30,8 +30,25 @@ const requirePath = (ctx$: any, path: string, flags?: { ignore?: boolean }): any
 
 
 
+// VENDORED from jostraca, which removed `select` in 0.33.
+//
+// This package re-exports it as part of its own public API, and pinning an
+// older jostraca to keep one four-line function would hold the entire
+// dependency tree back — so it lives here instead. The body is jostraca
+// 0.19's, semantics unchanged.
+//
+// A MISSING KEY IS NOT AN ERROR, and that is the point of the helper: it
+// branches on a model value where most keys have no case, so throwing would
+// turn "nothing to emit here" into a failed generate.
+const select = (key: any, map: Record<string, Function>): any => {
+  const fn = map && map[key]
+  return fn ? fn() : undefined
+}
+
+
 export {
   resolvePath,
   requirePath,
+  select,
 }
 

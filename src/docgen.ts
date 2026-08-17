@@ -8,6 +8,7 @@ import * as JostracaModule from 'jostraca'
 import { prettyPino, Pino } from '@voxgig/util'
 
 import { PrepareOpenAPI } from './prepare-openapi'
+import { select as selectImpl } from './utility'
 
 
 type DocGenOptions = {
@@ -148,7 +149,11 @@ export const each: (subject?: any, apply?: any) => any = JostracaModule.each
 export const snakify: (input: any[] | string) => string = JostracaModule.snakify
 export const camelify: (input: any[] | string) => string = JostracaModule.camelify
 export const kebabify: (input: any[] | string) => string = JostracaModule.kebabify
-export const select: (key: any, map: Record<string, Function>) => any = JostracaModule.select
+// `select` comes from this package now, not jostraca — 0.33 removed it, and
+// keeping one four-line helper is not a reason to hold the dependency tree
+// back. Vendored in ./utility with jostraca 0.19's semantics, so this export
+// is unchanged for anyone importing it.
+export const select: (key: any, map: Record<string, Function>) => any = selectImpl
 export const cmap: (o: any, p: any) => any = JostracaModule.cmap
 export const vmap: (o: any, p: any) => any = JostracaModule.vmap
 export const get: (root: any, path: string | string[]) => any = JostracaModule.get
