@@ -19,9 +19,8 @@
     "url": "git://github.com/voxgig/docgen.git"
   },
   "scripts": {
-    "test": "node --enable-source-maps --test dist-test",
-    "test22": "node --enable-source-maps --test \"dist-test/*.test.js\"",
-    "test-some": "node --enable-source-maps --test-name-pattern=\"$npm_config_pattern\" --test dist-test",
+    "test": "node --enable-source-maps --test dist-test/**/*.test.js",
+    "test-some": "node --enable-source-maps --test-name-pattern=\"$npm_config_pattern\" --test dist-test/**/*.test.js",
     "watch": "tsc --build src test -w",
     "build": "tsc --build src test",
     "clean": "rm -rf node_modules yarn.lock package-lock.json",
@@ -39,23 +38,26 @@
     "dist",
     "LICENSE"
   ],
+  "engines": {
+    "node": ">=24"
+  },
   "devDependencies": {
-    "@hapi/code": "^9.0.3",
-    "@types/js-yaml": "^4.0.9",
-    "@types/node": "22.15.29",
-    "esbuild": "^0.25.5",
-    "json-schema-to-ts": "^3.1.1",
-    "memfs": "^4.17.2",
-    "typescript": "^5.8.3"
+    "@hapi/code": "9.0.3",
+    "@types/js-yaml": "4.0.9",
+    "@types/node": "26.2.0",
+    "esbuild": "0.28.2",
+    "json-schema-to-ts": "3.1.1",
+    "memfs": "4.68.1",
+    "typescript": "7.0.2"
   },
   "peerDependencies": {
-    "@redocly/openapi-core": ">=1",
-    "@voxgig/apidef": ">=1",
-    "@voxgig/sdkgen": ">=3.4",
-    "@voxgig/util": ">=0",
-    "aontu": ">=0",
-    "jostraca": ">=0",
-    "pino": ">=9",
+    "@redocly/openapi-core": ">=2",
+    "@voxgig/apidef": ">=7",
+    "@voxgig/sdkgen": ">=3.5.0",
+    "@voxgig/util": ">=0.5",
+    "aontu": ">=0.52",
+    "jostraca": ">=0.33",
+    "pino": ">=10",
     "pino-pretty": ">=13"
   }
 }

@@ -40,6 +40,7 @@ const Fs = __importStar(require("node:fs"));
 const JostracaModule = __importStar(require("jostraca"));
 const util_1 = require("@voxgig/util");
 const prepare_openapi_1 = require("./prepare-openapi");
+const utility_1 = require("./utility");
 const { Jostraca } = JostracaModule;
 exports.Jostraca = Jostraca;
 function DocGen(opts) {
@@ -118,7 +119,11 @@ exports.each = JostracaModule.each;
 exports.snakify = JostracaModule.snakify;
 exports.camelify = JostracaModule.camelify;
 exports.kebabify = JostracaModule.kebabify;
-exports.select = JostracaModule.select;
+// `select` comes from this package now, not jostraca — 0.33 removed it, and
+// keeping one four-line helper is not a reason to hold the dependency tree
+// back. Vendored in ./utility with jostraca 0.19's semantics, so this export
+// is unchanged for anyone importing it.
+exports.select = utility_1.select;
 exports.cmap = JostracaModule.cmap;
 exports.vmap = JostracaModule.vmap;
 exports.get = JostracaModule.get;

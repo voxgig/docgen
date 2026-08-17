@@ -26,6 +26,46 @@ const SDK = Path.join(ROOT, '.sdk')
 const manifest = JSON.parse(
   Fs.readFileSync(Path.join(ROOT, 'sdkgen-package.json'), 'utf8'))
 
+const { select } = require('../dist/docgen.js')
+
+
+describe('vendored helpers', () => {
+
+  // `select` used to be jostraca's, re-exported from this package's public
+  // API. jostraca 0.33 removed it; rather than pin the dependency tree back
+  // for a four-line function, it was vendored — which makes it OURS, and
+  // therefore ours to test. It had no test here while it was jostraca's, so
+  // this is the first thing standing between a rewrite and a silent
+  // behaviour change for anyone importing it.
+
+  test('calls the matching branch', () => {
+    equal(select('b', { a: () => 'A', b: () => 'B' }), 'B')
+  })
+
+
+  test('a MISSING key yields undefined rather than throwing', () => {
+    // The property that matters. It branches on model values where most keys
+    // have no case, so throwing would turn "nothing to emit here" into a
+    // failed generate.
+    equal(select('nope', { a: () => 'A' }), undefined)
+  })
+
+
+  test('a missing map is not an error either', () => {
+    equal(select('a', undefined as any), undefined)
+  })
+
+
+  test('the branch is CALLED, not returned', () => {
+    // Returning the function instead of its result would satisfy a laxer
+    // test and break every caller.
+    let ran = false
+    select('a', { a: () => { ran = true; return 1 } })
+    equal(ran, true)
+  })
+
+})
+
 
 // Every COMMITTED file under `.sdk`, as tarball-style relative paths.
 //
@@ -108,27 +148,41 @@ describe('sdkgen package', () => {
 
 
   test('the manifest requires an sdkgen that HAS the docs kind', () => {
-    // `>=3.4` accepted every published sdkgen, and none of them can install
-    // a docs item — the kind landed after 3.4.8. A consumer on 3.4.7 would
-    // have got a confusing failure from `package add` instead of the clear
-    // refusal `engines` exists to give.
+    // `>=3.4` accepted every published sdkgen, and not one of them could
+    // install a docs item: the kind shipped in 3.5.0 (3.4.7 was the last of
+    // the 3.4 line to reach the registry — 3.4.8 was never published). A
+    // consumer on 3.4.7 got a confusing failure from `package add` instead
+    // of the clear refusal `engines` exists to give.
     //
-    // 3.4.9 is a FLOOR, not a guess at the release number: whatever sdkgen
-    // cuts next off main is at least that, and 3.5.0 satisfies it too.
+    // 3.5.0 rather than the earlier 3.4.9 floor because the release number is
+    // now KNOWN rather than guessed — verified against the published
+    // tarballs: 3.5.0 carries dist/action/docs.js, 3.4.7 does not.
     //
-    // The npm `peerDependencies` range deliberately still says `>=3.4`.
-    // npm resolves that against the registry, so naming an unpublished
-    // version there fails `npm ci` with ETARGET — for this repo's own CI
-    // and for anyone installing docgen. It gets raised in the commit that
-    // follows sdkgen's release; `engines` is the gate that actually runs,
-    // because `package add` reads it.
+    // The npm `peerDependencies` range matches it now. It could not until
+    // 3.5.0 existed: npm resolves that range against the registry, so a
+    // floor naming an unpublished version fails `npm ci` with ETARGET, for
+    // this repo's CI and for anyone installing docgen. `engines` is still
+    // the gate that decides an install, because `package add` reads it.
     const [major, minor, patch] =
       String(manifest.engines.sdkgen).replace(/^[^\d]*/, '')
         .split('.').map(Number)
 
-    ok(3 < major || (3 === major && (4 < minor || (4 === minor && 9 <= patch))),
+    ok(3 < major || (3 === major && 5 <= minor),
       'engines.sdkgen is ' + manifest.engines.sdkgen +
-      ', which admits an sdkgen without the docs kind')
+      ', which admits an sdkgen without the docs kind (needs >=3.5.0)')
+
+    // And the two pins agree. They are read by different things — `engines`
+    // by `package add`, the peer range by npm — so they drift silently, and
+    // a peer floor BELOW the engines floor is the drift that matters: npm
+    // would happily install an sdkgen that `package add` then refuses.
+    const pkg = JSON.parse(
+      Fs.readFileSync(Path.join(ROOT, 'package.json'), 'utf8'))
+
+    const peer = String(pkg.peerDependencies['@voxgig/sdkgen'])
+
+    equal(peer, '>=' + [major, minor, patch].join('.'),
+      'peerDependencies says ' + peer + ' but engines says ' +
+      manifest.engines.sdkgen)
   })
 
 
@@ -155,12 +209,16 @@ describe('sdkgen package', () => {
         // when an item is copied from another as a starting point.
         //
         // Checked as TEXT, deliberately. COMPILING it is `voxgig-sdkgen
-        // package check`'s job, and that is not squeamishness: this package
-        // pins no aontu, a consumer compiles with the one SDKGEN ships, and
-        // whichever version npm resolves here has different call semantics
-        // (0.28 faults on the options shape newer ones require). A compile
-        // against the wrong aontu proves nothing about the consumer, and
-        // fails for reasons that are not the author's.
+        // package check`'s job, which compiles every model file against the
+        // aontu the CONSUMER will use, and reports findings this suite has no
+        // vocabulary for. A second compile here would be that rule written
+        // twice, with this copy free to drift.
+        //
+        // The original reason was different and no longer holds: the peer
+        // floors were loose enough (`aontu: ">=0"`) that npm resolved 0.28
+        // here, whose call semantics differ from the line sdkgen ships, so a
+        // compile failed for reasons that were not the author's. The floors
+        // are real now and this tree resolves the same aontu sdkgen does.
         const src = Fs.readFileSync(
           Path.join(SDK, 'model', 'docs', name + '.aontu'), 'utf8')
 
