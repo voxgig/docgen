@@ -51,7 +51,7 @@
   "peerDependencies": {
     "@redocly/openapi-core": ">=1",
     "@voxgig/apidef": ">=1",
-    "@voxgig/sdkgen": ">=3.4",
+    "@voxgig/sdkgen": ">=3.5.0",
     "@voxgig/util": ">=0",
     "aontu": ">=0",
     "jostraca": ">=0",
