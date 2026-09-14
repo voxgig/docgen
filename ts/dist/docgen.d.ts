@@ -1,44 +1,33 @@
-import * as JostracaModule from 'jostraca';
-import { Pino } from '@voxgig/util';
-type DocGenOptions = {
+export type GenerateOptions = {
     folder: string;
+    model: any;
+    fs?: any;
+    log?: any;
+    control?: {
+        dryrun?: boolean;
+    };
+    existing?: any;
+    [key: string]: any;
+};
+export type EditionResult = {
+    files: Record<string, string | Buffer>;
+    qa: string[];
+};
+export type EditionProps = {
+    model: any;
+    edition: any;
+    root: string;
     fs: any;
-    root?: string;
-    def?: string;
-    model?: {
-        folder: string;
-        entity: any;
-    };
-    meta?: {
-        name: string;
-    };
-    pino?: ReturnType<typeof Pino>;
 };
-declare const Jostraca: typeof JostracaModule.Jostraca;
-declare function DocGen(opts: DocGenOptions): {
-    generate: (spec: any) => Promise<void>;
-};
-declare namespace DocGen {
-    var makeBuild: (opts: DocGenOptions) => Promise<(model: any, build: any) => Promise<void>>;
-}
-export type { DocGenOptions, };
-type Component = (props: any, children?: any) => void;
-export declare const cmp: (component: Function) => Component;
-export declare const names: (base: any, name: string, prop?: string) => any;
-export declare const each: (subject?: any, apply?: any) => any;
-export declare const snakify: (input: any[] | string) => string;
-export declare const camelify: (input: any[] | string) => string;
-export declare const kebabify: (input: any[] | string) => string;
-export declare const select: (key: any, map: Record<string, Function>) => any;
-export declare const cmap: (o: any, p: any) => any;
-export declare const vmap: (o: any, p: any) => any;
-export declare const get: (root: any, path: string | string[]) => any;
-export declare const getx: (root: any, path: string | string[]) => any;
-export declare const Project: Component;
-export declare const Folder: Component;
-export declare const File: Component;
-export declare const Content: Component;
-export declare const Copy: Component;
-export declare const Fragment: Component;
-export declare const Inject: Component;
-export { Jostraca, DocGen, };
+export declare function relativePath(value: string): string;
+export declare function styleFor(model: any, edition: any): any;
+export declare function renderEdition(props: EditionProps): EditionResult;
+export declare function generate(opts: GenerateOptions): Promise<{
+    editions: any[];
+    files: string[];
+}>;
+export { view, summary, pages, slides } from './content';
+export { checkText, proseText, runQA } from './qa';
+export declare function stageSite(root: string, name: string): string;
+export declare function scaffoldDefaults(): Record<string, string>;
+export declare function prepareProject(root: string): void;

@@ -1,0 +1,7 @@
+@"@voxgig/docgen/model/docgen.aon"
+main: kit: doc: edition: 'summary': {
+  kind: 'summary'
+  active: *true | boolean
+  base: 'BASE'
+  output: path: *'SUMMARY.md' | string
+}

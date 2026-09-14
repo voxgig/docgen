@@ -156,9 +156,6 @@ jobs:
           fi
           if [ -n "$AT" ]; then echo "$TAG already points here; nothing to create"; fi
 
-      - name: Pre-flight check
-        run: make check-docs
-
       - name: Build and test
         working-directory: ts
         run: |

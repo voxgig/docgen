@@ -1,10 +1,10 @@
 {
   "name": "@voxgig/docgen",
-  "version": "0.9.2",
+  "version": "0.10.0",
   "main": "dist/docgen.js",
   "type": "commonjs",
   "types": "dist/docgen.d.ts",
-  "description": "Voxgig Documentation Generator — an sdkgen package supplying documentation targets.",
+  "description": "Model-driven documentation editions for sdkgen projects",
   "homepage": "https://github.com/voxgig/voxgig-docgen",
   "keywords": [
     "voxgig",
@@ -34,15 +34,19 @@
     "repo-publish-quick": "npm run embed-version && npm run build && npm run test && npm run repo-tag && npm stage publish --registry https://registry.npmjs.org --access=public",
     "repo-publish-quick-dry": "npm run build && npm run test && ( npm stage publish --dry-run --registry https://registry.npmjs.org --access=public || echo \"[dry-run] npm stage publish refused (see npm error above) - usually the version is already published; bump package.json before a real release\" )",
     "repo-release": "npm run repo-publish && npm run repo-tag",
-    "repo-release-dry": "npm run repo-publish-quick-dry && npm run repo-tag-dry"
+    "repo-release-dry": "npm run repo-publish-quick-dry && npm run repo-tag-dry",
+    "text-qa": "node build/qa-fixture.cjs && cd .docgen/fixture && node ../../bin/voxgig-docgen qa"
   },
   "license": "MIT",
   "files": [
-    ".sdk",
-    "sdkgen-package.json",
+    "admin",
+    "assets",
+    "project",
     "model",
     "src",
     "dist",
+    "qa",
+    "bin",
     "LICENSE"
   ],
   "engines": {
@@ -58,13 +62,21 @@
     "typescript": "7.0.2"
   },
   "peerDependencies": {
-    "@redocly/openapi-core": ">=2",
-    "@voxgig/apidef": ">=7",
-    "@voxgig/sdkgen": ">=3.5.0",
-    "@voxgig/util": ">=0.5",
+    "@voxgig/sdkgen": ">=4.17.0",
     "aontu": ">=0.52",
-    "jostraca": ">=0.33",
-    "pino": ">=10",
-    "pino-pretty": ">=13"
+    "jostraca": ">=0.33.1"
+  },
+  "dependencies": {
+    "markdown-it": "14.1.0"
+  },
+  "bin": {
+    "voxgig-docgen": "bin/voxgig-docgen"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/docgen.d.ts",
+      "default": "./dist/docgen.js"
+    },
+    "./*": "./*"
   }
 }

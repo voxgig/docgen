@@ -1,0 +1,7 @@
+@"@voxgig/docgen/model/docgen.aon"
+main: kit: doc: edition: 'presentation': {
+  kind: 'presentation'
+  active: *true | boolean
+  base: 'BASE'
+  output: path: *'docs/slidev' | string
+}

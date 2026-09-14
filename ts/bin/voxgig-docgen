@@ -1,0 +1,19 @@
+#!/usr/bin/env node
+const Path = require('node:path')
+const {runQA, generate, stageSite} = require('../dist/docgen')
+async function main() {
+  const args=process.argv.slice(2), cmd=args.shift()
+  if(cmd==='qa') {
+    const at=args.indexOf('--manifest'), manifest=at<0?'.sdk/doc/qa-manifest.json':args[at+1]
+    const result=runQA(manifest,process.cwd(),!args.includes('--local-only'))
+    if(result.errors.length){console.error(result.errors.join('\n'));process.exitCode=1}
+    else console.log('Text QA passed: '+result.files+' files')
+  } else if(cmd==='stage') {
+    if(!args[0])throw Error('Usage: voxgig-docgen stage <website-edition>')
+    console.log(stageSite(process.cwd(),args[0]))
+  } else if(cmd==='generate') {
+    const root=Path.resolve(args[0]||'.'), model=require(Path.join(root,'.sdk/model/sdk.json'))
+    await generate({folder:root,model})
+  } else throw Error('Usage: voxgig-docgen generate [sdk-root] | qa [--manifest file] [--local-only] | stage <website-edition>')
+}
+main().catch(e=>{console.error(e.message);process.exitCode=1})

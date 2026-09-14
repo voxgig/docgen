@@ -1,246 +1,440 @@
 "use strict";
-// @voxgig/docgen as an SDKGEN PACKAGE.
-//
-// docgen supplies documentation ITEMS; @voxgig/sdkgen supplies the `docs`
-// kind that installs and generates them. So what this suite can check on its
-// own is the package's own shape — the manifest against the disk, and every
-// item's model file — which is exactly what a consumer's `package add`
-// validates before it writes anything.
-//
-// The end-to-end proof (install into a project, generate, clean `doctor`)
-// belongs to whoever has sdkgen present: `voxgig-sdkgen package check .`
-// followed by `package add` in a real project. It is not duplicated here,
-// because a copy of it that could not run the real installer would be
-// testing a mock.
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const node_test_1 = require("node:test");
-const node_assert_1 = require("node:assert");
+const strict_1 = __importDefault(require("node:assert/strict"));
 const node_fs_1 = __importDefault(require("node:fs"));
+const node_os_1 = __importDefault(require("node:os"));
 const node_path_1 = __importDefault(require("node:path"));
 const node_child_process_1 = require("node:child_process");
-const ROOT = node_path_1.default.resolve(__dirname, '..');
-const SDK = node_path_1.default.join(ROOT, '.sdk');
-const manifest = JSON.parse(node_fs_1.default.readFileSync(node_path_1.default.join(ROOT, 'sdkgen-package.json'), 'utf8'));
-const { select } = require('../dist/docgen.js');
-(0, node_test_1.describe)('vendored helpers', () => {
-    // `select` used to be jostraca's, re-exported from this package's public
-    // API. jostraca 0.33 removed it; rather than pin the dependency tree back
-    // for a four-line function, it was vendored — which makes it OURS, and
-    // therefore ours to test. It had no test here while it was jostraca's, so
-    // this is the first thing standing between a rewrite and a silent
-    // behaviour change for anyone importing it.
-    (0, node_test_1.test)('calls the matching branch', () => {
-        (0, node_assert_1.equal)(select('b', { a: () => 'A', b: () => 'B' }), 'B');
-    });
-    (0, node_test_1.test)('a MISSING key yields undefined rather than throwing', () => {
-        // The property that matters. It branches on model values where most keys
-        // have no case, so throwing would turn "nothing to emit here" into a
-        // failed generate.
-        (0, node_assert_1.equal)(select('nope', { a: () => 'A' }), undefined);
-    });
-    (0, node_test_1.test)('a missing map is not an error either', () => {
-        (0, node_assert_1.equal)(select('a', undefined), undefined);
-    });
-    (0, node_test_1.test)('the branch is CALLED, not returned', () => {
-        // Returning the function instead of its result would satisfy a laxer
-        // test and break every caller.
-        let ran = false;
-        select('a', { a: () => { ran = true; return 1; } });
-        (0, node_assert_1.equal)(ran, true);
-    });
-});
-// Every COMMITTED file under `.sdk`, as tarball-style relative paths.
-//
-// Tracked rather than "whatever is on disk": an untracked local file is not
-// part of the package, and demanding npm ship one would be a red build for
-// somebody's scratch file.
-function sdkFiles() {
-    const res = (0, node_child_process_1.spawnSync)('git', ['ls-files', '.sdk'], {
-        cwd: ROOT, encoding: 'utf8',
-    });
-    (0, node_assert_1.equal)(res.status, 0, 'git ls-files failed: ' + res.stderr);
-    return res.stdout.split('\n').filter((p) => '' !== p).sort();
+const docgen_1 = require("../dist/docgen");
+const PACKAGE = node_path_1.default.resolve(__dirname, '..');
+function model() {
+    return { name: 'petstore', origin: 'acme', main: { kit: {
+                info: { title: 'Pet API', summary: 'Store and retrieve pet records.', security: { type: 'http', scheme: 'bearer' }, servers: [{ url: 'https://api.example.test' }] },
+                target: { ts: { name: 'ts', title: 'TypeScript', active: true, ext: 'ts', module: { name: 'petstore' }, publish: { registry: { active: false, state: 'pending' } } },
+                    'go-mcp': { name: 'go-mcp', title: 'MCP server', active: true, module: { name: 'petstore' } } },
+                entity: { pet: { name: 'pet', active: true, fields: [{ name: 'id', type: 'number', req: true }],
+                        op: { load: { name: 'load', points: [{ method: 'GET', orig: '/pets/{id}', contract: {
+                                            json: JSON.stringify({ parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
+                                                responses: { '200': { description: 'Pet record', content: { 'application/json': { schema: { type: 'object' } } } } } })
+                                        } }] } }
+                    } },
+                feature: { retry: { name: 'retry', title: 'Retry', active: true, config: { options: { active: false } }, hook: { PreFetch: { active: true } } } },
+                doc: { edition: { summary: { kind: 'summary', active: true, output: { path: 'SUMMARY.md' } }, 'github-pages': { kind: 'github-pages', active: true, output: { path: 'docs' } } },
+                    target: { 'go-mcp': { kind: 'mcp', tool: { petstore_load: { description: 'Load a pet.', input: { type: 'object', properties: { id: { type: 'integer' } } } } } } } }
+            } } };
 }
-(0, node_test_1.describe)('sdkgen package', () => {
-    // The npm package root is ts/, and npm ships nothing from above it — so
-    // README.md and LICENSE exist twice: canonically at the repo root, where
-    // GitHub and a reader look, and mirrored here, which is the only copy the
-    // registry ever sees. @voxgig/sdkgen's npm page has no README at all
-    // because it made this same move and the file did not follow.
-    //
-    // `make sync-docs` refreshes the mirror and `make check-docs` guards it,
-    // but CI runs npm rather than make, so the guard has to live here too.
-    // Skipped when the root copy is absent: an INSTALLED package is a ts/ with
-    // no repo above it, and this suite must not fail there.
-    (0, node_test_1.test)('the mirrored root files are up to date', () => {
-        for (const name of ['README.md', 'LICENSE']) {
-            const root = node_path_1.default.join(ROOT, '..', name);
-            if (!node_fs_1.default.existsSync(root)) {
-                continue;
+function fixture(m = model()) {
+    const root = node_fs_1.default.mkdtempSync(node_path_1.default.join(node_os_1.default.tmpdir(), 'docgen-editions-'));
+    const write = (p, s) => { const dest = node_path_1.default.join(root, p); node_fs_1.default.mkdirSync(node_path_1.default.dirname(dest), { recursive: true }); node_fs_1.default.writeFileSync(dest, s); };
+    for (const [p, s] of Object.entries((0, docgen_1.scaffoldDefaults)()))
+        write('.sdk/' + p, s);
+    write('.sdk/package.json', '{}');
+    for (const [name, e] of Object.entries(m.main.kit.doc.edition)) {
+        const from = node_path_1.default.join(PACKAGE, 'project/.sdk/tm/edition', e.kind);
+        node_fs_1.default.cpSync(from, node_path_1.default.join(root, '.sdk/tm/edition', name), { recursive: true });
+        write('.sdk/dist/cmp/edition/' + name + '/Main_' + name + '.js', 'exports.Main=require(' + JSON.stringify(node_path_1.default.join(PACKAGE, 'dist/docgen.js')) + ').renderEdition');
+    }
+    return { root, m, write, read: (p) => node_fs_1.default.readFileSync(node_path_1.default.join(root, p), 'utf8'), clean: () => node_fs_1.default.rmSync(root, { recursive: true, force: true }) };
+}
+(0, node_test_1.test)('default scaffold contains summary and Pages, without Slidev', () => {
+    const files = (0, docgen_1.scaffoldDefaults)();
+    strict_1.default.ok(files['model/edition/summary.aon']);
+    strict_1.default.ok(files['model/edition/github-pages.aon']);
+    strict_1.default.ok(!Object.keys(files).some(p => p.includes('presentation')));
+});
+(0, node_test_1.test)('all editions render model content; site links resolve and output is deterministic', async () => {
+    const m = model();
+    m.main.kit.doc.edition.presentation = { kind: 'presentation', active: true, output: { path: 'presentation' } };
+    const f = fixture(m);
+    try {
+        f.write('.sdk/doc/content/start.md', '# Start\n\nRead the [details](nested/details.md).\n');
+        f.write('.sdk/doc/content/nested/details.md', '# Details\n\nRead the [start](../start.md).\n');
+        const first = await (0, docgen_1.generate)({ folder: f.root, model: m });
+        strict_1.default.equal(first.editions.length, 3);
+        strict_1.default.match(f.read('SUMMARY.md'), /TypeScript/);
+        strict_1.default.match(f.read('docs/api/pet.html'), /Parameters/);
+        strict_1.default.match(f.read('docs/api/pet.html'), /Responses/);
+        strict_1.default.match(f.read('docs/tools/go-mcp.html'), /petstore_load/);
+        strict_1.default.match(f.read('docs/features/retry.html'), /PreFetch/);
+        strict_1.default.match(f.read('presentation/slides.md'), /provider: none/);
+        for (const p of first.files.filter(p => p.endsWith('.html'))) {
+            const html = f.read(p);
+            for (const match of html.matchAll(/(?:href|src)="([^"]+)"/g)) {
+                const url = match[1].split('#')[0];
+                if (!url || /^[a-z]+:/i.test(url))
+                    continue;
+                strict_1.default.ok(node_fs_1.default.existsSync(node_path_1.default.resolve(f.root, node_path_1.default.dirname(p), url)), p + ' broken link ' + url);
             }
-            (0, node_assert_1.equal)(node_fs_1.default.readFileSync(node_path_1.default.join(ROOT, name), 'utf8'), node_fs_1.default.readFileSync(root, 'utf8'), name + ' differs from the repo root copy — run: make sync-docs');
         }
-    });
-    (0, node_test_1.test)('the manifest declares a package of the schema sdkgen knows', () => {
-        (0, node_assert_1.equal)(manifest.sdkgen.package, 1);
-        (0, node_assert_1.equal)(manifest.name, '@voxgig/docgen');
-        (0, node_assert_1.ok)(null != manifest.provides.docs, 'no docs items provided');
-    });
-    (0, node_test_1.test)('the manifest version matches package.json', () => {
-        // `package list` shows the MANIFEST's version, and `package update`
-        // compares against the source on disk — so two versions that disagree
-        // make a consumer's report a lie.
-        const pkg = JSON.parse(node_fs_1.default.readFileSync(node_path_1.default.join(ROOT, 'package.json'), 'utf8'));
-        (0, node_assert_1.equal)(manifest.version, pkg.version);
-    });
-    (0, node_test_1.test)('npm ships the package content', () => {
-        // A manifest npm does not publish makes an installed package that
-        // `package add` refuses.
-        const pkg = JSON.parse(node_fs_1.default.readFileSync(node_path_1.default.join(ROOT, 'package.json'), 'utf8'));
-        (0, node_assert_1.ok)(pkg.files.includes('.sdk'), 'files omits .sdk');
-        (0, node_assert_1.ok)(pkg.files.includes('sdkgen-package.json'), 'files omits the manifest');
-    });
-    (0, node_test_1.test)('every .sdk file on disk survives packing', () => {
-        // A package is what npm PUBLISHES, not what the repo holds, and the two
-        // differ in ways that no amount of `files` fixes. npm keeps its own
-        // always-excluded list, and `.gitignore` is on it: a template file of
-        // that name works perfectly from a checkout and is simply absent for
-        // everyone who installs from the registry. That is how the site's
-        // ignore file shipped as a template and reached nobody.
-        //
-        // npm is ASKED rather than restated. A copy of npm's exclusion rules
-        // here would be a second place to keep them right, and this codebase's
-        // recurring defect is precisely the rule written twice.
-        const res = (0, node_child_process_1.spawnSync)('npm', ['pack', '--dry-run', '--json'], {
-            cwd: ROOT, encoding: 'utf8', shell: true,
-        });
-        (0, node_assert_1.equal)(res.status, 0, 'npm pack failed: ' + res.stderr);
-        // TWO SHAPES, because npm changed this output: it used to be an ARRAY
-        // of package objects and is now an OBJECT KEYED BY PACKAGE NAME. Either
-        // is one package here, so take the first entry whichever way it came.
-        //
-        // The old spelling (`[0].files`) reads `undefined.files` against the new
-        // npm and fails with a TypeError that says nothing about packing. CI
-        // could not see it — the runner uses the npm bundled with Node 24, which
-        // still emits the array — while a developer on npm 12 hit it every run,
-        // and so would any publish job that upgrades npm before testing.
-        const out = JSON.parse(res.stdout);
-        const report = Array.isArray(out) ? out[0] : Object.values(out)[0];
-        (0, node_assert_1.ok)(null != report?.files, 'npm pack --json: unrecognised output shape');
-        const packed = new Set(report.files.map((f) => f.path));
-        const tracked = sdkFiles();
-        (0, node_assert_1.ok)(0 < tracked.length, 'no .sdk files found — this cannot pass vacuously');
-        const missing = tracked.filter((p) => !packed.has(p));
-        (0, node_assert_1.deepEqual)(missing, [], 'these .sdk files are not in the npm tarball, so an installed ' +
-            'package does not have them — generate them from a component ' +
-            'instead: ' + missing.join(', '));
-    });
-    (0, node_test_1.test)('the manifest requires an sdkgen that HAS the docs kind', () => {
-        // `>=3.4` accepted every published sdkgen, and not one of them could
-        // install a docs item: the kind shipped in 3.5.0 (3.4.7 was the last of
-        // the 3.4 line to reach the registry — 3.4.8 was never published). A
-        // consumer on 3.4.7 got a confusing failure from `package add` instead
-        // of the clear refusal `engines` exists to give.
-        //
-        // 3.5.0 rather than the earlier 3.4.9 floor because the release number is
-        // now KNOWN rather than guessed — verified against the published
-        // tarballs: 3.5.0 carries dist/action/docs.js, 3.4.7 does not.
-        //
-        // The npm `peerDependencies` range matches it now. It could not until
-        // 3.5.0 existed: npm resolves that range against the registry, so a
-        // floor naming an unpublished version fails `npm ci` with ETARGET, for
-        // this repo's CI and for anyone installing docgen. `engines` is still
-        // the gate that decides an install, because `package add` reads it.
-        const [major, minor, patch] = String(manifest.engines.sdkgen).replace(/^[^\d]*/, '')
-            .split('.').map(Number);
-        (0, node_assert_1.ok)(3 < major || (3 === major && 5 <= minor), 'engines.sdkgen is ' + manifest.engines.sdkgen +
-            ', which admits an sdkgen without the docs kind (needs >=3.5.0)');
-        // And the two pins agree. They are read by different things — `engines`
-        // by `package add`, the peer range by npm — so they drift silently, and
-        // a peer floor BELOW the engines floor is the drift that matters: npm
-        // would happily install an sdkgen that `package add` then refuses.
-        const pkg = JSON.parse(node_fs_1.default.readFileSync(node_path_1.default.join(ROOT, 'package.json'), 'utf8'));
-        const peer = String(pkg.peerDependencies['@voxgig/sdkgen']);
-        (0, node_assert_1.equal)(peer, '>=' + [major, minor, patch].join('.'), 'peerDependencies says ' + peer + ' but engines says ' +
-            manifest.engines.sdkgen);
-    });
-    for (const name of manifest.provides.docs) {
-        (0, node_test_1.describe)('docs item: ' + name, () => {
-            (0, node_test_1.test)('everything the kind requires is on disk', () => {
-                (0, node_assert_1.ok)(node_fs_1.default.existsSync(node_path_1.default.join(SDK, 'model', 'docs', name + '.aontu')), 'no model file');
-                const cmpdir = node_path_1.default.join(SDK, 'src', 'cmp', 'docs', name);
-                (0, node_assert_1.ok)(node_fs_1.default.statSync(cmpdir).isDirectory(), 'no component tree');
-                // Dispatched by convention: `cmp/docs/<n>/Main_<n>`.
-                (0, node_assert_1.ok)(node_fs_1.default.existsSync(node_path_1.default.join(cmpdir, 'Main_' + name + '.ts')), 'no Main_' + name);
-            });
-            (0, node_test_1.test)('the model file declares its own name', () => {
-                // The file is installed and included under its OWN name, so anything
-                // it declares under another name is unreachable — the mistake made
-                // when an item is copied from another as a starting point.
-                //
-                // Checked as TEXT, deliberately. COMPILING it is `voxgig-sdkgen
-                // package check`'s job, which compiles every model file against the
-                // aontu the CONSUMER will use, and reports findings this suite has no
-                // vocabulary for. A second compile here would be that rule written
-                // twice, with this copy free to drift.
-                //
-                // The original reason was different and no longer holds: the peer
-                // floors were loose enough (`aontu: ">=0"`) that npm resolved 0.28
-                // here, whose call semantics differ from the line sdkgen ships, so a
-                // compile failed for reasons that were not the author's. The floors
-                // are real now and this tree resolves the same aontu sdkgen does.
-                const src = node_fs_1.default.readFileSync(node_path_1.default.join(SDK, 'model', 'docs', name + '.aontu'), 'utf8');
-                (0, node_assert_1.ok)(new RegExp('main: kit: docs: ' + name + ':').test(src), 'declares no `main: kit: docs: ' + name + ':` block');
-            });
-            (0, node_test_1.test)('the model file keeps the provenance anchor', () => {
-                // The anchor is where `docs add` writes where this copy came from.
-                // Without it the installed item records nothing, and `package
-                // update` can never find its source again.
-                const src = node_fs_1.default.readFileSync(node_path_1.default.join(SDK, 'model', 'docs', name + '.aontu'), 'utf8');
-                (0, node_assert_1.ok)(/^[ \t]*base: 'BASE'[ \t]*$/m.test(src), "no `base: 'BASE'` line");
-            });
-            (0, node_test_1.test)('every setting the model offers is READ by the item', () => {
-                // `site.extra` was declared, documented as "appended after the
-                // generated ones", and never read by anything: a project that set it
-                // got silence, with no way to tell whether its value was wrong or
-                // the feature absent. An option that does nothing is worse than an
-                // option that is not there.
-                //
-                // The check is TEXT over the item's own components, which is coarse
-                // — it proves the name is mentioned, not that it is honoured. That
-                // is the right coarseness for a guard: it cannot pass vacuously (a
-                // setting nobody reads has its name nowhere), and when it fails it
-                // names the setting.
-                const src = node_fs_1.default.readFileSync(node_path_1.default.join(SDK, 'model', 'docs', name + '.aontu'), 'utf8');
-                // The `site:` block's own keys, one indent level in.
-                const block = /^\s*site:\s*\{\s*$([\s\S]*?)^\s*\}\s*$/m.exec(src);
-                (0, node_assert_1.ok)(null != block, 'no `site: {` block to check');
-                const settings = block[1].split('\n')
-                    .map((line) => /^\s{4}([A-Za-z_$][\w$]*):/.exec(line))
-                    .filter((m) => null != m)
-                    .map((m) => m[1]);
-                (0, node_assert_1.ok)(0 < settings.length, 'found no settings — the regex has drifted');
-                const cmpdir = node_path_1.default.join(SDK, 'src', 'cmp', 'docs', name);
-                const code = node_fs_1.default.readdirSync(cmpdir)
-                    .map((f) => node_fs_1.default.readFileSync(node_path_1.default.join(cmpdir, f), 'utf8'))
-                    .join('\n');
-                const unread = settings.filter((s) => !new RegExp('\\b' + s + '\\b').test(code));
-                (0, node_assert_1.deepEqual)(unread, [], 'declared in the model and read by nothing: ' + unread.join(', '));
-            });
-            (0, node_test_1.test)('no model file uses a slash comment', () => {
-                // aontu takes `#` comments only, and a consumer compiles under a
-                // parser configured to reject `//` — the mistake that once shipped
-                // seven broken targets in sdkgen itself.
-                const src = node_fs_1.default.readFileSync(node_path_1.default.join(SDK, 'model', 'docs', name + '.aontu'), 'utf8');
-                const bad = src.split('\n')
-                    .map((line, i) => ({ line: i + 1, text: line }))
-                    .filter(({ text }) => /(^|\s)(\/\/|\/\*)/.test(text.replace(/'[^']*'|"[^"]*"/g, '').split('#')[0]));
-                (0, node_assert_1.deepEqual)(bad, []);
-            });
-        });
+        const before = f.read('docs/index.html');
+        await (0, docgen_1.generate)({ folder: f.root, model: m });
+        strict_1.default.equal(f.read('docs/index.html'), before);
+        const qa = JSON.parse(f.read('.sdk/doc/qa-manifest.json'));
+        strict_1.default.ok(qa.files.includes('presentation/slides.md'));
+        strict_1.default.ok(qa.files.includes('SUMMARY.md'));
+        strict_1.default.ok(qa.files.includes('docs/additional/start.html'));
+        strict_1.default.match(f.read('.github/workflows/docgen.yml'), /needs: check/);
+        strict_1.default.match(f.read('.github/workflows/docgen.yml'), /voxgig-docgen generate \.\./);
+        strict_1.default.doesNotMatch(f.read('.github/workflows/docgen.yml'), /npm run generate|voxgig-model/);
+    }
+    finally {
+        f.clean();
+    }
+});
+(0, node_test_1.test)('filters, aliases, and per-edition styles are independent', async () => {
+    const m = model();
+    m.main.kit.doc.style = { color: { primary: '#123456' }, font: 'Arial' };
+    m.main.kit.doc.edition.summary.filter = { targets: ['ts'] };
+    m.main.kit.doc.edition.portal = { kind: 'github-pages', active: true, output: { path: 'portal' }, style: { color: { primary: '#abcdef' } } };
+    m.main.kit.doc.ci = { active: false };
+    const f = fixture(m);
+    try {
+        await (0, docgen_1.generate)({ folder: f.root, model: m });
+        strict_1.default.doesNotMatch(f.read('SUMMARY.md'), /MCP server/);
+        strict_1.default.match(f.read('docs/assets/style.css'), /#123456/);
+        strict_1.default.match(f.read('portal/assets/style.css'), /#abcdef/);
+        strict_1.default.match(f.read('portal/assets/style.css'), /Arial/);
+    }
+    finally {
+        f.clean();
+    }
+});
+(0, node_test_1.test)('preflight refuses unsafe and overlapping output paths', async () => {
+    for (const path of ['../escape', '.sdk', '.git', '.github', '.sdk/model', 'ts', 'docs']) {
+        const m = model();
+        m.main.kit.doc.edition.summary.output.path = path;
+        const f = fixture(m);
+        try {
+            await strict_1.default.rejects((0, docgen_1.generate)({ folder: f.root, model: m }));
+            strict_1.default.ok(!node_fs_1.default.existsSync(node_path_1.default.join(f.root, 'docs/index.html')));
+        }
+        finally {
+            f.clean();
+        }
+    }
+});
+(0, node_test_1.test)('dry run writes nothing and stale owned pages are removed', async () => {
+    const f = fixture();
+    try {
+        await (0, docgen_1.generate)({ folder: f.root, model: f.m, control: { dryrun: true } });
+        strict_1.default.ok(!node_fs_1.default.existsSync(node_path_1.default.join(f.root, 'docs')));
+        await (0, docgen_1.generate)({ folder: f.root, model: f.m });
+        f.write('docs/handwritten.txt', 'keep');
+        f.m.main.kit.entity.pet.active = false;
+        await (0, docgen_1.generate)({ folder: f.root, model: f.m });
+        strict_1.default.ok(!node_fs_1.default.existsSync(node_path_1.default.join(f.root, 'docs/api/pet.html')));
+        strict_1.default.equal(f.read('docs/handwritten.txt'), 'keep');
+    }
+    finally {
+        f.clean();
+    }
+});
+(0, node_test_1.test)('model prose cannot execute HTML or Vue expressions', async () => {
+    const m = model();
+    m.main.kit.info.summary = '<script>alert(1)</script> {{ execute() }}';
+    m.main.kit.doc.edition.presentation = { kind: 'presentation', active: true, output: { path: 'presentation' } };
+    const f = fixture(m);
+    try {
+        await (0, docgen_1.generate)({ folder: f.root, model: m });
+        strict_1.default.doesNotMatch(f.read('docs/index.html'), /<script>alert/);
+        strict_1.default.doesNotMatch(f.read('presentation/slides.md'), /\{\{ execute/);
+    }
+    finally {
+        f.clean();
+    }
+});
+(0, node_test_1.test)('text QA gates Markdown, rendered HTML, and Slidev prose but excludes code', () => {
+    strict_1.default.ok((0, docgen_1.checkText)('A seamless\nintegration.').length);
+    strict_1.default.ok((0, docgen_1.checkText)('<main>A seamless integration.</main>', 'html').length);
+    strict_1.default.ok((0, docgen_1.checkText)('---\ntheme: none\n---\n# A seamless integration').length);
+    strict_1.default.equal((0, docgen_1.checkText)('Use `seamless` as an identifier.\n```ts\nconst seamless = true\n```').length, 0);
+    strict_1.default.equal((0, docgen_1.checkText)('<main>Use the identifier.<pre>seamless</pre></main>', 'html').length, 0);
+    strict_1.default.ok((0, docgen_1.checkText)('We make requests.').length);
+    strict_1.default.ok((0, docgen_1.checkText)('One — two.').length);
+    strict_1.default.equal((0, docgen_1.proseText)('<p>A &amp; B</p>', 'html'), 'A & B');
+});
+(0, node_test_1.test)('model schema compiles with all three editions and shared style overrides', () => {
+    const { Aontu } = require('aontu');
+    const source = node_fs_1.default.readFileSync(node_path_1.default.join(PACKAGE, 'model/docgen.aon'), 'utf8') + '\nmain: kit: doc: style: color: primary: "#123456"\nmain: kit: doc: edition: summary: {kind: "summary", active:true, output:path:"SUMMARY.md"}';
+    const all = source + '\nmain: kit: doc: edition: {presentation: {kind: \"presentation\", output:path:\"presentation\"}, \"github-pages\": {kind:\"github-pages\", output:path:\"docs\"}}';
+    const out = new Aontu().generate(all, { path: node_path_1.default.join(PACKAGE, 'model/docgen.aon') });
+    strict_1.default.equal(out.main.kit.doc.edition.summary.output.path, 'SUMMARY.md');
+    strict_1.default.equal(out.main.kit.doc.style.color.primary, '#123456');
+    strict_1.default.equal(Object.keys(out.main.kit.doc.edition).length, 3);
+    strict_1.default.throws(() => new Aontu().generate(all + '\nmain: kit: doc: edition: invalid: {kind: \"summary\", active: \"wrong type\", output:path:\"invalid.md\"}', { path: node_path_1.default.join(PACKAGE, 'model/docgen.aon') }));
+});
+(0, node_test_1.test)('package manifest and shipped edition trees agree', () => {
+    const manifest = require('../project/sdkgen-package.json');
+    strict_1.default.deepEqual(manifest.provides.edition, ['summary', 'github-pages', 'presentation']);
+    for (const name of manifest.provides.edition)
+        strict_1.default.ok(node_fs_1.default.existsSync(node_path_1.default.join(PACKAGE, 'project/.sdk/src/cmp/edition', name, 'Main_' + name + '.ts')));
+    const packed = (0, node_child_process_1.spawnSync)('npm', ['pack', '--dry-run', '--json', '--ignore-scripts'], { cwd: PACKAGE, encoding: 'utf8', env: { ...process.env, npm_config_cache: node_path_1.default.join(node_os_1.default.tmpdir(), 'docgen-npm-cache') } });
+    strict_1.default.equal(packed.status, 0, packed.stderr);
+    const json = JSON.parse(packed.stdout), entry = Array.isArray(json) ? json[0] : Object.values(json)[0];
+    const paths = entry.files.map((f) => f.path);
+    strict_1.default.ok(!paths.some((path) => path.startsWith('.sdk/') || path === 'sdkgen-package.json'));
+    strict_1.default.equal(manifest.version, require('../package.json').version);
+    for (const path of ['qa/vale.ini', 'qa/styles/config/vocabularies/Docgen/reject.txt', 'model/docgen.aon', 'bin/voxgig-docgen', 'README.md', 'LICENSE', 'project/sdkgen-package.json', 'project/.sdk/tm/edition/github-pages/page.html', 'assets/nunito.woff2', 'assets/nunito.woff2.license.txt', 'admin/setup-github-pages.sh', 'dist/admin/github-pages.js'])
+        strict_1.default.ok(paths.includes(path), path);
+});
+(0, node_test_1.test)('project bootstrap installs defaults once and preserves customised templates', () => {
+    const root = node_fs_1.default.mkdtempSync(node_path_1.default.join(node_os_1.default.tmpdir(), 'docgen-bootstrap-'));
+    try {
+        node_fs_1.default.mkdirSync(node_path_1.default.join(root, '.sdk/model'), { recursive: true });
+        node_fs_1.default.writeFileSync(node_path_1.default.join(root, '.sdk/model/sdk.aon'), 'main: kit: {}\n');
+        (0, docgen_1.prepareProject)(root);
+        const file = node_path_1.default.join(root, '.sdk/tm/edition/github-pages/page.html');
+        strict_1.default.ok(node_fs_1.default.existsSync(file));
+        strict_1.default.ok(!node_fs_1.default.existsSync(node_path_1.default.join(root, '.sdk/model/edition/presentation.aon')));
+        node_fs_1.default.writeFileSync(file, 'custom page');
+        (0, docgen_1.prepareProject)(root);
+        strict_1.default.equal(node_fs_1.default.readFileSync(file, 'utf8'), 'custom page');
+        strict_1.default.equal(node_fs_1.default.readFileSync(node_path_1.default.join(root, '.sdk/model/sdk.aon'), 'utf8').split('edition-index.aon').length, 2);
+    }
+    finally {
+        node_fs_1.default.rmSync(root, { recursive: true, force: true });
+    }
+});
+(0, node_test_1.test)('local branding assets retain their bytes in the website and presentation', async () => {
+    const m = model();
+    m.main.kit.doc.style = { logo: 'logo.png', fontFile: 'brand.woff2' };
+    m.main.kit.doc.edition.presentation = { kind: 'presentation', active: true, output: { path: 'presentation' } };
+    const f = fixture(m), bytes = Buffer.from([0, 1, 127, 128, 255]);
+    try {
+        node_fs_1.default.mkdirSync(node_path_1.default.join(f.root, '.sdk/doc/assets'), { recursive: true });
+        for (const file of ['logo.png', 'brand.woff2'])
+            node_fs_1.default.writeFileSync(node_path_1.default.join(f.root, '.sdk/doc/assets', file), bytes);
+        await (0, docgen_1.generate)({ folder: f.root, model: m });
+        strict_1.default.deepEqual(node_fs_1.default.readFileSync(node_path_1.default.join(f.root, 'docs/assets/logo.png')), bytes);
+        strict_1.default.deepEqual(node_fs_1.default.readFileSync(node_path_1.default.join(f.root, 'presentation/assets/font.woff2')), bytes);
+        strict_1.default.match(f.read('presentation/global-top.vue'), /logo.png/);
+        strict_1.default.match(f.read('docs/assets/style.css'), /DocgenLocal/);
+    }
+    finally {
+        f.clean();
+    }
+});
+(0, node_test_1.test)('SDK defaults and MCP capability limits reflect the model', async () => {
+    const m = model();
+    delete m.main.kit.doc.target['go-mcp'].tool;
+    const f = fixture(m);
+    try {
+        await (0, docgen_1.generate)({ folder: f.root, model: m });
+        strict_1.default.match(f.read('docs/sdks/ts.html'), /https:\/\/api.example.test/);
+        strict_1.default.match(f.read('docs/sdks/ts.html'), /Bearer/);
+        const mcp = f.read('docs/tools/go-mcp.html');
+        strict_1.default.match(mcp, /no active entity supports <code>list<\/code>/);
+        strict_1.default.match(mcp, /Supported entities: <code>pet<\/code>/);
+        strict_1.default.doesNotMatch(mcp, /&quot;enum&quot;: \[\]/);
+        strict_1.default.match(mcp, /<details open><summary>Tools<\/summary>/);
+        strict_1.default.equal((0, docgen_1.checkText)(f.read('docs/index.html'), 'html').length, 0);
+    }
+    finally {
+        f.clean();
+    }
+});
+(0, node_test_1.test)('Pages staging excludes project-owned notes and stale output', async () => {
+    const { stageSite } = require('../dist/docgen');
+    const f = fixture();
+    let artifact = '';
+    try {
+        await (0, docgen_1.generate)({ folder: f.root, model: f.m });
+        f.write('.sdk/model/sdk.json', JSON.stringify(f.m));
+        f.write('docs/reviews/private-note.md', 'Internal review');
+        f.write('docs/old.html', 'Retired page');
+        artifact = stageSite(f.root, 'github-pages');
+        strict_1.default.ok(node_fs_1.default.existsSync(node_path_1.default.join(artifact, 'index.html')));
+        strict_1.default.ok(node_fs_1.default.existsSync(node_path_1.default.join(artifact, '.nojekyll')));
+        strict_1.default.ok(!node_fs_1.default.existsSync(node_path_1.default.join(artifact, 'reviews')));
+        strict_1.default.ok(!node_fs_1.default.existsSync(node_path_1.default.join(artifact, 'old.html')));
+        strict_1.default.match(f.read('.github/workflows/docgen.yml'), /steps.site.outputs.path/);
+        node_fs_1.default.unlinkSync(node_path_1.default.join(f.root, 'docs/api/pet.html'));
+        strict_1.default.throws(() => stageSite(f.root, 'github-pages'));
+    }
+    finally {
+        f.clean();
+        if (artifact)
+            node_fs_1.default.rmSync(artifact, { recursive: true, force: true });
+    }
+});
+(0, node_test_1.test)('summary orients readers and links from a nested output location', async () => {
+    const m = model();
+    m.main.kit.info.description = 'Store pet records and retrieve the current catalogue.';
+    m.main.kit.entity.pet.op.list = { name: 'list', points: [{ method: 'GET', orig: '/pets', contract: { json: JSON.stringify({ security: [], responses: { 200: { description: 'Pet records' } } }) } }] };
+    m.main.kit.doc.edition.summary.output.path = 'overview/SUMMARY.md';
+    const f = fixture(m);
+    try {
+        await (0, docgen_1.generate)({ folder: f.root, model: m });
+        const text = f.read('overview/SUMMARY.md');
+        strict_1.default.match(text, /Store pet records and retrieve the current catalogue/);
+        strict_1.default.match(text, /curl --fail-with-body --silent --show-error 'https:\/\/api.example.test\/pets'/);
+        strict_1.default.match(text, /\.\.\/docs\/api\/pet.html/);
+        strict_1.default.match(text, /Choose an SDK/);
+        strict_1.default.match(text, /Operational features/);
+        strict_1.default.doesNotMatch(text, /curl[^\n]*\{id\}/);
+    }
+    finally {
+        f.clean();
+    }
+});
+(0, node_test_1.test)('summary does not invent anonymous examples or reference an inactive site', async () => {
+    const m = model();
+    m.main.kit.doc.edition['github-pages'].active = false;
+    const f = fixture(m);
+    try {
+        await (0, docgen_1.generate)({ folder: f.root, model: m });
+        strict_1.default.doesNotMatch(f.read('SUMMARY.md'), /curl --|\]\(docs\//);
+    }
+    finally {
+        f.clean();
+    }
+});
+(0, node_test_1.test)('branding, local typography, and a logo-free slide frame survive generation', async () => {
+    const m = model();
+    m.main.kit.doc.brand = { url: 'https://example.test', label: 'example.test', notice: 'Unofficial SDK. Generated by [Voxgig](https://voxgig.com/). No affiliation with the API provider.', shortNotice: 'Unofficial SDK. {{ literal }}' };
+    m.main.kit.doc.style = { mode: 'dark', color: { primary: '#49d49e', darkBackground: '#0e1615', darkText: '#f3f0ec' }, fontFile: 'body.woff2', headingFontFile: 'heading.woff2', monoFile: 'mono.woff2' };
+    m.main.kit.doc.edition.presentation = { kind: 'presentation', active: true, output: { path: 'presentation' } };
+    const f = fixture(m);
+    try {
+        for (const name of ['body', 'heading', 'mono']) {
+            f.write('.sdk/doc/assets/' + name + '.woff2', 'font fixture');
+            f.write('.sdk/doc/assets/' + name + '.woff2.license.txt', 'Font license');
+        }
+        await (0, docgen_1.generate)({ folder: f.root, model: m });
+        strict_1.default.match(f.read('docs/index.html'), /class="provider-link" href="https:\/\/example.test"/);
+        strict_1.default.match(f.read('docs/index.html'), /Unofficial SDK/);
+        strict_1.default.match(f.read('docs/index.html'), /Generated by <a href="https:\/\/voxgig.com\/">Voxgig<\/a>/);
+        strict_1.default.match(f.read('SUMMARY.md'), /Unofficial SDK/);
+        strict_1.default.match(f.read('presentation/slides.md'), /colorSchema: dark/);
+        strict_1.default.match(f.read('presentation/global-top.vue'), /docgen-frame/);
+        strict_1.default.match(f.read('presentation/global-top.vue'), /\$page/);
+        strict_1.default.match(f.read('presentation/global-top.vue'), /v-pre>Unofficial SDK. \{\{ literal \}\}/);
+        strict_1.default.doesNotMatch(f.read('presentation/global-top.vue'), /<img/);
+        strict_1.default.match(f.read('presentation/assets/style.css'), /DocgenHeading/);
+        strict_1.default.equal(f.read('docs/assets/heading-font.woff2.license.txt'), 'Font license');
+        strict_1.default.equal(f.read('presentation/public/assets/heading-font.woff2.license.txt'), 'Font license');
+        strict_1.default.ok(JSON.parse(f.read('.sdk/doc/qa-manifest.json')).files.includes('presentation/global-top.vue'));
+        strict_1.default.ok((0, docgen_1.checkText)('<template><footer>This is seamless.</footer></template>', 'vue').length);
+        m.main.kit.doc.brand.url = 'javascript:alert(1)';
+        await strict_1.default.rejects((0, docgen_1.generate)({ folder: f.root, model: m }), /must use HTTP/);
+    }
+    finally {
+        f.clean();
+    }
+});
+(0, node_test_1.test)('Voxgig defaults and project themes are independent in all visual editions', async () => {
+    const m = model();
+    m.main.kit.doc.edition.presentation = { kind: 'presentation', active: true, output: { path: 'presentation' } };
+    const f = fixture(m);
+    try {
+        const defaults = (0, docgen_1.styleFor)(m, {});
+        strict_1.default.equal(defaults.mode, 'light');
+        strict_1.default.equal(defaults.color.primary, '#e70042');
+        const { Aontu } = require('aontu');
+        const schema = new Aontu().generate(node_fs_1.default.readFileSync(node_path_1.default.join(PACKAGE, 'model/docgen.aon'), 'utf8'));
+        strict_1.default.deepEqual(schema.main.kit.doc.style.color, defaults.color);
+        strict_1.default.equal(schema.main.kit.doc.style.font, defaults.font);
+        strict_1.default.equal(schema.main.kit.doc.style.mode, defaults.mode);
+        await (0, docgen_1.generate)({ folder: f.root, model: m });
+        for (const prefix of ['docs', 'presentation']) {
+            strict_1.default.match(f.read(prefix + '/assets/style.css'), /--primary:#e70042;--accent:#00c6d8;--background:#f5f5f9;--text:#0a0a0a/);
+            strict_1.default.match(f.read(prefix + '/assets/style.css'), /font-family:Nunito/);
+            strict_1.default.ok(node_fs_1.default.existsSync(node_path_1.default.join(f.root, prefix, 'assets/nunito.woff2')));
+        }
+        strict_1.default.ok(node_fs_1.default.existsSync(node_path_1.default.join(f.root, 'presentation/public/assets/nunito.woff2.license.txt')));
+        strict_1.default.doesNotMatch(f.read('docs/index.html'), /univec.ai/);
+        m.main.kit.doc.style = { mode: 'dark', font: 'Arial', headingFont: 'Arial', color: { primary: '#49d4a1', accent: '#f7bc45', darkBackground: '#0e1615', darkText: '#f3f1ec' } };
+        await (0, docgen_1.generate)({ folder: f.root, model: m });
+        for (const prefix of ['docs', 'presentation']) {
+            strict_1.default.match(f.read(prefix + '/assets/style.css'), /--primary:#49d4a1/);
+            strict_1.default.match(f.read(prefix + '/assets/style.css'), /--background:#0e1615;--text:#f3f1ec/);
+            strict_1.default.doesNotMatch(f.read(prefix + '/assets/style.css'), /Nunito|#e70042/);
+            strict_1.default.ok(!node_fs_1.default.existsSync(node_path_1.default.join(f.root, prefix, 'assets/nunito.woff2')));
+        }
+        strict_1.default.equal((0, docgen_1.styleFor)(model(), {}).color.primary, '#e70042');
+        strict_1.default.equal((0, docgen_1.styleFor)(m, { style: { color: { primary: '#123456' } } }).color.primary, '#123456');
+    }
+    finally {
+        f.clean();
+    }
+});
+(0, node_test_1.test)('Pages admin script is generated with executable permissions and removed when Pages is disabled', async () => {
+    const m = model(), f = fixture(m);
+    try {
+        await (0, docgen_1.generate)({ folder: f.root, model: m, control: { dryrun: true } });
+        strict_1.default.ok(!node_fs_1.default.existsSync(node_path_1.default.join(f.root, '.sdk/admin/setup-github-pages.sh')));
+        await (0, docgen_1.generate)({ folder: f.root, model: m });
+        const file = node_path_1.default.join(f.root, '.sdk/admin/setup-github-pages.sh');
+        strict_1.default.match(f.read('.sdk/admin/setup-github-pages.sh'), /docgen\/dist\/admin\/github-pages.js/);
+        if (process.platform !== 'win32')
+            strict_1.default.ok(node_fs_1.default.statSync(file).mode & 0o111);
+        f.write('.sdk/admin/status.sh', '# status belongs to the scaffold\n');
+        f.write('.sdk/admin/custom.sh', '# project script\n');
+        m.main.kit.doc.edition['github-pages'].active = false;
+        await (0, docgen_1.generate)({ folder: f.root, model: m });
+        strict_1.default.ok(!node_fs_1.default.existsSync(file));
+        strict_1.default.ok(node_fs_1.default.existsSync(node_path_1.default.join(f.root, '.sdk/admin/status.sh')));
+        strict_1.default.ok(node_fs_1.default.existsSync(node_path_1.default.join(f.root, '.sdk/admin/custom.sh')));
+    }
+    finally {
+        f.clean();
+    }
+});
+(0, node_test_1.test)('nested Slidev presentation stages built assets without its source or dependencies', async () => {
+    const { stageSite, runQA } = require('../dist/docgen');
+    const m = model();
+    m.main.kit.doc.edition.deck = { kind: 'presentation', output: { path: 'docs/slidev' } };
+    const f = fixture(m);
+    let artifact = '';
+    try {
+        await (0, docgen_1.generate)({ folder: f.root, model: m });
+        f.write('.sdk/model/sdk.json', JSON.stringify(m));
+        strict_1.default.match(f.read('docs/index.html'), /href="slidev\/index.html"/);
+        strict_1.default.match(f.read('docs/api/pet.html'), /href="..\/slidev\/index.html"/);
+        strict_1.default.ok(node_fs_1.default.existsSync(node_path_1.default.join(f.root, 'docs/slidev/uno.config.ts')));
+        strict_1.default.throws(() => stageSite(f.root, 'github-pages'), /Build presentation deck/);
+        strict_1.default.ok(runQA('.sdk/doc/qa-manifest.json', f.root, false).errors.some((error) => error.includes('broken local link')));
+        f.write('docs/slidev/dist/index.html', '<h1>Built slides</h1>');
+        f.write('docs/slidev/dist/assets/deck.js', 'console.log("deck")');
+        strict_1.default.deepEqual(runQA('.sdk/doc/qa-manifest.json', f.root, false).errors, []);
+        f.write('docs/slidev/node_modules/private.txt', 'dependency');
+        f.write('docs/reviews/notes.md', 'review notes');
+        artifact = stageSite(f.root, 'github-pages');
+        strict_1.default.equal(node_fs_1.default.readFileSync(node_path_1.default.join(artifact, 'slidev/index.html'), 'utf8'), '<h1>Built slides</h1>');
+        strict_1.default.ok(node_fs_1.default.existsSync(node_path_1.default.join(artifact, 'slidev/assets/deck.js')));
+        for (const name of ['slides.md', 'package.json', 'uno.config.ts', 'node_modules', 'dist']) {
+            strict_1.default.ok(!node_fs_1.default.existsSync(node_path_1.default.join(artifact, 'slidev', name)), name + ' leaked into Pages');
+        }
+        strict_1.default.ok(!node_fs_1.default.existsSync(node_path_1.default.join(artifact, 'reviews')));
+        node_fs_1.default.rmSync(artifact, { recursive: true });
+        artifact = '';
+        m.main.kit.doc.edition.deck.site = { active: false };
+        await (0, docgen_1.generate)({ folder: f.root, model: m });
+        f.write('.sdk/model/sdk.json', JSON.stringify(m));
+        strict_1.default.doesNotMatch(f.read('docs/index.html'), /class="presentation-link"/);
+        artifact = stageSite(f.root, 'github-pages');
+        strict_1.default.ok(!node_fs_1.default.existsSync(node_path_1.default.join(artifact, 'slidev')));
+    }
+    finally {
+        f.clean();
+        if (artifact)
+            node_fs_1.default.rmSync(artifact, { recursive: true, force: true });
+    }
+});
+(0, node_test_1.test)('nested edition paths still reject file and directory collisions', async () => {
+    const m = model();
+    m.main.kit.doc.edition.presentation = { kind: 'presentation', output: { path: 'docs/api/index.html' } };
+    const f = fixture(m);
+    try {
+        await strict_1.default.rejects((0, docgen_1.generate)({ folder: f.root, model: m }), /overlaps presentation|Duplicate edition output/);
+        strict_1.default.ok(!node_fs_1.default.existsSync(node_path_1.default.join(f.root, 'docs/index.html')));
+    }
+    finally {
+        f.clean();
     }
 });
 //# sourceMappingURL=docgen.test.js.map

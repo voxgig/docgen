@@ -1,0 +1,17 @@
+{
+  "sdkgen": {
+    "package": 1
+  },
+  "name": "@voxgig/docgen",
+  "version": "0.10.0",
+  "engines": {
+    "sdkgen": ">=4.17.0"
+  },
+  "provides": {
+    "edition": [
+      "summary",
+      "github-pages",
+      "presentation"
+    ]
+  }
+}

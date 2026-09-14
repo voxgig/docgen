@@ -1,0 +1,70 @@
+# Documentation extends the same model as apidef and sdkgen.
+main: kit: doc: {
+  active: *true | boolean
+  # Voxgig defaults. Projects and editions can override every style setting.
+  style: {
+    color: {
+      accent: *'#00c6d8' | string
+      primary: *'#e70042' | string
+      background: *'#f5f5f9' | string
+      text: *'#0a0a0a' | string
+      darkBackground: *'#0f1117' | string
+      darkText: *'#e6edf3' | string
+    }
+    mode: *'light' | string
+    font: *'Nunito, system-ui, sans-serif' | string
+    headingFont: *'Nunito, system-ui, sans-serif' | string
+    headingFontFile: *'' | string
+    monoFile: *'' | string
+    mono: *'ui-monospace, monospace' | string
+    logo: *'' | string
+    fontFile: *'' | string
+  }
+  brand: {
+    url: *'' | string
+    label: *'' | string
+    notice: *'' | string
+    shortNotice: *'' | string
+  }
+  # Authored Markdown and local assets, relative to the SDK repository.
+  content: path: *'.sdk/doc/content' | string
+  assets: path: *'.sdk/doc/assets' | string
+  ci: {
+    active: *true | boolean
+    branch: *'main' | string
+  }
+  qa: {
+    vocabulary: *[] | [&: string]
+  }
+  # Per-target enrichment: tutorials, examples and tool contracts are model data.
+  target: &: {
+    kind: *'' | string
+    description: *'' | string
+    install: *'' | string
+    example: *'' | string
+    language: *'' | string
+    tool: &: {
+      description: *'' | string
+      input: {}
+    }
+  }
+  edition: &: {
+    name: key()
+    kind: string
+    active: *true | boolean
+    base: *'' | string
+    origname: *'' | string
+    package: *'' | string
+    output: path: string
+    # A presentation nested under a website is linked and deployed with it.
+    site: active: *true | boolean
+    title: *'' | string
+    style: {}
+    brand: {}
+    filter: {
+      targets: *[] | [&: string]
+      entities: *[] | [&: string]
+      features: *[] | [&: string]
+    }
+  }
+}

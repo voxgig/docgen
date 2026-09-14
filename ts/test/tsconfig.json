@@ -13,5 +13,10 @@
     "types": [
       "node"
     ]
-  }
+  },
+  "references": [
+    {
+      "path": "../src"
+    }
+  ]
 }

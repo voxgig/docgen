@@ -1,0 +1,40 @@
+name: Documentation text QA
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  editions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Build and test docgen
+        working-directory: ts
+        run: |
+          npm install --no-audit --no-fund
+          npm run build
+          npm test
+          node build/qa-fixture.cjs
+      - name: Install Vale
+        env:
+          VALE_VERSION: '3.14.0'
+        run: |
+          curl -fsSL -o /tmp/vale.tar.gz "https://github.com/errata-ai/vale/releases/download/v${VALE_VERSION}/vale_${VALE_VERSION}_Linux_64-bit.tar.gz"
+          tar -xzf /tmp/vale.tar.gz -C /tmp vale
+          sudo install /tmp/vale /usr/local/bin/vale
+      - name: Load the pinned rules
+        run: vale --config=ts/.docgen/fixture/.sdk/doc/qa/vale.ini sync
+      - name: Check prose in every edition
+        working-directory: ts/.docgen/fixture
+        run: node ../../bin/voxgig-docgen qa
+      - name: Build the presentation
+        working-directory: ts/.docgen/fixture/presentation
+        run: |
+          npm install --no-audit --no-fund
+          npm run build

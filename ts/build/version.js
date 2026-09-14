@@ -15,8 +15,8 @@
 // — but only once someone has already had to notice; this makes it one
 // command, run by `repo-publish-quick` before the build. Modelled on sdkgen's
 // build/version.js, which does the same for its own manifest and for the
-// version embedded in its bin script (docgen has no bin, so the manifest is
-// the whole job here).
+// version embedded in its bin script. Here the manifest is the only version
+// stamp; the docgen CLI does not embed a version.
 //
 // The version LINE is rewritten, rather than the file being re-serialised
 // from the parsed object: `sdkgen-package.json` is hand-formatted (one-line
@@ -29,7 +29,7 @@ const path = require('path')
 const packageJsonPath = path.join(__dirname, '..', 'package.json')
 const version = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8')).version
 
-const manifestPath = path.join(__dirname, '..', 'sdkgen-package.json')
+const manifestPath = path.join(__dirname, '..', 'project', 'sdkgen-package.json')
 const src = fs.readFileSync(manifestPath, 'utf8')
 
 const VERSION_RE = /("version"\s*:\s*)"[^"]*"/
