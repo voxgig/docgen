@@ -119,7 +119,7 @@ test('package manifest and shipped edition trees agree',()=>{
   const manifest=require('../project/sdkgen-package.json')
   Assert.deepEqual(manifest.provides.edition,['summary','github-pages','presentation'])
   for(const name of manifest.provides.edition)Assert.ok(Fs.existsSync(Path.join(PACKAGE,'project/.sdk/src/cmp/edition',name,'Main_'+name+'.ts')))
-  const packed=spawnSync('npm',['pack','--dry-run','--json','--ignore-scripts'],{cwd:PACKAGE,encoding:'utf8',env:{...process.env,npm_config_cache:Path.join(Os.tmpdir(),'docgen-npm-cache')}})
+  const packed=spawnSync('npm',['pack','--dry-run','--json','--ignore-scripts'],{cwd:PACKAGE,shell:process.platform==='win32',encoding:'utf8',env:{...process.env,npm_config_cache:Path.join(Os.tmpdir(),'docgen-npm-cache')}})
   Assert.equal(packed.status,0,packed.stderr)
   const json=JSON.parse(packed.stdout),entry=Array.isArray(json)?json[0]:Object.values<any>(json)[0]
   const paths=entry.files.map((f:any)=>f.path)

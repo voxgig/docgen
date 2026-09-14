@@ -172,7 +172,7 @@ function fixture(m = model()) {
     strict_1.default.deepEqual(manifest.provides.edition, ['summary', 'github-pages', 'presentation']);
     for (const name of manifest.provides.edition)
         strict_1.default.ok(node_fs_1.default.existsSync(node_path_1.default.join(PACKAGE, 'project/.sdk/src/cmp/edition', name, 'Main_' + name + '.ts')));
-    const packed = (0, node_child_process_1.spawnSync)('npm', ['pack', '--dry-run', '--json', '--ignore-scripts'], { cwd: PACKAGE, encoding: 'utf8', env: { ...process.env, npm_config_cache: node_path_1.default.join(node_os_1.default.tmpdir(), 'docgen-npm-cache') } });
+    const packed = (0, node_child_process_1.spawnSync)('npm', ['pack', '--dry-run', '--json', '--ignore-scripts'], { cwd: PACKAGE, shell: process.platform === 'win32', encoding: 'utf8', env: { ...process.env, npm_config_cache: node_path_1.default.join(node_os_1.default.tmpdir(), 'docgen-npm-cache') } });
     strict_1.default.equal(packed.status, 0, packed.stderr);
     const json = JSON.parse(packed.stdout), entry = Array.isArray(json) ? json[0] : Object.values(json)[0];
     const paths = entry.files.map((f) => f.path);
