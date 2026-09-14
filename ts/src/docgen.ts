@@ -135,6 +135,22 @@ function nestedPresentations(model: any, site: any): any[] {
     e.kind === 'presentation' && e.output?.path?.startsWith(prefix))
 }
 
+// The SDK's own source repository, for the link back to it from the website.
+//
+// DERIVED EXACTLY AS sdkgen DERIVES IT (`repoInfo` in helpers/packageMeta):
+// an explicit `main: kit: repo: path` wins, otherwise `<origin>/<name>-sdk`
+// under `repo: host`. That rule already decides the go module path and the
+// `homepage`/`repository`/`bugs` URLs in every generated manifest, so a
+// website link derived any other way would eventually disagree with the
+// published package — which is worse than having no link at all.
+export function repoInfo(model: any): { url: string, path: string } {
+  const declared = model?.main?.kit?.repo ?? {}
+  const host = String(declared.host || '') || 'github.com'
+  const path = String(declared.path || '') ||
+    String(model?.origin || 'voxgig-sdk') + '/' + String(model?.name) + '-sdk'
+  return { url: 'https://' + host + '/' + path, path }
+}
+
 // Edition components can wrap or replace this function. All output is emitted
 // through the same Jostraca pass and included in ownership and QA manifests.
 export function renderEdition(props: EditionProps): EditionResult {
@@ -143,8 +159,10 @@ export function renderEdition(props: EditionProps): EditionResult {
   const brand = { ...v.kit.doc?.brand, ...edition.brand }
   if (brand.url && !/^https?:\/\//i.test(brand.url)) throw new Error('Documentation brand URL must use HTTP or HTTPS')
   if (brand.url) new URL(brand.url)
+  const repo = repoInfo(props.model)
   const branding = {
     providerLink: brand.url ? '<a class="provider-link" href="' + html(brand.url) + '">' + html(brand.label || new URL(brand.url).hostname) + '</a>' : '',
+    repoLink: '<a class="repo-link" href="' + html(repo.url) + '">' + html(repo.path) + '</a>',
     notice: html(brand.notice || ''), shortNotice: html(brand.shortNotice || brand.notice || ''),
   }
   const result: EditionResult = { files: {}, qa: [] }, files = result.files

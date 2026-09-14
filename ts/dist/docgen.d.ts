@@ -21,6 +21,10 @@ export type EditionProps = {
 };
 export declare function relativePath(value: string): string;
 export declare function styleFor(model: any, edition: any): any;
+export declare function repoInfo(model: any): {
+    url: string;
+    path: string;
+};
 export declare function renderEdition(props: EditionProps): EditionResult;
 export declare function generate(opts: GenerateOptions): Promise<{
     editions: any[];
