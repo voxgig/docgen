@@ -6,6 +6,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.code = exports.cell = exports.prose = exports.html = void 0;
 exports.fence = fence;
 exports.rows = rows;
+exports.repoLinkFor = repoLinkFor;
+exports.specLink = specLink;
 exports.view = view;
 exports.surface = surface;
 exports.installation = installation;
@@ -38,6 +40,27 @@ function pick(items, selected = []) {
         if (!items.some(i => i.name === n))
             throw new Error('Unknown or inactive documentation selection: ' + n);
     return selected.length ? items.filter(i => selected.includes(i.name)) : items;
+}
+// The SDK's own repository. sdkgen's `repoInfo` is THE implementation of the
+// `main: kit: repo` rule (explicit path, else `<origin>/<name>-sdk`); it
+// already decides the go module path and every manifest URL, so the website
+// must not re-derive it — a link that disagrees with the published
+// `repository` URL is worse than no link.
+function repoLinkFor(model) {
+    const info = (0, sdkgen_1.repoInfo)(model);
+    return { url: info.repoUrl, path: info.path };
+}
+// The OpenAPI definition this SDK is generated from, at its canonical place
+// in the repository: apidef resolves `def` against `.sdk/def/`. Returns ''
+// when the model carries no definition, so a hand-built model links nothing
+// rather than linking a 404.
+function specLink(model) {
+    const def = model?.def;
+    if (!def || 'string' !== typeof def)
+        return '';
+    const branch = model?.main?.kit?.doc?.ci?.branch || 'main';
+    return repoLinkFor(model).url + '/blob/' + encodeURIComponent(branch) +
+        '/.sdk/def/' + encodeURIComponent(def);
 }
 function view(model, edition) {
     const kit = model.main.kit;
@@ -197,8 +220,10 @@ function pages(v, examples = {}) {
     const add = (path, title, group, body) => out.push({ path, title, group, markdown: '# ' + (0, exports.prose)(title) + '\n\n' + body + '\n' });
     add('index', v.title, 'Overview', (0, exports.prose)(v.description));
     const servers = v.info.servers ?? [];
+    const spec = specLink(v.model);
     add('api/index', 'API overview', 'API', [(0, exports.prose)(v.info.summary || ''), '',
         ...servers.map((s) => '- ' + (0, exports.code)(s.url) + (s.description ? ': ' + (0, exports.prose)(s.description) : '')),
+        ...(spec ? ['', 'This documentation is generated from the [OpenAPI specification](' + spec + ') held in the SDK repository.'] : []),
         '', ...v.entities.map(e => '- [' + (0, exports.prose)(e.Name) + '](' + encodeURIComponent(e.name) + '.html)')].join('\n'));
     add('guides/authentication', 'Authentication', 'Guides', v.info.security && Object.keys(v.info.security).length ?
         'Configure credentials for the scheme described by the API model. Keep credentials outside source control.\n' +

@@ -1,7 +1,7 @@
 import { clientDefaults, toolContracts } from './sdk-reference'
 import { names } from 'jostraca'
 import Path from 'node:path'
-import { installCommand, packageName, isPublished, targetFeatures } from '@voxgig/sdkgen'
+import { installCommand, packageName, isPublished, targetFeatures, repoInfo } from '@voxgig/sdkgen'
 
 export type Page = { path: string, title: string, group: string, markdown: string }
 export const html = (v: any): string => String(v ?? '').replace(/[&<>"']/g,
@@ -22,6 +22,28 @@ function pick(items: any[], selected: string[] = []): any[] {
   for (const n of selected) if (!items.some(i => i.name === n)) throw new Error('Unknown or inactive documentation selection: ' + n)
   return selected.length ? items.filter(i => selected.includes(i.name)) : items
 }
+// The SDK's own repository. sdkgen's `repoInfo` is THE implementation of the
+// `main: kit: repo` rule (explicit path, else `<origin>/<name>-sdk`); it
+// already decides the go module path and every manifest URL, so the website
+// must not re-derive it — a link that disagrees with the published
+// `repository` URL is worse than no link.
+export function repoLinkFor(model: any): { url: string, path: string } {
+  const info: any = repoInfo(model)
+  return { url: info.repoUrl, path: info.path }
+}
+
+// The OpenAPI definition this SDK is generated from, at its canonical place
+// in the repository: apidef resolves `def` against `.sdk/def/`. Returns ''
+// when the model carries no definition, so a hand-built model links nothing
+// rather than linking a 404.
+export function specLink(model: any): string {
+  const def = model?.def
+  if (!def || 'string' !== typeof def) return ''
+  const branch = model?.main?.kit?.doc?.ci?.branch || 'main'
+  return repoLinkFor(model).url + '/blob/' + encodeURIComponent(branch) +
+    '/.sdk/def/' + encodeURIComponent(def)
+}
+
 export function view(model: any, edition: any) {
   const kit = model.main.kit
   const entities = pick(rows(kit.entity), edition.filter?.entities)
@@ -181,8 +203,10 @@ export function pages(v: ReturnType<typeof view>, examples: Record<string,string
     out.push({ path, title, group, markdown: '# ' + prose(title) + '\n\n' + body + '\n' })
   add('index', v.title, 'Overview', prose(v.description))
   const servers = v.info.servers ?? []
+  const spec = specLink(v.model)
   add('api/index', 'API overview', 'API', [prose(v.info.summary || ''), '',
     ...servers.map((s: any) => '- ' + code(s.url) + (s.description ? ': ' + prose(s.description) : '')),
+    ...(spec ? ['', 'This documentation is generated from the [OpenAPI specification](' + spec + ') held in the SDK repository.'] : []),
     '', ...v.entities.map(e => '- [' + prose(e.Name) + '](' + encodeURIComponent(e.name) + '.html)')].join('\n'))
   add('guides/authentication', 'Authentication', 'Guides',
     v.info.security && Object.keys(v.info.security).length ?

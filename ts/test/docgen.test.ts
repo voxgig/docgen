@@ -225,6 +225,7 @@ test('the website links back to the SDK repository, declared or derived',async()
   // Derived: no `repo` declared, so `<origin>/<name>-sdk` under github.com —
   // the same rule sdkgen uses for go.mod and the package manifests.
   const m:any=model()
+  m.def='petstore.json'
   const f=fixture(m)
   try {
     await generate({folder:f.root,model:m})
@@ -232,6 +233,9 @@ test('the website links back to the SDK repository, declared or derived',async()
     // Every page carries it, not just the index — a reader deep in the
     // reference must be able to get back to the source.
     Assert.match(f.read('docs/api/index.html'),/class="repo-link" href="https:\/\/github.com\/acme\/petstore-sdk"/)
+    // The API overview links the OpenAPI definition it was generated from,
+    // at the path apidef resolves `def` against.
+    Assert.match(f.read('docs/api/index.html'),/href="https:\/\/github.com\/acme\/petstore-sdk\/blob\/main\/.sdk\/def\/petstore.json">OpenAPI specification<\/a>/)
   } finally {f.clean()}
 
   // Declared: a repo that is not `<origin>/<name>-sdk` says so, and the link
@@ -244,6 +248,15 @@ test('the website links back to the SDK repository, declared or derived',async()
     Assert.match(f2.read('docs/index.html'),/class="repo-link" href="https:\/\/gitlab.example\/acme\/legacy-client-sdk">acme\/legacy-client-sdk<\/a>/)
     Assert.doesNotMatch(f2.read('docs/index.html'),/petstore-sdk/)
   } finally {f2.clean()}
+
+  // No definition in the model -> no spec link at all. Linking
+  // `.sdk/def/undefined` would be a guaranteed 404 on every generated site.
+  const m3:any=model(); delete m3.def
+  const f3=fixture(m3)
+  try {
+    await generate({folder:f3.root,model:m3})
+    Assert.doesNotMatch(f3.read('docs/api/index.html'),/OpenAPI specification|\.sdk\/def\//)
+  } finally {f3.clean()}
 })
 
 test('branding, local typography, and a logo-free slide frame survive generation',async()=>{

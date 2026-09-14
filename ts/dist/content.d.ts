@@ -10,6 +10,11 @@ export declare const cell: (v: any) => string;
 export declare const code: (v: any) => string;
 export declare function fence(text: string, language?: string): string;
 export declare function rows(map: any): any[];
+export declare function repoLinkFor(model: any): {
+    url: string;
+    path: string;
+};
+export declare function specLink(model: any): string;
 export declare function view(model: any, edition: any): {
     model: any;
     kit: any;

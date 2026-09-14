@@ -297,6 +297,7 @@ function fixture(m = model()) {
     // Derived: no `repo` declared, so `<origin>/<name>-sdk` under github.com —
     // the same rule sdkgen uses for go.mod and the package manifests.
     const m = model();
+    m.def = 'petstore.json';
     const f = fixture(m);
     try {
         await (0, docgen_1.generate)({ folder: f.root, model: m });
@@ -304,6 +305,9 @@ function fixture(m = model()) {
         // Every page carries it, not just the index — a reader deep in the
         // reference must be able to get back to the source.
         strict_1.default.match(f.read('docs/api/index.html'), /class="repo-link" href="https:\/\/github.com\/acme\/petstore-sdk"/);
+        // The API overview links the OpenAPI definition it was generated from,
+        // at the path apidef resolves `def` against.
+        strict_1.default.match(f.read('docs/api/index.html'), /href="https:\/\/github.com\/acme\/petstore-sdk\/blob\/main\/.sdk\/def\/petstore.json">OpenAPI specification<\/a>/);
     }
     finally {
         f.clean();
@@ -320,6 +324,18 @@ function fixture(m = model()) {
     }
     finally {
         f2.clean();
+    }
+    // No definition in the model -> no spec link at all. Linking
+    // `.sdk/def/undefined` would be a guaranteed 404 on every generated site.
+    const m3 = model();
+    delete m3.def;
+    const f3 = fixture(m3);
+    try {
+        await (0, docgen_1.generate)({ folder: f3.root, model: m3 });
+        strict_1.default.doesNotMatch(f3.read('docs/api/index.html'), /OpenAPI specification|\.sdk\/def\//);
+    }
+    finally {
+        f3.clean();
     }
 });
 (0, node_test_1.test)('branding, local typography, and a logo-free slide frame survive generation', async () => {

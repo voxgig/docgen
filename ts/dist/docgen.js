@@ -6,7 +6,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.runQA = exports.proseText = exports.checkText = exports.slides = exports.pages = exports.summary = exports.view = void 0;
 exports.relativePath = relativePath;
 exports.styleFor = styleFor;
-exports.repoInfo = repoInfo;
 exports.renderEdition = renderEdition;
 exports.generate = generate;
 exports.stageSite = stageSite;
@@ -156,21 +155,6 @@ function nestedPresentations(model, site) {
     const prefix = relativePath(site.output.path) + '/';
     return (0, content_1.rows)(model.main.kit.doc?.edition).filter(e => e.kind === 'presentation' && e.output?.path?.startsWith(prefix));
 }
-// The SDK's own source repository, for the link back to it from the website.
-//
-// DERIVED EXACTLY AS sdkgen DERIVES IT (`repoInfo` in helpers/packageMeta):
-// an explicit `main: kit: repo: path` wins, otherwise `<origin>/<name>-sdk`
-// under `repo: host`. That rule already decides the go module path and the
-// `homepage`/`repository`/`bugs` URLs in every generated manifest, so a
-// website link derived any other way would eventually disagree with the
-// published package — which is worse than having no link at all.
-function repoInfo(model) {
-    const declared = model?.main?.kit?.repo ?? {};
-    const host = String(declared.host || '') || 'github.com';
-    const path = String(declared.path || '') ||
-        String(model?.origin || 'voxgig-sdk') + '/' + String(model?.name) + '-sdk';
-    return { url: 'https://' + host + '/' + path, path };
-}
 // Edition components can wrap or replace this function. All output is emitted
 // through the same Jostraca pass and included in ownership and QA manifests.
 function renderEdition(props) {
@@ -181,7 +165,7 @@ function renderEdition(props) {
         throw new Error('Documentation brand URL must use HTTP or HTTPS');
     if (brand.url)
         new URL(brand.url);
-    const repo = repoInfo(props.model);
+    const repo = (0, content_1.repoLinkFor)(props.model);
     const branding = {
         providerLink: brand.url ? '<a class="provider-link" href="' + (0, content_1.html)(brand.url) + '">' + (0, content_1.html)(brand.label || new URL(brand.url).hostname) + '</a>' : '',
         repoLink: '<a class="repo-link" href="' + (0, content_1.html)(repo.url) + '">' + (0, content_1.html)(repo.path) + '</a>',
