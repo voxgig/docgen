@@ -4,16 +4,31 @@ import Path from 'node:path'
 import Os from 'node:os'
 import { createRequire } from 'node:module'
 import { Jostraca, Project, Folder, File, Content } from 'jostraca'
-import { rows, view, summary, pages, slides, html, repoLinkFor, type Page } from './content'
+import { rows, view, summary, pages, slides, html, repoLinkFor, slugFor, METHODS, type Page } from './content'
 const MarkdownIt = require('markdown-it')
 const markdown = new MarkdownIt({ html: false, linkify: false, typographer: false })
+const OPERATION_RE = new RegExp('^`?(' + METHODS + ')`?\\s', 'i')
 markdown.renderer.rules.heading_open = (tokens: any[], index: number, options: any, env: any, self: any) => {
   const title = tokens[index + 1]?.content || ''
-  const slug = title.toLowerCase().replace(/[^\p{L}\p{N}_ -]/gu, '').replace(/ /g, '-')
+  const slug = slugFor(title)
   env.headings ??= {}
   const count = env.headings[slug] || 0
   env.headings[slug] = count + 1
   tokens[index].attrSet('id', slug + (count ? '-' + count : ''))
+  // Classify the two heading kinds the API reference generates, so the
+  // stylesheet can give a route its method badge and a response its status
+  // colour. The heading TEXT still comes from markdown and is still escaped;
+  // only the attributes are added here.
+  const operation = OPERATION_RE.exec(title)
+  if (operation) {
+    tokens[index].attrJoin('class', 'operation')
+    tokens[index].attrSet('data-method', operation[1].toLowerCase())
+  }
+  const status = /^([1-5])\d\d\b/.exec(title)
+  if (status) {
+    tokens[index].attrJoin('class', 'status')
+    tokens[index].attrSet('data-status', status[1] + 'xx')
+  }
   return self.renderToken(tokens, index, options)
 }
 const PACKAGE = Path.resolve(__dirname, '..')
@@ -170,8 +185,21 @@ export function renderEdition(props: EditionProps): EditionResult {
     for (const page of all) {
       const base = '../'.repeat(page.path.split('/').length - 1)
       const groups = [...new Set(all.map(p => p.group))]
+      // A page's own sections are listed UNDER it, and only while it is the
+      // page being read. The API reference puts every route of an entity on
+      // one page, so without this the sidebar stops at the entity and a
+      // reader has no way to jump to a route, which is exactly what an API
+      // reference is navigated by.
+      const navLink = (p: Page) => {
+        const link = '<a' + (p.path === page.path ? ' aria-current="page"' : '') +
+          ' href="' + html(base + p.path + '.html') + '">' + html(p.title) + '</a>'
+        const sections = p.path === page.path ? (p.sections ?? []) : []
+        return !sections.length ? link : link + '<div class="nav-sections">' +
+          sections.map(s => '<a class="nav-section" href="#' + html(s.id) + '">' +
+            html(s.title) + '</a>').join('\n') + '</div>'
+      }
       const nav = groups.map(group => '<details' + (group === page.group ? ' open' : '') + '><summary>' + html(group) + '</summary>' +
-        all.filter(p => p.group === group).map(p => '<a' + (p.path === page.path ? ' aria-current="page"' : '') + ' href="' + html(base + p.path + '.html') + '">' + html(p.title) + '</a>').join('\n') + '</details>').join('\n')
+        all.filter(p => p.group === group).map(navLink).join('\n') + '</details>').join('\n')
       const presentationLinks = nestedPresentations(props.model, edition)
         .filter(e => e.active !== false && e.site?.active !== false)
         .map(e => '<a class="presentation-link" href="' + html(base + relativePath(e.output.path).slice(prefix.length) + '/index.html') + '">' + html(e.title || 'Presentation') + '</a>').join('\n')
@@ -200,7 +228,19 @@ function qaResources(model: any): Record<string, string> {
   for (const file of walk(Fs, Path.join(PACKAGE, 'qa'))) files['.sdk/doc/qa/' + file] = Fs.readFileSync(Path.join(PACKAGE, 'qa', file), 'utf8')
   const vocabulary = model.main.kit.doc?.qa?.vocabulary ?? []
   if (vocabulary.some((s: any) => typeof s !== 'string' || !/^[\w -]+$/.test(s))) throw new Error('QA vocabulary entries must be literal words or phrases')
-  const words = [model.name, ...rows(model.main.kit.target).flatMap(t => [t.name, t.title]), ...rows(model.main.kit.entity).map(e => e.name), ...vocabulary]
+  // Identifiers the generated prose now CARRIES have to be spellable.
+  //
+  // The reference used to print request and response schemas as fenced JSON,
+  // which the prose gate skips entirely. Rendering them as property tables
+  // puts the specification's own descriptions into prose, and those
+  // descriptions cross-reference operations by id ("see listModels"). Those
+  // ids are the API's vocabulary, not typing errors, so the accept list this
+  // function already builds from model names covers them too.
+  const operationIds = rows(model.main.kit.entity).flatMap((entity: any) =>
+    rows(entity.op).flatMap((op: any) => (op.points ?? []).map((point: any) => {
+      try { return JSON.parse(point?.contract?.json || '{}').operationId } catch { return '' }
+    })))
+  const words = [model.name, ...rows(model.main.kit.target).flatMap(t => [t.name, t.title]), ...rows(model.main.kit.entity).map(e => e.name), ...operationIds, ...vocabulary]
     .filter(Boolean).map(w => Array.from(String(w), c => /[a-z]/i.test(c) ? '[' + c.toUpperCase() + c.toLowerCase() + ']' : c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join(''))
   files['.sdk/doc/qa/styles/config/vocabularies/Docgen/accept.txt'] += '\n' + words.join('\n') + '\n'
   return files

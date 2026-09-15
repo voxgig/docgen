@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.code = exports.cell = exports.prose = exports.html = void 0;
+exports.METHODS = exports.code = exports.cell = exports.prose = exports.html = void 0;
 exports.fence = fence;
 exports.rows = rows;
 exports.repoLinkFor = repoLinkFor;
@@ -12,6 +12,8 @@ exports.view = view;
 exports.surface = surface;
 exports.installation = installation;
 exports.summary = summary;
+exports.slugFor = slugFor;
+exports.typeName = typeName;
 exports.pages = pages;
 exports.slides = slides;
 const sdk_reference_1 = require("./sdk-reference");
@@ -186,34 +188,185 @@ function contract(point) {
         throw new Error('Invalid model contract: ' + point.contract.id);
     }
 }
-function operationText(op) {
-    const lines = ['## ' + (0, exports.prose)(op.name), '', (0, exports.prose)(op.short || op.description || '')];
-    for (const point of (op.points ?? []).filter((p) => p.active !== false)) {
-        lines.push('', '### ' + (0, exports.prose)((point.method || '').toUpperCase() + ' ' + (point.orig || '')), '');
-        const c = contract(point);
-        if (c.parameters?.length)
-            lines.push('#### Parameters', '', fieldsTable(c.parameters.map((p) => ({ ...p, type: p.schema?.type, name: p.name + ' (' + p.in + ')' }))), '');
-        if (c.requestBody) {
-            lines.push('#### Request body', '');
-            for (const [mime, body] of Object.entries(c.requestBody.content ?? {})) {
-                lines.push((0, exports.code)(mime), '', fence(JSON.stringify(body.schema ?? {}, null, 2)));
-                if (body.example)
-                    lines.push('Example request:', fence(JSON.stringify(body.example, null, 2)));
-            }
+// SWAGGER-STYLE REFERENCE, GROUPED BY ENTITY (not by OpenAPI tag).
+//
+// Requests and responses used to print as raw JSON Schema dumps, which is the
+// one thing a reader cannot skim: learning that `data.embeddings` is a
+// required array of numbers meant parsing nested `properties` / `items` /
+// `required` by eye. These helpers render the same schema as a property
+// table, the shape every API reference a reader has already used presents.
+//
+// The grouping stays the ENTITY, because that is what the SDKs expose. A tag
+// is a spec-authoring convention; `client.convert.create(...)` is what the
+// reader actually calls, so the reference is organised the way the code is.
+// How deep a nested schema is flattened before a row just names the type.
+// A reference that unrolls a recursive schema forever is worse than one that
+// says `object` and lets the linked specification answer the rest.
+const SCHEMA_DEPTH = 4;
+exports.METHODS = 'GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS';
+// The slug the rendered heading will carry.
+//
+// EXPORTED because the markdown heading renderer computes the id and the
+// sidebar computes the link, and a second copy of this rule is a broken
+// anchor waiting to happen: the two must agree character for character.
+function slugFor(text) {
+    return String(text ?? '').toLowerCase()
+        .replace(/[^\p{L}\p{N}_ -]/gu, '').replace(/ /g, '-');
+}
+// A readable type for one schema node.
+function typeName(schema) {
+    if (!schema || 'object' !== typeof schema)
+        return 'any';
+    if (Array.isArray(schema.enum) && schema.enum.length) {
+        return 'enum: ' + schema.enum.slice(0, 6).map((v) => String(v)).join(', ') +
+            (6 < schema.enum.length ? ', ...' : '');
+    }
+    if ('array' === schema.type)
+        return 'array of ' + typeName(schema.items);
+    for (const key of ['oneOf', 'anyOf', 'allOf']) {
+        const composed = schema[key];
+        if (Array.isArray(composed) && composed.length) {
+            return composed.map(typeName).join('allOf' === key ? ' and ' : ' or ');
         }
-        if (c.responses) {
-            lines.push('#### Responses', '');
-            for (const [status, response] of Object.entries(c.responses)) {
-                lines.push('##### ' + (0, exports.prose)(status), '', (0, exports.prose)(response.description || ''), '');
-                for (const [mime, body] of Object.entries(response.content ?? {})) {
-                    lines.push((0, exports.code)(mime), '', fence(JSON.stringify(body.schema ?? {}, null, 2)));
+    }
+    if (schema.type)
+        return String(schema.type) + (schema.format ? ' (' + schema.format + ')' : '');
+    return schema.properties ? 'object' : 'any';
+}
+// One row per property: nested objects flatten to dotted paths and array
+// items to `name[]`, so a single table carries a whole response shape.
+function schemaRows(schema, prefix = '', depth = 0) {
+    if (!schema || 'object' !== typeof schema || SCHEMA_DEPTH < depth)
+        return [];
+    if ('array' === schema.type)
+        return schemaRows(schema.items, prefix + '[].', depth);
+    const properties = schema.properties;
+    if (!properties || 'object' !== typeof properties)
+        return [];
+    const required = Array.isArray(schema.required) ? schema.required : [];
+    const out = [];
+    for (const [name, field] of Object.entries(properties)) {
+        const path = prefix + name;
+        out.push({
+            name: path,
+            type: typeName(field),
+            required: required.includes(name),
+            description: field?.description || field?.title || '',
+        });
+        const array = 'array' === field?.type;
+        const nested = array ? field.items : field;
+        if (nested?.properties)
+            out.push(...schemaRows(nested, path + (array ? '[]' : '') + '.', depth + 1));
+    }
+    return out;
+}
+function schemaTable(schema) {
+    const rows = schemaRows(schema);
+    if (!rows.length)
+        return '';
+    return ['| Property | Type | Required | Description |', '| --- | --- | --- | --- |',
+        ...rows.map(r => '| ' + (0, exports.code)(r.name) + ' | ' + (0, exports.code)(r.type) + ' | ' +
+            (r.required ? 'Yes' : 'No') + ' | ' + (0, exports.cell)(r.description) + ' |')].join('\n');
+}
+// A media type block: the property table when the schema has properties, the
+// bare type when it has none, and the specification's own example.
+function bodyText(content, label) {
+    const lines = [];
+    for (const [mime, body] of Object.entries(content ?? {})) {
+        lines.push((0, exports.code)(mime), '');
+        const table = schemaTable(body?.schema);
+        if (table)
+            lines.push(table, '');
+        else if (body?.schema)
+            lines.push('The ' + label + ' is ' + (0, exports.code)(typeName(body.schema)) + '.', '');
+        if (body?.example)
+            lines.push('Example ' + label + ':', fence(JSON.stringify(body.example, null, 2)));
+    }
+    return lines;
+}
+// What a route needs, in words. The reference printed the raw `security`
+// array, which tells a reader nothing they can act on.
+function authText(c) {
+    const security = c.security;
+    if (!Array.isArray(security))
+        return '';
+    if (!security.length || security.some((s) => s && !Object.keys(s).length)) {
+        return 'Authentication: not required.';
+    }
+    const schemes = c.securitySchemes || {};
+    const named = [...new Set(security.flatMap((s) => Object.keys(s || {})))];
+    if (!named.length)
+        return 'Authentication: not required.';
+    const describe = (name) => {
+        const scheme = schemes[name] || {};
+        const kind = 'http' === scheme.type && scheme.scheme ? String(scheme.scheme) + ' token' :
+            'apiKey' === scheme.type ? 'API key in the ' + (scheme.in || 'header') :
+                scheme.type ? String(scheme.type) : 'credential';
+        return (0, exports.prose)(kind) + ' (' + (0, exports.code)(name) + ')';
+    };
+    return 'Authentication: ' + named.map(describe).join(' or ') + '.';
+}
+// What a route gives back on success. An OpenAPI operation need not carry a
+// `summary`, and this one's do not, so an index column fed from `summary`
+// was empty on every row. The 2xx response description is the fact the spec
+// does record, and it answers the same question.
+function succeeds(c) {
+    for (const [status, response] of Object.entries(c?.responses ?? {})) {
+        if (/^2\d\d$/.test(status))
+            return String(response?.description || '').replace(/\.+$/, '');
+    }
+    return '';
+}
+function routesOf(entity) {
+    return rows(entity.op).flatMap((op) => (op.points ?? []).filter((p) => p.active !== false).map((point) => {
+        const method = String(point.method || '').toUpperCase();
+        const path = String(point.orig || '');
+        const heading = (0, exports.code)(method) + ' ' + path;
+        return { op, point, method, path, heading, id: slugFor(heading), c: contract(point) };
+    }));
+}
+// One entity page: the routes it exposes, its fields, then a reference
+// section per route, each with its own anchor so the sidebar can link to it.
+function entityReference(entity) {
+    const routes = routesOf(entity);
+    const lines = [];
+    if (routes.length) {
+        lines.push('## Operations', '', 'Every route this entity exposes. Each route links to its own reference on this page.', '', '| Method | Route | SDK operation | Returns |', '| --- | --- | --- | --- |', ...routes.map(r => '| ' + (0, exports.code)(r.method) + ' | [' + (0, exports.code)(r.path) + '](#' + r.id + ') | ' +
+            (0, exports.code)(r.op.name) + ' | ' + (0, exports.cell)(r.op.short || r.op.description || succeeds(r.c)) + ' |'), '');
+    }
+    lines.push('## Fields', '', fieldsTable(entity.fields ?? []), '');
+    for (const op of rows(entity.op)) {
+        lines.push('## ' + (0, exports.prose)(op.name), '', (0, exports.prose)(op.short || op.description || ''), '');
+        for (const r of routes.filter(x => x.op.name === op.name)) {
+            lines.push('### ' + r.heading, '');
+            if (r.c.operationId)
+                lines.push('Operation ID: ' + (0, exports.code)(r.c.operationId) + '.', '');
+            const auth = authText(r.c);
+            if (auth)
+                lines.push(auth, '');
+            if (r.c.parameters?.length) {
+                lines.push('#### Parameters', '', '| Parameter | In | Type | Required | Description |', '| --- | --- | --- | --- |', ...r.c.parameters.map((p) => '| ' + (0, exports.code)(p.name) + ' | ' + (0, exports.code)(p.in || '') + ' | ' +
+                    (0, exports.code)(typeName(p.schema)) + ' | ' + (p.required ? 'Yes' : 'No') + ' | ' +
+                    (0, exports.cell)(p.description || '') + ' |'), '');
+            }
+            if (r.c.requestBody) {
+                lines.push('#### Request body', '', ...bodyText(r.c.requestBody.content, 'request body'));
+            }
+            const responses = r.c.responses;
+            if (responses && Object.keys(responses).length) {
+                lines.push('#### Responses', '');
+                for (const [status, response] of Object.entries(responses)) {
+                    const described = String(response?.description || '').replace(/\.+$/, '');
+                    lines.push('##### ' + (0, exports.prose)(status) + (described ? ': ' + (0, exports.prose)(described) : ''), '');
+                    lines.push(...bodyText(response?.content, 'response'));
                 }
             }
         }
-        if (c.security)
-            lines.push('#### Security requirements', fence(JSON.stringify(c.security, null, 2)));
     }
-    return lines.join('\n');
+    return {
+        markdown: lines.join('\n'),
+        sections: routes.map(r => ({ id: r.id, title: r.method + ' ' + r.path })),
+    };
 }
 function pages(v, examples = {}) {
     const out = [];
@@ -241,8 +394,10 @@ function pages(v, examples = {}) {
     add('guides/concepts', 'Entities, SDKs, and tools', 'Guides', 'The API model defines entities, operations, fields, and endpoint contracts. SDK targets expose those operations in a programming language. Additional targets expose a command interface, an MCP server, or a data integration.\n\n' +
         'SDKs expose the API operations using each language’s conventions. Read the language reference for configuration and return values.');
     for (const entity of v.entities) {
+        const reference = entityReference(entity);
         add('api/' + encodeURIComponent(entity.name), entity.Name, 'API', [(0, exports.prose)(v.info.entity_desc?.[entity.name] || entity.desc || entity.short || ''), '',
-            '## Fields', '', fieldsTable(entity.fields ?? []), '', ...rows(entity.op).map(operationText)].join('\n'));
+            reference.markdown].join('\n'));
+        out[out.length - 1].sections = reference.sections;
     }
     for (const target of v.targets) {
         const kind = surface(target, v.kit), detail = v.kit.doc?.target?.[target.name] ?? {};

@@ -3,6 +3,7 @@ export type Page = {
     title: string;
     group: string;
     markdown: string;
+    sections?: Section[];
 };
 export declare const html: (v: any) => string;
 export declare const prose: (v: any) => string;
@@ -29,5 +30,12 @@ export declare function view(model: any, edition: any): {
 export declare function surface(target: any, kit: any): string;
 export declare function installation(model: any, target: any): string;
 export declare function summary(v: ReturnType<typeof view>): string;
+export declare const METHODS = "GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS";
+export type Section = {
+    id: string;
+    title: string;
+};
+export declare function slugFor(text: string): string;
+export declare function typeName(schema: any): string;
 export declare function pages(v: ReturnType<typeof view>, examples?: Record<string, string>): Page[];
 export declare function slides(v: ReturnType<typeof view>, example?: string): string;

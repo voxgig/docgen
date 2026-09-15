@@ -293,6 +293,73 @@ function fixture(m = model()) {
         f.clean();
     }
 });
+// The API section is an API REFERENCE, grouped by entity rather than by
+// OpenAPI tag: an entity is what the SDKs expose, so `pet.load(...)` is what
+// the reader actually calls. Every route of an entity lives on that entity's
+// page, and the page has to be navigable the way a reference is.
+//
+// What this pins is the structure, not the prose: an operations index whose
+// links resolve, a route heading that carries its method, a response heading
+// that carries its status, schemas as property tables rather than the JSON
+// Schema dumps this replaced, and a sidebar that reaches individual routes.
+(0, node_test_1.test)('the API reference is structured by entity, route and status', async () => {
+    const m = model();
+    m.main.kit.entity.pet.op.load.points[0].contract.json = JSON.stringify({
+        operationId: 'loadPet',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' }, description: 'Pet identifier.' }],
+        security: [{ bearerAuth: [] }],
+        securitySchemes: { bearerAuth: { type: 'http', scheme: 'bearer' } },
+        requestBody: { content: { 'application/json': { schema: { type: 'object', required: ['tag'],
+                        properties: { tag: { type: 'string', description: 'Short label.' } } } } } },
+        responses: { '200': { description: 'Pet record', content: { 'application/json': { schema: {
+                            type: 'object', required: ['data'], properties: {
+                                data: { type: 'object', required: ['name'], properties: {
+                                        name: { type: 'string', description: 'Display name.' },
+                                        tags: { type: 'array', items: { type: 'string' } }
+                                    } },
+                                ok: { type: 'boolean' }
+                            }
+                        } } } },
+            '404': { description: 'No such pet' } }
+    });
+    const f = fixture(m);
+    try {
+        await (0, docgen_1.generate)({ folder: f.root, model: m });
+        const page = f.read('docs/api/pet.html');
+        // An index of every route, each link resolving to a heading on the page.
+        strict_1.default.match(page, /Operations/);
+        strict_1.default.match(page, /href="#get-petsid"/);
+        strict_1.default.match(page, /<h3 id="get-petsid" class="operation" data-method="get">/);
+        // The index reports what the route returns, from the 2xx description.
+        strict_1.default.match(page, /Pet record/);
+        // Responses are classed by status family so each is recognisable.
+        strict_1.default.match(page, /<h5 id="200-pet-record" class="status" data-status="2xx">/);
+        strict_1.default.match(page, /data-status="4xx"/);
+        // Authentication in words, not the raw `security` array.
+        strict_1.default.match(page, /Authentication: bearer token/);
+        strict_1.default.match(page, /loadPet/);
+        // Parameters, with where each one goes.
+        strict_1.default.match(page, /Parameters/);
+        strict_1.default.match(page, /Pet identifier/);
+        // Schemas render as property tables: nested objects flatten to dotted
+        // paths, arrays name their element type, and `required` is a column.
+        strict_1.default.match(page, /data\.name/);
+        strict_1.default.match(page, /array of string/);
+        strict_1.default.match(page, /Display name/);
+        // ... and the JSON Schema dump they replace is gone.
+        strict_1.default.doesNotMatch(page, /&quot;properties&quot;/);
+        // The sidebar reaches individual routes, but only for the page being
+        // read: every entity page would otherwise list every other page's.
+        strict_1.default.match(page, /class="nav-section" href="#get-petsid"/);
+        strict_1.default.doesNotMatch(f.read('docs/index.html'), /class="nav-section"/);
+        // Operation ids appear in generated prose (specs cross-reference them),
+        // so the generated spelling vocabulary has to carry them.
+        strict_1.default.match(f.read('.sdk/doc/qa/styles/config/vocabularies/Docgen/accept.txt'), /\[Ll\]\[Oo\]\[Aa\]\[Dd\]\[Pp\]\[Ee\]\[Tt\]/);
+    }
+    finally {
+        f.clean();
+    }
+});
 (0, node_test_1.test)('the website links back to the SDK repository, declared or derived', async () => {
     // Derived: no `repo` declared, so `<origin>/<name>-sdk` under github.com —
     // the same rule sdkgen uses for go.mod and the package manifests.
