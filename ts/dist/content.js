@@ -37,7 +37,21 @@ exports.html = html;
 // \b(\w+) \1\b rule would corrupt meaning to tidy a typo. This list cannot.
 const NEVER_DOUBLED = ['the', 'a', 'an', 'of', 'to', 'and', 'in', 'for', 'on', 'at', 'by', 'with', 'from'];
 const undouble = (s) => s.replace(new RegExp('\\b(' + NEVER_DOUBLED.join('|') + ')([ \\t]+\\1)+\\b', 'gi'), '$1');
-const prose = (v) => (0, exports.html)(undouble(String(v ?? '')).replace(/\be\.g\.?(?![a-z])/gi, 'for example').replace(/\bi\.e\.?(?![a-z])/gi, 'that is').replace(/\s*—\s*/g, ', ')).replace(/\{/g, '&#123;').replace(/\}/g, '&#125;');
+// Line-break markup and stray whitespace in UPSTREAM text.
+//
+// A specification description is written for a rendering docgen does not
+// control. NoFrixion's security scheme carries literal <br/> tags, CRLF, and
+// the YAML block's own indentation, so it reached the page as
+//
+//   JWT Authorization header using the Bearer scheme.&lt;br/&gt;
+//                         Enter your JWT access token in the text input below.
+//
+// with the markup escaped into view and the indentation preserved. The tags
+// become spaces and the whitespace collapses, which is what every consumer of
+// that description has to do anyway. Escaping still happens afterwards, so no
+// markup survives into the page.
+const unwrap = (s) => s.replace(/<\s*br\s*\/?\s*>/gi, ' ').replace(/<\/?\s*p\s*>/gi, ' ').replace(/\s+/g, ' ').trim();
+const prose = (v) => (0, exports.html)(unwrap(undouble(String(v ?? ''))).replace(/\be\.g\.?(?![a-z])/gi, 'for example').replace(/\bi\.e\.?(?![a-z])/gi, 'that is').replace(/\s*—\s*/g, ', ')).replace(/\{/g, '&#123;').replace(/\}/g, '&#125;');
 exports.prose = prose;
 const cell = (v) => (0, exports.prose)(v).replace(/\|/g, '\\|').replace(/[\r\n]+/g, ' ');
 exports.cell = cell;

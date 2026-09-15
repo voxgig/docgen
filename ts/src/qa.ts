@@ -30,9 +30,13 @@ export function proseText(source: string, format = 'md'): string {
   }).join(' ')
   return stripUrls(collect(md.parse(source, {}))).replace(/[ \t]+/g, ' ').replace(/ *\n */g, '\n').replace(/\n{3,}/g, '\n\n').trim()
 }
-// The prose docgen itself wrote: everything except table cells. See the voice
-// rule in checkText for why the distinction exists.
-function authored(source: string, format: string): string {
+// The prose docgen itself WROTE, as opposed to the prose it QUOTED from the
+// API definition: everything except table cells, which is where every field,
+// parameter and response description lands.
+//
+// The split is not marginal. On NoFrixion's documentation, 93% of the rendered
+// prose is the upstream author's words and 7% is ours.
+export function authored(source: string, format: string): string {
   const stripped = 'html' === format || 'vue' === format
     ? source.replace(/<td\b[^>]*>[\s\S]*?<\/td>/gi, ' ')
     : source.split('\n').filter(line => !/^\s*\|/.test(line)).join('\n')
@@ -94,8 +98,22 @@ export function runQA(manifestPath: string, root = process.cwd(), vale = true): 
           }
         }
       }
+      // VALE SEES THE PROSE WE WROTE, NOT THE PROSE WE QUOTED.
+      //
+      // It used to see the whole rendered page, so it spell-checked the API
+      // definition. NoFrixion's reported 9,819 spelling errors: `Xero`,
+      // `payin`, `pisp`, `jwk` and the rest are that API's vocabulary, and
+      // `remvoed`, `amound` and `wehn` are typos in their spec. Neither is
+      // ours to fix, and failing the build on them makes the gate unpassable
+      // for any API with a large surface.
+      //
+      // It also made the gate slow for no return: 3MB of text per run, 93% of
+      // it quoted.
+      //
+      // The checks that find defects on the PAGE rather than in the VOICE,
+      // above in checkText, still read everything.
       const dest = Path.join(temp, index + '.txt')
-      Fs.writeFileSync(dest, proseText(text, format)); inputs.push(dest)
+      Fs.writeFileSync(dest, authored(text, format)); inputs.push(dest)
     }
     if (vale) {
       // maxBuffer, because the default is 1MB and Vale's report scales with the

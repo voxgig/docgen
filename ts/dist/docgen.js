@@ -252,6 +252,15 @@ function renderEdition(props) {
         throw new Error('Unknown documentation edition kind: ' + edition.kind);
     return result;
 }
+// The CAPITALISED entity name, as the pages spell it. `view()` derives it with
+// jostraca's names() at render time and it is not stored on the model, so an
+// accept list built from the raw model carried `i_payment` while every page
+// that lists entities said `IPayment`.
+function entityNames(name) {
+    const n = {};
+    (0, jostraca_1.names)(n, name);
+    return n.Name;
+}
 function qaResources(model) {
     const files = {};
     for (const file of walk(node_fs_1.default, node_path_1.default.join(PACKAGE, 'qa')))
@@ -275,7 +284,55 @@ function qaResources(model) {
             return '';
         }
     })));
-    const words = [model.name, ...(0, content_1.rows)(model.main.kit.target).flatMap(t => [t.name, t.title]), ...(0, content_1.rows)(model.main.kit.entity).map(e => e.name), ...operationIds, ...vocabulary]
+    // AND THE WORDS THE DEFINITION ITSELF USES.
+    //
+    // Vale now reads only the prose docgen wrote, but spec text still reaches a
+    // few renderings that are not tables: the summary joins operation
+    // descriptions into a sentence, for one. What leaks through is the API's own
+    // vocabulary (`payruns`, `pisp`, `jwk`, `Xero`) and, unavoidably, the API's
+    // own typos (`accoutt`, `remvoed`). Neither is ours to fix, and neither
+    // should fail a build.
+    //
+    // Harvested from description text only, never from our own strings, so this
+    // widens the dictionary by exactly the domain the documentation covers.
+    const described = [];
+    const harvest = (node, depth = 0) => {
+        if (!node || 24 < depth)
+            return;
+        if ('string' === typeof node) {
+            described.push(node);
+            return;
+        }
+        if (Array.isArray(node)) {
+            for (const item of node)
+                harvest(item, depth + 1);
+            return;
+        }
+        if ('object' !== typeof node)
+            return;
+        for (const key of ['desc', 'description', 'short', 'title', 'summary']) {
+            if ('string' === typeof node[key])
+                described.push(node[key]);
+        }
+        // The contract is a SERIALISED OpenAPI fragment, and most of the
+        // specification's prose lives inside it: the schema descriptions the
+        // reference tables render. Left unparsed, `csv`, `arithemtic` and the rest
+        // of this API's vocabulary stayed invisible to the accept list while being
+        // perfectly visible on the page.
+        if ('string' === typeof node.json) {
+            try {
+                harvest(JSON.parse(node.json), depth + 1);
+            }
+            catch { /* not JSON, nothing to harvest */ }
+        }
+        for (const value of Object.values(node))
+            if (value && 'object' === typeof value)
+                harvest(value, depth + 1);
+    };
+    harvest(model.main.kit.entity);
+    harvest(model.main.kit.info);
+    const specWords = [...new Set(described.join(' ').match(/[A-Za-z][A-Za-z0-9]{1,}/g) ?? [])].slice(0, 20000);
+    const words = [model.name, ...(0, content_1.rows)(model.main.kit.target).flatMap(t => [t.name, t.title]), ...(0, content_1.rows)(model.main.kit.entity).flatMap(e => [e.name, entityNames(e.name)]), ...operationIds, ...specWords, ...vocabulary]
         .filter(Boolean).map(w => Array.from(String(w), c => /[a-z]/i.test(c) ? '[' + c.toUpperCase() + c.toLowerCase() + ']' : c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join(''));
     files['.sdk/doc/qa/styles/config/vocabularies/Docgen/accept.txt'] += '\n' + words.join('\n') + '\n';
     return files;

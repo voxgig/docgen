@@ -158,6 +158,34 @@ test('dry run writes nothing and stale owned pages are removed',async()=>{
     Assert.ok(!Fs.existsSync(Path.join(f.root,'docs/api/pet.html')));Assert.equal(f.read('docs/handwritten.txt'),'keep')
   }finally{f.clean()}
 })
+test('the prose gate reads what docgen wrote, not what the definition said', () => {
+  const { authored, proseText } = require('../dist/qa')
+  const { prose } = require('../dist/content')
+
+  // Vale used to read the whole rendered page, so it spell-checked the API
+  // definition. On NoFrixion that was 9,819 errors: `Xero`, `payin`, `pisp`
+  // and `jwk` are that API's vocabulary, and `remvoed`, `amound` and `wehn`
+  // are typos in their spec. Neither is ours to fix.
+  const page = '<p>Docgen wrote this.</p><table><tr><td>remvoed amound wehn</td></tr></table>'
+  Assert.match(authored(page, 'html'), /Docgen wrote this/)
+  Assert.doesNotMatch(authored(page, 'html'), /remvoed|amound|wehn/)
+  Assert.match(proseText(page, 'html'), /remvoed/)
+
+  const markdown = 'Docgen wrote this.\n\n| Field | Note |\n| --- | --- |\n| id | remvoed |\n'
+  Assert.match(authored(markdown, 'md'), /Docgen wrote this/)
+  Assert.doesNotMatch(authored(markdown, 'md'), /remvoed/)
+
+  // Line-break markup and the YAML block's indentation, both of which reached
+  // the page: NoFrixion's security scheme rendered as
+  // "the Bearer scheme.&lt;br/&gt;" followed by twenty spaces.
+  Assert.equal(
+    prose('Bearer scheme.<br/>\r\n          Enter your token.'),
+    'Bearer scheme. Enter your token.')
+
+  // Escaping still happens after the unwrapping, so no markup survives.
+  Assert.equal(prose('<script>alert(1)</script>'), '&lt;script&gt;alert(1)&lt;/script&gt;')
+}, )
+
 test('the voice rule reads docgen prose, not quoted specification text', () => {
   const { checkText } = require('../dist/qa')
   const voice = 'Use neutral or second-person prose'

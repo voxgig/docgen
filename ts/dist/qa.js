@@ -4,6 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.proseText = proseText;
+exports.authored = authored;
 exports.checkText = checkText;
 exports.runQA = runQA;
 const node_fs_1 = __importDefault(require("node:fs"));
@@ -39,8 +40,12 @@ function proseText(source, format = 'md') {
     }).join(' ');
     return stripUrls(collect(md.parse(source, {}))).replace(/[ \t]+/g, ' ').replace(/ *\n */g, '\n').replace(/\n{3,}/g, '\n\n').trim();
 }
-// The prose docgen itself wrote: everything except table cells. See the voice
-// rule in checkText for why the distinction exists.
+// The prose docgen itself WROTE, as opposed to the prose it QUOTED from the
+// API definition: everything except table cells, which is where every field,
+// parameter and response description lands.
+//
+// The split is not marginal. On NoFrixion's documentation, 93% of the rendered
+// prose is the upstream author's words and 7% is ours.
 function authored(source, format) {
     const stripped = 'html' === format || 'vue' === format
         ? source.replace(/<td\b[^>]*>[\s\S]*?<\/td>/gi, ' ')
@@ -115,8 +120,22 @@ function runQA(manifestPath, root = process.cwd(), vale = true) {
                     }
                 }
             }
+            // VALE SEES THE PROSE WE WROTE, NOT THE PROSE WE QUOTED.
+            //
+            // It used to see the whole rendered page, so it spell-checked the API
+            // definition. NoFrixion's reported 9,819 spelling errors: `Xero`,
+            // `payin`, `pisp`, `jwk` and the rest are that API's vocabulary, and
+            // `remvoed`, `amound` and `wehn` are typos in their spec. Neither is
+            // ours to fix, and failing the build on them makes the gate unpassable
+            // for any API with a large surface.
+            //
+            // It also made the gate slow for no return: 3MB of text per run, 93% of
+            // it quoted.
+            //
+            // The checks that find defects on the PAGE rather than in the VOICE,
+            // above in checkText, still read everything.
             const dest = node_path_1.default.join(temp, index + '.txt');
-            node_fs_1.default.writeFileSync(dest, proseText(text, format));
+            node_fs_1.default.writeFileSync(dest, authored(text, format));
             inputs.push(dest);
         }
         if (vale) {
