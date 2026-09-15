@@ -140,11 +140,19 @@ function fixture(m = model()) {
         strict_1.default.match(f.read('presentation/slides.md'), /provider: none/);
         for (const p of first.files.filter(p => p.endsWith('.html'))) {
             const html = f.read(p);
+            // Honours the manifest's route map, the same way runQA does: a deck's
+            // index.html is a BUILD artifact under dist/, and preview.html links to
+            // it, so the raw path is legitimately absent from a generated tree.
+            const routes = JSON.parse(f.read('.sdk/doc/qa-manifest.json')).routes || {};
             for (const match of html.matchAll(/(?:href|src)="([^"]+)"/g)) {
                 const url = match[1].split('#')[0];
                 if (!url || /^[a-z]+:/i.test(url))
                     continue;
-                strict_1.default.ok(node_fs_1.default.existsSync(node_path_1.default.resolve(f.root, node_path_1.default.dirname(p), url)), p + ' broken link ' + url);
+                let at = node_path_1.default.resolve(f.root, node_path_1.default.dirname(p), url);
+                const route = routes[node_path_1.default.relative(f.root, at).split(node_path_1.default.sep).join('/')];
+                if (route)
+                    at = node_path_1.default.resolve(f.root, route);
+                strict_1.default.ok(node_fs_1.default.existsSync(at) || undefined !== route, p + ' broken link ' + url);
             }
         }
         const before = f.read('docs/index.html');
@@ -271,6 +279,18 @@ function fixture(m = model()) {
         (0, docgen_1.prepareProject)(root);
         strict_1.default.equal(node_fs_1.default.readFileSync(file, 'utf8'), 'custom page');
         strict_1.default.equal(node_fs_1.default.readFileSync(node_path_1.default.join(root, '.sdk/model/sdk.aon'), 'utf8').split('edition-index.aon').length, 2);
+        // A LATER DOCGEN THAT ADDS A TEMPLATE FILE STILL REACHES THIS PROJECT.
+        // Deleting one stands in for a file the package has and the project has
+        // not: the next prepareProject restores it, WITHOUT reverting the
+        // customised template beside it, and without introducing an edition the
+        // project never asked for.
+        const added = node_path_1.default.join(root, '.sdk/tm/edition/github-pages/search.js');
+        strict_1.default.ok(node_fs_1.default.existsSync(added));
+        node_fs_1.default.rmSync(added);
+        (0, docgen_1.prepareProject)(root);
+        strict_1.default.ok(node_fs_1.default.existsSync(added));
+        strict_1.default.equal(node_fs_1.default.readFileSync(file, 'utf8'), 'custom page');
+        strict_1.default.ok(!node_fs_1.default.existsSync(node_path_1.default.join(root, '.sdk/tm/edition/presentation')));
     }
     finally {
         node_fs_1.default.rmSync(root, { recursive: true, force: true });
@@ -568,6 +588,49 @@ function fixture(m = model()) {
         strict_1.default.ok(!node_fs_1.default.existsSync(file));
         strict_1.default.ok(node_fs_1.default.existsSync(node_path_1.default.join(f.root, '.sdk/admin/status.sh')));
         strict_1.default.ok(node_fs_1.default.existsSync(node_path_1.default.join(f.root, '.sdk/admin/custom.sh')));
+    }
+    finally {
+        f.clean();
+    }
+});
+(0, node_test_1.test)('the presentation ships a static preview that needs no build and no script', async () => {
+    const { stageSite } = require('../dist/docgen');
+    const m = model();
+    m.main.kit.doc.edition.deck = { kind: 'presentation', output: { path: 'docs/slidev' } };
+    const f = fixture(m);
+    try {
+        const result = await (0, docgen_1.generate)({ folder: f.root, model: m });
+        const preview = f.read('docs/slidev/preview.html');
+        // THE POINT OF THE PAGE: readable with no JavaScript. A built Slidev
+        // index.html is a shell around a module script and shows nothing without
+        // one, so a preview that needed a script would be no better than the deck.
+        strict_1.default.doesNotMatch(preview, /<script/i);
+        // Every slide, in order, with its heading as real markup rather than the
+        // markdown `# ` the deck source carries.
+        const deck = f.read('docs/slidev/slides.md');
+        const slideCount = deck.split(/^---$/m).filter(part => part.trim().startsWith('#')).length;
+        strict_1.default.ok(2 < slideCount);
+        strict_1.default.equal(preview.match(/<section class="slide">/g)?.length, slideCount);
+        strict_1.default.match(preview, /<span class="n">Slide 1<\/span>/);
+        strict_1.default.match(preview, new RegExp('<span class="n">Slide ' + slideCount + '<\\/span>'));
+        // Content, not just chrome: the deck's own headings reach the page.
+        strict_1.default.match(preview, /API capabilities/);
+        strict_1.default.match(preview, /<h2>/);
+        // It links to the interactive deck, whose index.html is a build artifact,
+        // so the link gate has to resolve it through the manifest's route map.
+        strict_1.default.match(preview, /href="\.\/index\.html"/);
+        strict_1.default.equal(JSON.parse(f.read('.sdk/doc/qa-manifest.json')).routes['docs/slidev/index.html'], 'docs/slidev/dist/index.html');
+        strict_1.default.ok(result.files.includes('docs/slidev/preview.html'));
+        // And it DEPLOYS from source. Everything else under a deck directory is
+        // filtered out of the Pages artifact as deck source; the preview is the
+        // one generated file there that a reader is meant to open, and it must not
+        // depend on the deck build having run.
+        f.write('.sdk/model/sdk.json', JSON.stringify(m));
+        f.write('docs/slidev/dist/index.html', '<h1>Built slides</h1>');
+        const staged = stageSite(f.root, 'github-pages');
+        strict_1.default.ok(node_fs_1.default.existsSync(node_path_1.default.join(staged, 'slidev/preview.html')));
+        strict_1.default.ok(!node_fs_1.default.existsSync(node_path_1.default.join(staged, 'slidev/slides.md')));
+        strict_1.default.match(f.read('docs/index.html'), /href="slidev\/preview.html"/);
     }
     finally {
         f.clean();

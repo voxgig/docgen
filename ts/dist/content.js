@@ -16,6 +16,7 @@ exports.summary = summary;
 exports.slugFor = slugFor;
 exports.typeName = typeName;
 exports.pages = pages;
+exports.slideBodies = slideBodies;
 exports.slides = slides;
 const sdk_reference_1 = require("./sdk-reference");
 const jostraca_1 = require("jostraca");
@@ -497,7 +498,12 @@ function pages(v, examples = {}) {
     }
     return out;
 }
-function slides(v, example = '') {
+// The slide bodies, one string per slide, WITHOUT the leading `# `.
+//
+// Split out of slides() because the presentation edition now emits two things
+// from the same source: the Slidev deck, and a static preview page that needs
+// each slide separately. One builder, so the two can never drift.
+function slideBodies(v, example = '') {
     const chunks = [(0, exports.prose)(v.title) + '\n\n' + (0, exports.prose)(v.info.summary || v.description) + (v.kit.doc?.brand?.notice ? '\n\n' + (0, exports.prose)(v.kit.doc.brand.notice) : ''),
         'API capabilities\n\n' + v.entities.map(e => '- ' + (0, exports.prose)(e.Name) + ': ' + rows(e.op).map(o => (0, exports.code)(o.name)).join(', ')).join('\n'),
         'Authentication\n\n' + (v.info.security?.type ? 'Use ' + (0, exports.code)(v.info.security.type) + ' authentication. Configure credentials outside source control.' : 'The model declares no authentication scheme.'),
@@ -508,6 +514,9 @@ function slides(v, example = '') {
     if (example)
         chunks.splice(4, 0, 'Set up a client\n\n' + example);
     chunks.push('Next steps\n\n- Follow the first-call guide.\n- Read the API and SDK reference.\n- Review the feature and tool documentation.');
-    return chunks.map(c => '# ' + c).join('\n\n---\n\n') + '\n';
+    return chunks;
+}
+function slides(v, example = '') {
+    return slideBodies(v, example).map(c => '# ' + c).join('\n\n---\n\n') + '\n';
 }
 //# sourceMappingURL=content.js.map

@@ -512,7 +512,12 @@ export function pages(v: ReturnType<typeof view>, examples: Record<string,string
   }
   return out
 }
-export function slides(v: ReturnType<typeof view>, example = ''): string {
+// The slide bodies, one string per slide, WITHOUT the leading `# `.
+//
+// Split out of slides() because the presentation edition now emits two things
+// from the same source: the Slidev deck, and a static preview page that needs
+// each slide separately. One builder, so the two can never drift.
+export function slideBodies(v: ReturnType<typeof view>, example = ''): string[] {
   const chunks = [prose(v.title) + '\n\n' + prose(v.info.summary || v.description) + (v.kit.doc?.brand?.notice ? '\n\n' + prose(v.kit.doc.brand.notice) : ''),
     'API capabilities\n\n' + v.entities.map(e => '- ' + prose(e.Name) + ': ' + rows(e.op).map(o => code(o.name)).join(', ')).join('\n'),
     'Authentication\n\n' + (v.info.security?.type ? 'Use ' + code(v.info.security.type) + ' authentication. Configure credentials outside source control.' : 'The model declares no authentication scheme.'),
@@ -521,5 +526,9 @@ export function slides(v: ReturnType<typeof view>, example = ''): string {
     .map(t => '- ' + prose(t.title || t.name) + ': ' + (isPublished(v.model, t.name) ? prose(installation(v.model, t)) : 'build from ' + code(t.name + '/'))).join('\n'))
   if (example) chunks.splice(4, 0, 'Set up a client\n\n' + example)
   chunks.push('Next steps\n\n- Follow the first-call guide.\n- Read the API and SDK reference.\n- Review the feature and tool documentation.')
-  return chunks.map(c => '# ' + c).join('\n\n---\n\n') + '\n'
+  return chunks
+}
+
+export function slides(v: ReturnType<typeof view>, example = ''): string {
+  return slideBodies(v, example).map(c => '# ' + c).join('\n\n---\n\n') + '\n'
 }

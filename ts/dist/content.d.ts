@@ -39,4 +39,5 @@ export type Section = {
 export declare function slugFor(text: string): string;
 export declare function typeName(schema: any): string;
 export declare function pages(v: ReturnType<typeof view>, examples?: Record<string, string>): Page[];
+export declare function slideBodies(v: ReturnType<typeof view>, example?: string): string[];
 export declare function slides(v: ReturnType<typeof view>, example?: string): string;
