@@ -24,7 +24,20 @@ const node_path_1 = __importDefault(require("node:path"));
 const sdkgen_1 = require("@voxgig/sdkgen");
 const html = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 exports.html = html;
-const prose = (v) => (0, exports.html)(String(v ?? '').replace(/\be\.g\./gi, 'for example').replace(/\bi\.e\./gi, 'that is').replace(/\s*—\s*/g, ', ')).replace(/\{/g, '&#123;').replace(/\}/g, '&#125;');
+// Accidental doubled words in UPSTREAM text, collapsed.
+//
+// prose() already normalises Latin abbreviations and em dashes from the
+// specification, because the generated pages are our documentation whatever
+// the source of the words. A doubled word belongs in the same bucket:
+// NoFrixion's own spec says "get the the FX held rates for", and that reaches
+// the reader as a visible defect on a page we published.
+//
+// Restricted to words whose repetition is NEVER correct. English has genuine
+// doublings ("had had", "that that", "is is" in a quotation), so a blanket
+// \b(\w+) \1\b rule would corrupt meaning to tidy a typo. This list cannot.
+const NEVER_DOUBLED = ['the', 'a', 'an', 'of', 'to', 'and', 'in', 'for', 'on', 'at', 'by', 'with', 'from'];
+const undouble = (s) => s.replace(new RegExp('\\b(' + NEVER_DOUBLED.join('|') + ')([ \\t]+\\1)+\\b', 'gi'), '$1');
+const prose = (v) => (0, exports.html)(undouble(String(v ?? '')).replace(/\be\.g\.?(?![a-z])/gi, 'for example').replace(/\bi\.e\.?(?![a-z])/gi, 'that is').replace(/\s*—\s*/g, ', ')).replace(/\{/g, '&#123;').replace(/\}/g, '&#125;');
 exports.prose = prose;
 const cell = (v) => (0, exports.prose)(v).replace(/\|/g, '\\|').replace(/[\r\n]+/g, ' ');
 exports.cell = cell;

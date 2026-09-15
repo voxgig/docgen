@@ -210,6 +210,22 @@ function fixture(m = model()) {
         f.clean();
     }
 });
+(0, node_test_1.test)('upstream spec prose is normalised before it reaches the gate', () => {
+    const { prose } = require('../dist/content');
+    // A LATIN ABBREVIATION WITHOUT ITS FINAL DOT. NoFrixion's spec says
+    // "Its 1 based. i.e firstpage is 1", and `i.e` tokenises as a bare "I", so
+    // nineteen generated pages failed the neutral-voice gate on the strength of
+    // one upstream typo. The rewrite used to require the trailing dot.
+    strict_1.default.match(prose('Its 1 based. i.e firstpage is 1'), /that is firstpage/);
+    strict_1.default.match(prose('e.g a value'), /for example a value/);
+    strict_1.default.match(prose('i.e., the thing'), /that is, the thing/);
+    // A DOUBLED WORD, from the same spec: "get the the FX held rates for".
+    strict_1.default.equal(prose('get the the FX held rates for'), 'get the FX held rates for');
+    // But only where repetition is never correct. English has genuine doublings,
+    // and tidying a typo must not rewrite meaning.
+    strict_1.default.equal(prose('he had had enough'), 'he had had enough');
+    strict_1.default.equal(prose('that that is fine'), 'that that is fine');
+});
 (0, node_test_1.test)('model prose cannot execute HTML or Vue expressions', async () => {
     const m = model();
     m.main.kit.info.summary = '<script>alert(1)</script> {{ execute() }}';

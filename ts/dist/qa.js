@@ -93,7 +93,16 @@ function runQA(manifestPath, root = process.cwd(), vale = true) {
             inputs.push(dest);
         }
         if (vale) {
-            const result = (0, node_child_process_1.spawnSync)('vale', ['--config=' + config, '--minAlertLevel=error', ...inputs], { encoding: 'utf8', cwd: root });
+            // maxBuffer, because the default is 1MB and Vale's report scales with the
+            // documentation. A 49-entity API produces 64 pages, and the run died on
+            //
+            //   Vale is required for text QA: spawnSync vale ENOBUFS
+            //
+            // which reads as a missing binary and is nothing of the kind: Vale ran,
+            // found plenty, and its own output overflowed the pipe. Small doc sets
+            // never reach it, so this only ever appears on the projects whose reports
+            // matter most.
+            const result = (0, node_child_process_1.spawnSync)('vale', ['--config=' + config, '--minAlertLevel=error', ...inputs], { encoding: 'utf8', cwd: root, maxBuffer: 64 * 1024 * 1024 });
             if (result.error)
                 errors.push('Vale is required for text QA: ' + result.error.message);
             else if (result.status !== 0) {

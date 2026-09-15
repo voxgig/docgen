@@ -158,6 +158,26 @@ test('dry run writes nothing and stale owned pages are removed',async()=>{
     Assert.ok(!Fs.existsSync(Path.join(f.root,'docs/api/pet.html')));Assert.equal(f.read('docs/handwritten.txt'),'keep')
   }finally{f.clean()}
 })
+test('upstream spec prose is normalised before it reaches the gate', () => {
+  const { prose } = require('../dist/content')
+
+  // A LATIN ABBREVIATION WITHOUT ITS FINAL DOT. NoFrixion's spec says
+  // "Its 1 based. i.e firstpage is 1", and `i.e` tokenises as a bare "I", so
+  // nineteen generated pages failed the neutral-voice gate on the strength of
+  // one upstream typo. The rewrite used to require the trailing dot.
+  Assert.match(prose('Its 1 based. i.e firstpage is 1'), /that is firstpage/)
+  Assert.match(prose('e.g a value'), /for example a value/)
+  Assert.match(prose('i.e., the thing'), /that is, the thing/)
+
+  // A DOUBLED WORD, from the same spec: "get the the FX held rates for".
+  Assert.equal(prose('get the the FX held rates for'), 'get the FX held rates for')
+
+  // But only where repetition is never correct. English has genuine doublings,
+  // and tidying a typo must not rewrite meaning.
+  Assert.equal(prose('he had had enough'), 'he had had enough')
+  Assert.equal(prose('that that is fine'), 'that that is fine')
+}, )
+
 test('model prose cannot execute HTML or Vue expressions',async()=>{
   const m:any=model();m.main.kit.info.summary='<script>alert(1)</script> {{ execute() }}'
   m.main.kit.doc.edition.presentation={kind:'presentation',active:true,output:{path:'presentation'}}
