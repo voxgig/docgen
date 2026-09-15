@@ -593,6 +593,46 @@ function fixture(m = model()) {
         f.clean();
     }
 });
+(0, node_test_1.test)('the deck teaches capabilities, then a tutorial, then extending with sdkgen', async () => {
+    const m = model();
+    m.main.kit.doc.edition.deck = { kind: 'presentation', output: { path: 'docs/slidev' } };
+    const f = fixture(m);
+    try {
+        await (0, docgen_1.generate)({ folder: f.root, model: m });
+        const deck = f.read('docs/slidev/slides.md');
+        const at = (heading) => deck.indexOf('# ' + heading);
+        // THE THREE ACTS, IN ORDER. The deck used to be a flat list that named no
+        // operation and showed no code, so a reader reached the end with nothing
+        // they could type.
+        strict_1.default.ok(-1 < at('API capabilities'));
+        strict_1.default.ok(at('API capabilities') < at('Tutorial: your first call'));
+        strict_1.default.ok(at('Tutorial: your first call') < at('This SDK is generated'));
+        // Act one states what comes with the SDK, features included. They were
+        // absent from the deck entirely, though they are half of what it offers.
+        strict_1.default.match(deck, /Built-in features/);
+        strict_1.default.match(deck, /Authentication/);
+        // Act two walks ONE REAL OPERATION from the model, not four generic
+        // instructions. The dotted form is sdkgen's own: entity accessor, then
+        // operation.
+        strict_1.default.match(deck, /Step 1: install/);
+        strict_1.default.match(deck, /Step 3: call an operation/);
+        strict_1.default.match(deck, /await client\.Pet\(\)\.load\(/);
+        strict_1.default.match(deck, /Step 4: handle the failure/);
+        strict_1.default.match(deck, /catch/);
+        // Act three is about the generator, and names the one rule that decides
+        // whether a customisation survives.
+        strict_1.default.match(deck, /voxgig-sdkgen target add/);
+        strict_1.default.match(deck, /voxgig-sdkgen feature add/);
+        strict_1.default.match(deck, /project\.aon/);
+        // The preview renders the same acts: one builder, two outputs.
+        const preview = f.read('docs/slidev/preview.html');
+        strict_1.default.equal(preview.match(/<section class="slide">/g)?.length, deck.split(/^---$/m).filter(p => p.trim().startsWith('#')).length);
+        strict_1.default.match(preview, /Tutorial: your first call/);
+    }
+    finally {
+        f.clean();
+    }
+});
 (0, node_test_1.test)('the presentation ships a static preview that needs no build and no script', async () => {
     const { stageSite } = require('../dist/docgen');
     const m = model();

@@ -499,6 +499,49 @@ test('Pages admin script is generated with executable permissions and removed wh
 })
 
 
+test('the deck teaches capabilities, then a tutorial, then extending with sdkgen', async () => {
+  const m: any = model()
+  m.main.kit.doc.edition.deck = { kind: 'presentation', output: { path: 'docs/slidev' } }
+  const f = fixture(m)
+  try {
+    await generate({ folder: f.root, model: m })
+    const deck = f.read('docs/slidev/slides.md')
+    const at = (heading: string) => deck.indexOf('# ' + heading)
+
+    // THE THREE ACTS, IN ORDER. The deck used to be a flat list that named no
+    // operation and showed no code, so a reader reached the end with nothing
+    // they could type.
+    Assert.ok(-1 < at('API capabilities'))
+    Assert.ok(at('API capabilities') < at('Tutorial: your first call'))
+    Assert.ok(at('Tutorial: your first call') < at('This SDK is generated'))
+
+    // Act one states what comes with the SDK, features included. They were
+    // absent from the deck entirely, though they are half of what it offers.
+    Assert.match(deck, /Built-in features/)
+    Assert.match(deck, /Authentication/)
+
+    // Act two walks ONE REAL OPERATION from the model, not four generic
+    // instructions. The dotted form is sdkgen's own: entity accessor, then
+    // operation.
+    Assert.match(deck, /Step 1: install/)
+    Assert.match(deck, /Step 3: call an operation/)
+    Assert.match(deck, /await client\.Pet\(\)\.load\(/)
+    Assert.match(deck, /Step 4: handle the failure/)
+    Assert.match(deck, /catch/)
+
+    // Act three is about the generator, and names the one rule that decides
+    // whether a customisation survives.
+    Assert.match(deck, /voxgig-sdkgen target add/)
+    Assert.match(deck, /voxgig-sdkgen feature add/)
+    Assert.match(deck, /project\.aon/)
+
+    // The preview renders the same acts: one builder, two outputs.
+    const preview = f.read('docs/slidev/preview.html')
+    Assert.equal(preview.match(/<section class="slide">/g)?.length, deck.split(/^---$/m).filter(p => p.trim().startsWith('#')).length)
+    Assert.match(preview, /Tutorial: your first call/)
+  } finally { f.clean() }
+})
+
 test('the presentation ships a static preview that needs no build and no script', async () => {
   const { stageSite } = require('../dist/docgen')
   const m: any = model()

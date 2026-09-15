@@ -514,18 +514,143 @@ export function pages(v: ReturnType<typeof view>, examples: Record<string,string
 }
 // The slide bodies, one string per slide, WITHOUT the leading `# `.
 //
-// Split out of slides() because the presentation edition now emits two things
-// from the same source: the Slidev deck, and a static preview page that needs
-// each slide separately. One builder, so the two can never drift.
+// Split out of slides() because the presentation edition emits two things from
+// the same source: the Slidev deck, and a static preview page that needs each
+// slide separately. One builder, so the two can never drift.
+//
+// THREE ACTS, in the order someone meets the SDK:
+//
+//   1. What it gives you   the API surface, the authentication, the features
+//                          that come built in, and the languages it ships in.
+//   2. A tutorial          install, construct a client, make one real call,
+//                          handle the failure, turn a feature on.
+//   3. Extending it        the SDK is generated, so the interesting question
+//                          is what you can regenerate and what survives it.
+//
+// It used to be a flat list: capabilities, then authentication, then four
+// generic instructions that named no operation and showed no code, then five
+// slides of install commands. A reader reached the end knowing the API existed
+// and not one thing they could type.
+//
+// Everything here comes from the model. A deck for an API with no entities, no
+// features or no targets drops those slides rather than asserting something
+// the model does not say.
 export function slideBodies(v: ReturnType<typeof view>, example = ''): string[] {
-  const chunks = [prose(v.title) + '\n\n' + prose(v.info.summary || v.description) + (v.kit.doc?.brand?.notice ? '\n\n' + prose(v.kit.doc.brand.notice) : ''),
-    'API capabilities\n\n' + v.entities.map(e => '- ' + prose(e.Name) + ': ' + rows(e.op).map(o => code(o.name)).join(', ')).join('\n'),
-    'Authentication\n\n' + (v.info.security?.type ? 'Use ' + code(v.info.security.type) + ' authentication. Configure credentials outside source control.' : 'The model declares no authentication scheme.'),
-    'Make your first call\n\n1. Install an SDK.\n2. Configure the server and credentials.\n3. Supply the operation’s required input.\n4. Inspect the response.']
-  for (let i = 0; i < v.targets.length; i += 5) chunks.push('SDKs and tools ' + (Math.floor(i / 5) + 1) + ' / ' + Math.ceil(v.targets.length / 5) + '\n\n' + v.targets.slice(i, i + 5)
-    .map(t => '- ' + prose(t.title || t.name) + ': ' + (isPublished(v.model, t.name) ? prose(installation(v.model, t)) : 'build from ' + code(t.name + '/'))).join('\n'))
-  if (example) chunks.splice(4, 0, 'Set up a client\n\n' + example)
-  chunks.push('Next steps\n\n- Follow the first-call guide.\n- Read the API and SDK reference.\n- Review the feature and tool documentation.')
+  const chunks: string[] = []
+  const group = <T,>(items: T[], size: number): T[][] =>
+    Array.from({ length: Math.ceil(items.length / size) }, (_, i) => items.slice(i * size, i * size + size))
+  const titled = (label: string, parts: any[][]) => parts.forEach((part, i) =>
+    chunks.push(label + (1 < parts.length ? ' ' + (i + 1) + ' / ' + parts.length : '') + '\n\n' + part.join('\n')))
+
+  const sdks = v.targets.filter(t => 'sdk' === surface(t, v.kit))
+  const tools = v.targets.filter(t => 'sdk' !== surface(t, v.kit))
+  const routes = v.entities.flatMap(e => rows(e.op).flatMap(op => (op.points ?? []).filter((p: any) => false !== p.active)))
+  // The one operation the tutorial walks through. First entity, first
+  // operation, first route: the same choice the first-call guide makes, so the
+  // deck and the website teach the same call.
+  const first = v.entities.flatMap(e => rows(e.op).flatMap(op => (op.points || []).map((p: any) => ({ e, op, p }))))[0]
+  const primary = sdks.find(t => 'ts' === (t.origname || t.name)) || sdks[0]
+
+  // --- ACT ONE: what the SDK gives you --------------------------------------
+  chunks.push(prose(v.title) + '\n\n' + prose(v.info.summary || v.description) +
+    (v.kit.doc?.brand?.notice ? '\n\n' + prose(v.kit.doc.brand.notice) : ''))
+
+  // A deck for a one-entity API should not read "1 entities across 1 HTTP
+  // routes". The counts are the model's, so they are as small as the model is.
+  const many = (n: number, one: string, more = one + 's') => n + ' ' + (1 === n ? one : more)
+  const scale = [
+    v.entities.length ? '- ' + many(v.entities.length, 'entity', 'entities') + ' across ' + many(routes.length, 'HTTP route') : '',
+    sdks.length ? '- ' + many(sdks.length, 'language SDK') + (tools.length ? ' and ' + many(tools.length, 'companion tool') : '') : '',
+    v.features.length ? '- ' + many(v.features.length, 'optional feature') + ' built in, all off until you enable them' : '',
+  ].filter(Boolean)
+  chunks.push('What this SDK gives you\n\n' + (scale.length ? scale.join('\n') + '\n\n' : '') +
+    'An entity groups related operations, and each operation may cover several routes. ' +
+    'The SDK exposes both using the conventions of your language, so you write ' +
+    (first ? code('client') + ' calls rather than HTTP requests.' : 'code rather than HTTP requests.'))
+
+  if (v.entities.length) titled('API capabilities', group(
+    v.entities.map(e => '- ' + prose(e.Name) + ': ' + rows(e.op).map(o => code(o.name)).join(', ')), 6))
+
+  chunks.push('Authentication\n\n' + (v.info.security?.type
+    ? 'The API uses ' + code(v.info.security.type) + ' authentication. Pass the credential when you construct the client, and read it from the environment rather than from source.'
+    : 'The API model declares no authentication scheme, so no credential is required.'))
+
+  if (v.features.length) {
+    chunks.push('Features come with the SDK\n\n' +
+      'Retries, caching, paging, logging and the rest are compiled in and switched off. ' +
+      'You turn on the ones your application needs in the client configuration, and pay for nothing you leave alone.')
+    titled('Built-in features', group(v.features.map(f => '- ' + prose(f.title || f.name)), 8))
+  }
+
+  if (v.targets.length) titled('SDKs and tools', group(v.targets.map(t => '- ' + prose(t.title || t.name) + ': ' +
+    (isPublished(v.model, t.name) ? prose(installation(v.model, t)) : 'build from ' + code(t.name + '/'))), 5))
+
+  // --- ACT TWO: the tutorial ------------------------------------------------
+  if (primary && example) {
+    const lang = primary.origname || primary.name
+    chunks.push('Tutorial: your first call\n\n' +
+      'Five steps, in ' + prose(primary.title || primary.name) + '. Every other language in this repository follows the same shape.\n\n' +
+      '1. Install the SDK.\n2. Construct a client.\n3. Call an operation.\n4. Handle the failure.\n5. Turn on a feature.')
+
+    chunks.push('Step 1: install\n\n' + (isPublished(v.model, primary.name)
+      ? fence(installation(v.model, primary), 'sh').trim()
+      : 'This target is not published yet. Build it from ' + code(primary.name + '/') + ' in the repository.'))
+
+    chunks.push('Step 2: construct a client\n\n' + example.trim() + '\n\n' +
+      'The credential is read from the environment, so nothing secret reaches your source tree.')
+
+    if (first) {
+      // The dotted form is sdkgen's own: an entity accessor, then the
+      // operation. Emitted for ts and js only, the two targets whose generated
+      // shape this is verified against; every other language gets the same
+      // fact in prose, which is true everywhere.
+      const call = ['ts', 'js'].includes(lang)
+        ? fence('const result = await client.' + first.e.Name + '().' + first.op.name + '({\n  // the input this operation requires\n})', lang).trim()
+        : 'Call ' + code(first.op.name) + ' on the ' + prose(first.e.Name) + ' entity.'
+      chunks.push('Step 3: call an operation\n\n' + call + '\n\n' +
+        'That reaches ' + code(first.p.method + ' ' + first.p.orig) + '. The reference page for ' +
+        prose(first.e.Name) + ' lists every field it expects.')
+
+      chunks.push('Step 4: handle the failure\n\n' + (['ts', 'js'].includes(lang)
+        ? fence('try {\n  const result = await client.' + first.e.Name + '().' + first.op.name + '({ /* input */ })\n} catch (err) {\n  // authentication, validation, or the API itself\n}', lang).trim()
+        : 'Operations signal failure the way your language expects. Handle authentication and validation errors before retrying.') + '\n\n' +
+        'Operations fail loudly rather than returning an empty result, so an error is never mistaken for no data.')
+    }
+
+    const retry = v.features.find(f => 'retry' === f.name) || v.features[0]
+    if (retry) chunks.push('Step 5: turn on a feature\n\n' +
+      fence('{ "' + retry.name + '": { "active": true } }').trim() + '\n\n' +
+      'Pass that in the client configuration and ' + prose(retry.title || retry.name).toLowerCase() +
+      ' is live. The feature pages document every option and its default.')
+  }
+
+  // --- ACT THREE: extending it with sdkgen ----------------------------------
+  const spec = specLink(v.model)
+  chunks.push('This SDK is generated\n\n' +
+    'Nothing here was written by hand. An API definition goes in, and every language, test suite and page of documentation comes out.\n\n' +
+    'So the useful question is not how to patch it. It is what to regenerate, and what survives when you do.')
+
+  chunks.push('Regenerate it\n\n' + fence('npm run generate', 'sh').trim() + '\n\n' +
+    (spec ? 'Update the API definition in ' + code('.sdk/def/') + ' and regenerate. ' : 'Update the API definition and regenerate. ') +
+    'New routes, new fields and new entities reach every target at once.')
+
+  chunks.push('Add a language\n\n' + fence('voxgig-sdkgen target add <language>', 'sh').trim() + '\n\n' +
+    (1 < sdks.length ? 'This repository already builds ' + sdks.length + ' of them. ' : '') +
+    'A target added today is generated from the same model as the ones already here, so it arrives complete rather than as a stub.')
+
+  chunks.push('Add a feature\n\n' + fence('voxgig-sdkgen feature add <feature>', 'sh').trim() + '\n\n' +
+    'A feature is behaviour around the call, not a change to it: retries, caching, audit trails, secret resolution. ' +
+    'It lands in every target that supports it.')
+
+  chunks.push('What survives a regeneration\n\n' +
+    '- ' + code('.sdk/model/project.aon') + ' is yours. Settings belong there.\n' +
+    '- Everything generated is overwritten, every time.\n\n' +
+    'An edit to a generated file works until the next regeneration and then disappears without warning, which is the one failure mode worth knowing in advance.')
+
+  const next = ['- Read the API reference for the operation you need.',
+    '- Pick a language and follow its installation page.',
+    v.features.length ? '- Review the feature pages before enabling anything in production.' : '']
+  chunks.push('Where to go next\n\n' + next.filter(Boolean).join('\n'))
   return chunks
 }
 
