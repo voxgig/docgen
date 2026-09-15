@@ -15,13 +15,19 @@ const md = new MarkdownIt({ html: false });
 const PACKAGE = node_path_1.default.resolve(__dirname, '..');
 // The local gate and Vale consume this exact extracted prose and vocabulary.
 // Fenced examples, inline identifiers, HTML code, scripts, and styles are not prose.
+// A URL IS NOT PROSE. Its characters are a path, not English, and every word
+// rule here will eventually trip over one: a Microsoft docs link in NoFrixion's
+// spec carries `en-us`, the hyphen is a word boundary, and `us` failed the
+// neutral-voice check on five generated pages. Stripped before any check runs,
+// the same way code blocks already are.
+const stripUrls = (s) => s.replace(/\b[a-z][a-z0-9+.-]*:\/\/[^\s<>"')\]]+/gi, ' ');
 function proseText(source, format = 'md') {
     if (format === 'html' || format === 'vue') {
         if (format === 'vue')
             source = source.replace(/\{\{[^]*?\}\}/g, ' ');
         source = source.replace(/<(script|style|pre|code)\b[^>]*>[\s\S]*?<\/\1>/gi, ' ')
             .replace(/<!--[^]*?-->/g, '').replace(/<\/(?:p|h[1-6]|li|tr|td|th|div|nav|header|main|summary|details|footer|aside|span)>/gi, '\n\n').replace(/<[^>]+>/g, ' ');
-        return md.utils.unescapeAll(source).replace(/[ \t]+/g, ' ').replace(/ *\n */g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+        return stripUrls(md.utils.unescapeAll(source)).replace(/[ \t]+/g, ' ').replace(/ *\n */g, '\n').replace(/\n{3,}/g, '\n\n').trim();
     }
     source = source.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, '').replace(/<!--[\s\S]*?-->/g, '');
     const collect = (tokens) => tokens.map(t => {
@@ -31,7 +37,15 @@ function proseText(source, format = 'md') {
             return collect(t.children);
         return t.type === 'text' ? md.utils.unescapeAll(t.content) : t.type.endsWith('_close') ? '\n\n' : ' ';
     }).join(' ');
-    return collect(md.parse(source, {})).replace(/[ \t]+/g, ' ').replace(/ *\n */g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+    return stripUrls(collect(md.parse(source, {}))).replace(/[ \t]+/g, ' ').replace(/ *\n */g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+// The prose docgen itself wrote: everything except table cells. See the voice
+// rule in checkText for why the distinction exists.
+function authored(source, format) {
+    const stripped = 'html' === format || 'vue' === format
+        ? source.replace(/<td\b[^>]*>[\s\S]*?<\/td>/gi, ' ')
+        : source.split('\n').filter(line => !/^\s*\|/.test(line)).join('\n');
+    return proseText(stripped, format);
 }
 function checkText(source, format = 'md', rejectFile = node_path_1.default.join(PACKAGE, 'qa/styles/config/vocabularies/Docgen/reject.txt')) {
     const text = proseText(source, format), errors = [];
@@ -43,7 +57,20 @@ function checkText(source, format = 'md', rejectFile = node_path_1.default.join(
         errors.push('Remove the repeated word');
     if (/—/.test(text))
         errors.push('Use a comma, colon, parentheses, or a new sentence instead of an em dash');
-    if (/\b(I|me|my|mine|we|us|our|ours)\b/i.test(text))
+    // THE VOICE RULE DOES NOT READ TABLE CELLS.
+    //
+    // Tables are where QUOTED specification text lives: every field and parameter
+    // description in the API reference is the upstream author's sentence, not
+    // ours. NoFrixion's spec says "the ID returned by the service provider
+    // initiating the payment for us", and five generated pages failed a rule that
+    // exists to keep DOCGEN's own voice neutral. Policing someone else's spec
+    // makes the gate unpassable for any API whose descriptions use first person,
+    // and there will be many.
+    //
+    // Only this rule is narrowed. Banned phrases, em dashes, emoji, exclamation
+    // marks and repeated words still apply everywhere, because those are defects
+    // on the page whoever wrote them.
+    if (/\b(I|me|my|mine|we|us|our|ours)\b/i.test(authored(source, format)))
         errors.push('Use neutral or second-person prose');
     if (/\p{Extended_Pictographic}/u.test(text))
         errors.push('Do not use emoji in documentation');

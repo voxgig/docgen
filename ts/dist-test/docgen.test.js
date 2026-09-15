@@ -210,6 +210,23 @@ function fixture(m = model()) {
         f.clean();
     }
 });
+(0, node_test_1.test)('the voice rule reads docgen prose, not quoted specification text', () => {
+    const { checkText } = require('../dist/qa');
+    const voice = 'Use neutral or second-person prose';
+    // Ours, and still caught.
+    strict_1.default.ok(checkText('<p>We built this for you.</p>', 'html').includes(voice));
+    strict_1.default.ok(checkText('We built this for you.', 'md').includes(voice));
+    // Theirs. Every field description in the API reference is the upstream
+    // author's sentence: NoFrixion's spec says "returned by the service provider
+    // initiating the payment for us", and five pages failed a rule that exists to
+    // keep docgen's own voice neutral.
+    strict_1.default.ok(!checkText('<table><tr><td>returned for us</td></tr></table>', 'html').includes(voice));
+    strict_1.default.ok(!checkText('| Field | Note |\n| --- | --- |\n| id | returned for us |', 'md').includes(voice));
+    // Only that rule is narrowed. A defect is a defect wherever it appears.
+    strict_1.default.ok(checkText('<table><tr><td>Fast! Really fast!</td></tr></table>', 'html').length > 0);
+    // A URL is not prose: `en-us` in a Microsoft docs link failed the voice rule.
+    strict_1.default.ok(!checkText('<p>See https://docs.microsoft.com/en-us/dotnet/standard</p>', 'html').includes(voice));
+});
 (0, node_test_1.test)('upstream spec prose is normalised before it reaches the gate', () => {
     const { prose } = require('../dist/content');
     // A LATIN ABBREVIATION WITHOUT ITS FINAL DOT. NoFrixion's spec says
