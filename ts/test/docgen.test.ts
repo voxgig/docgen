@@ -34,6 +34,24 @@ function fixture(m: any = model()) {
   }
   return {root,m,write,read:(p:string)=>Fs.readFileSync(Path.join(root,p),'utf8'),clean:()=>Fs.rmSync(root,{recursive:true,force:true})}
 }
+test('a feature page explains itself to a reader who knows none of this',async()=>{
+  // The page used to be a one-line description, a bare JSON blob and two
+  // headings. Nothing said what a feature was, whether it was on, or what a
+  // "pipeline stage" meant.
+  const m=model()
+  const f=fixture(m)
+  try {
+    await generate({folder:f.root,model:m})
+    const page=f.read('docs/features/retry.html')
+    Assert.match(page,/adds behaviour around API calls/)
+    Assert.match(page,/features are off by\s*\n?\s*default/)
+    Assert.match(page,/defaults compiled into the SDK/)
+    Assert.match(page,/points in the request lifecycle/)
+    // The model content is still there — the prose is an addition, not a
+    // replacement.
+    Assert.match(page,/PreFetch/)
+  } finally { f.clean() }
+})
 test('a feature page never renders a heading with nothing under it',async()=>{
   // univec's `proxy` is an ACTIVE feature whose 11 declared hooks are all
   // `active: false`. rows() drops inactive entries, correctly, but the headings

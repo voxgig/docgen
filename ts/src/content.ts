@@ -482,15 +482,32 @@ export function pages(v: ReturnType<typeof view>, examples: Record<string,string
     // hooks into the pipeline then gets an answer rather than silence.
     const stages = rows(feature.hook)
     const options = feature.config?.options ?? {}
+    // A FEATURE PAGE HAS TO EXPLAIN ITSELF.
+    //
+    // It used to be a one-line description, a bare JSON blob, and two headings:
+    // a reader who did not already know what a feature was, whether it was on,
+    // or what a "pipeline stage" meant got no help from the page. Each section
+    // now says what it is and what to do with it, which costs three sentences
+    // and makes the page readable on its own.
     add('features/' + encodeURIComponent(feature.name), feature.title || feature.name, 'Features',
       [prose(feature.description || feature.short || ''), '',
+        'A feature adds behaviour around API calls without changing how you call the API.'
+        + ' Being documented here does not mean it is switched on: features are off by'
+        + ' default, and you enable the ones your application needs when you construct the'
+        + ' client.', '',
         '## Options', '',
         ...(0 < Object.keys(options).length
-          ? [fence(JSON.stringify(options, null, 2))]
+          ? ['The settings this feature reads, with the defaults compiled into the SDK.'
+             + ' Pass replacements in the client configuration to change them; set'
+             + ' ' + code('active') + ' to turn the feature on.', '',
+             fence(JSON.stringify(options, null, 2))]
           : ['This feature takes no configuration options.']),
         '', '## Pipeline stages', '',
         ...(0 < stages.length
-          ? stages.map(h => '- ' + code(h.name))
+          ? ['The points in the request lifecycle where this feature runs. The SDK calls'
+             + ' each stage in order as it prepares a request, sends it, and handles the'
+             + ' response.', '',
+             ...stages.map(h => '- ' + code(h.name))]
           : ['No pipeline stages are enabled for this feature.'])].join('\n'))
   }
   return out
