@@ -555,6 +555,26 @@ test('the deck teaches capabilities, then a tutorial, then extending with sdkgen
     const capabilitySlides = (deck.match(/# API capabilities/g) || []).length
     Assert.ok(4 > capabilitySlides, 'capabilities capped at three slides, got ' + capabilitySlides)
 
+    // With MANY entities, the cap holds and the remainder line fits INSIDE it.
+    // Appending "and N more" to a full three slices spilled one bullet onto a
+    // fourth slide, which is how NoFrixion's 49 entities produced four.
+    const many: any = model()
+    many.main.kit.doc.edition.deck = { kind: 'presentation', output: { path: 'docs/slidev' } }
+    const pet = many.main.kit.entity.pet
+    for (let i = 0; 40 > i; i++) {
+      const clone = JSON.parse(JSON.stringify(pet))
+      clone.name = 'pet' + i
+      delete clone.Name
+      many.main.kit.entity['pet' + i] = clone
+    }
+    const big = fixture(many)
+    try {
+      await generate({ folder: big.root, model: many })
+      const bigDeck = big.read('docs/slidev/slides.md')
+      Assert.equal((bigDeck.match(/# API capabilities/g) || []).length, 3)
+      Assert.match(bigDeck, /and \d+ more, in the API reference/)
+    } finally { big.clean() }
+
     // Act one states what comes with the SDK, features included. They were
     // absent from the deck entirely, though they are half of what it offers.
     Assert.match(deck, /Built-in features/)

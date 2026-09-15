@@ -590,11 +590,16 @@ export function slideBodies(v: ReturnType<typeof view>, example = ''): string[] 
   // pages carry the full set, and they are linked; the deck's job is to convey
   // the shape and the scale.
   if (v.entities.length) {
+    // The remainder line COUNTS against the cap. Taking CAP * PER entities and
+    // then appending "and N more" makes CAP * PER + 1 lines, which spills a
+    // single bullet onto one extra slide: NoFrixion's 49 entities produced four
+    // slides from a cap of three, the last of them one line long.
     const CAP = 3, PER = 6
-    const shown = v.entities.slice(0, CAP * PER)
-    const rest = v.entities.length - shown.length
+    const room = CAP * PER
+    const overflows = v.entities.length > room
+    const shown = v.entities.slice(0, overflows ? room - 1 : room)
     const lines = shown.map(e => '- ' + prose(e.Name) + ': ' + rows(e.op).map(o => code(o.name)).join(', '))
-    if (0 < rest) lines.push('- and ' + rest + ' more, in the API reference')
+    if (overflows) lines.push('- and ' + (v.entities.length - shown.length) + ' more, in the API reference')
     titled('API capabilities', group(lines, PER))
   }
 
