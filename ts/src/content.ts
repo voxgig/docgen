@@ -9,6 +9,33 @@ export const html = (v: any): string => String(v ?? '').replace(/[&<>"']/g,
 export const prose = (v: any): string => html(String(v ?? '').replace(/\be\.g\./gi, 'for example').replace(/\bi\.e\./gi, 'that is').replace(/\s*—\s*/g, ', ')).replace(/\{/g, '&#123;').replace(/\}/g, '&#125;')
 export const cell = (v: any): string => prose(v).replace(/\|/g, '\\|').replace(/[\r\n]+/g, ' ')
 export const code = (v: any): string => '`' + String(v ?? '').replace(/`/g, '') + '`'
+// AN ENTITY PAGE PATH, which is not simply its encoded name.
+//
+// Entity pages live at `api/<name>.html`, and the API section's own landing page
+// is `api/index.html`. An entity actually named `index` therefore claims the
+// path the overview already owns, and generation dies with
+//
+//   Error: Duplicate documentation page: api/index
+//
+// Four of the 609 freepublicapis SDKs are built from specs carrying such an
+// entity — 4chan's board `index` among them — so they could not be documented
+// at all.
+//
+// THE LANDING PAGE CANNOT MOVE: `index.html` is what a web server returns for
+// the directory. So the entity moves instead, and it moves in ONE place,
+// because five call sites build this path and a page that moves without its
+// links is worse than the collision it fixed.
+//
+// `api/` is the only section with a landing page, so it is the only section
+// that can collide.
+const RESERVED_API_PAGES = new Set(['index'])
+
+export function entityPage(name: string): string {
+  const slug = encodeURIComponent(name)
+  return RESERVED_API_PAGES.has(slug) ? slug + '-entity' : slug
+}
+
+
 export function fence(text: string, language = 'json'): string {
   const marker = '`'.repeat(Math.max(3, ...Array.from(text.matchAll(/`+/g), m => m[0].length + 1)))
   return '\n' + marker + language.replace(/[^\w+-]/g, '') + '\n' + text + '\n' + marker + '\n'
@@ -74,7 +101,7 @@ export function summary(v: ReturnType<typeof view>): string {
     const href = Path.posix.relative(base, website.output.path + '/' + page)
     return '[' + prose(label) + '](' + href.split('/').map(encodeURIComponent).join('/') + ')'
   }
-  const apiLink = (e: any) => link(e.Name, 'api/' + encodeURIComponent(e.name) + '.html', 'entities', e.name)
+  const apiLink = (e: any) => link(e.Name, 'api/' + entityPage(e.name) + '.html', 'entities', e.name)
   const sdkLink = (t: any) => link(t.title || t.name, 'sdks/' + encodeURIComponent(t.name) + '.html', 'targets', t.name)
   const lines = ['# ' + prose(v.title), '', prose(v.description), '', '## Start here', '',
     'This guide introduces the API, the client libraries, and the companion tools in this repository. Start with the API capabilities, choose a client for your application, and use the linked reference when you need exact request and response details.', '',
@@ -388,7 +415,7 @@ export function pages(v: ReturnType<typeof view>, examples: Record<string,string
   add('api/index', 'API overview', 'API', [prose(v.info.summary || ''), '',
     ...servers.map((s: any) => '- ' + code(s.url) + (s.description ? ': ' + prose(s.description) : '')),
     ...(spec ? ['', 'This documentation is generated from the [OpenAPI specification](' + spec + ') held in the SDK repository.'] : []),
-    '', ...v.entities.map(e => '- [' + prose(e.Name) + '](' + encodeURIComponent(e.name) + '.html)')].join('\n'))
+    '', ...v.entities.map(e => '- [' + prose(e.Name) + '](' + entityPage(e.name) + '.html)')].join('\n'))
   add('guides/authentication', 'Authentication', 'Guides',
     v.info.security && Object.keys(v.info.security).length ?
       'Configure credentials for the scheme described by the API model. Keep credentials outside source control.\n' +
@@ -397,7 +424,7 @@ export function pages(v: ReturnType<typeof view>, examples: Record<string,string
   add('guides/first-call', 'Make your first API call', 'Guides', first ?
     '1. Choose an SDK from the SDK section and follow its installation instructions.\n' +
     '2. Configure the API server and authentication settings.\n' +
-    '3. Open the [' + prose(first.e.Name) + ' reference](../api/' + encodeURIComponent(first.e.name) + '.html) and supply the parameters and request body it requires.\n' +
+    '3. Open the [' + prose(first.e.Name) + ' reference](../api/' + entityPage(first.e.name) + '.html) and supply the parameters and request body it requires.\n' +
     '4. Call ' + code(first.op.name) + ' and inspect the returned entity data.\n\n' +
     'The first endpoint is ' + code(first.p.method + ' ' + first.p.orig) + '. Request and response examples come from the model.' :
     'Add an active entity and operation to the API model to document a first call.')
@@ -409,7 +436,7 @@ export function pages(v: ReturnType<typeof view>, examples: Record<string,string
     'SDKs expose the API operations using each language’s conventions. Read the language reference for configuration and return values.')
   for (const entity of v.entities) {
     const reference = entityReference(entity)
-    add('api/' + encodeURIComponent(entity.name), entity.Name, 'API',
+    add('api/' + entityPage(entity.name), entity.Name, 'API',
       [prose(v.info.entity_desc?.[entity.name] || entity.desc || entity.short || ''), '',
         reference.markdown].join('\n'))
     out[out.length - 1].sections = reference.sections
@@ -421,7 +448,7 @@ export function pages(v: ReturnType<typeof view>, examples: Record<string,string
     const text = [prose(detail.description || target.title || target.name), '', '## Install', '',
       prose(installation(v.model, target)), '', '## Package', '', code(packageName(v.model, target.name)), '',
       '## API reference', '', ...(kind === 'mcp' ? ['The API reference covers all entities. The tools section lists the operations this server exposes.', ''] : []), '| Entity | Operations |', '| --- | --- |', ...v.entities.map(e =>
-        '| [' + cell(e.Name) + '](../api/' + encodeURIComponent(e.name) + '.html) | ' + rows(e.op).map(op => code(op.name)).join(', ') + ' |'),
+        '| [' + cell(e.Name) + '](../api/' + entityPage(e.name) + '.html) | ' + rows(e.op).map(op => code(op.name)).join(', ') + ' |'),
       '', '## Configuration', '', 'Set the server URL and credentials for your environment. Enable only the features your application needs.',
       '', '## Features', '', ...features.map(f => '- [' + prose(f.title || f.name) + '](../features/' + encodeURIComponent(f.name) + '.html)')]
     if (examples[target.name]) text.push('', '## Set up the client', '', 'This setup fragment reads credentials from the environment. Use the API operation reference to supply input for each call.', '', fence(examples[target.name], detail.language || target.ext || target.name))
@@ -440,9 +467,32 @@ export function pages(v: ReturnType<typeof view>, examples: Record<string,string
     add((kind === 'sdk' ? 'sdks/' : 'tools/') + encodeURIComponent(target.name), target.title || target.name,
       kind === 'sdk' ? 'SDKs' : 'Tools', text.join('\n'))
   }
-  for (const feature of v.features) add('features/' + encodeURIComponent(feature.name), feature.title || feature.name, 'Features',
-    [prose(feature.description || feature.short || ''), '', '## Options', fence(JSON.stringify(feature.config?.options ?? {}, null, 2)),
-      '## Pipeline stages', '', ...rows(feature.hook).map(h => '- ' + code(h.name))].join('\n'))
+  for (const feature of v.features) {
+    // A HEADING WITH NOTHING UNDER IT IS A BUG, not a blank line.
+    //
+    // `rows` drops entries marked `active: false`, which is right — an inactive
+    // hook is not part of the pipeline. But the headings were emitted
+    // unconditionally, so a feature that is itself ENABLED while every one of
+    // its hooks is off rendered "## Pipeline stages" followed by nothing.
+    // univec's `proxy` is exactly that: active feature, 11 declared hooks, 0 of
+    // them active, and a published page with an empty section.
+    //
+    // Say so instead, which is what this file already does for an absent
+    // security scheme and an absent first call. A reader asking whether proxy
+    // hooks into the pipeline then gets an answer rather than silence.
+    const stages = rows(feature.hook)
+    const options = feature.config?.options ?? {}
+    add('features/' + encodeURIComponent(feature.name), feature.title || feature.name, 'Features',
+      [prose(feature.description || feature.short || ''), '',
+        '## Options', '',
+        ...(0 < Object.keys(options).length
+          ? [fence(JSON.stringify(options, null, 2))]
+          : ['This feature takes no configuration options.']),
+        '', '## Pipeline stages', '',
+        ...(0 < stages.length
+          ? stages.map(h => '- ' + code(h.name))
+          : ['No pipeline stages are enabled for this feature.'])].join('\n'))
+  }
   return out
 }
 export function slides(v: ReturnType<typeof view>, example = ''): string {

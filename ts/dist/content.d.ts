@@ -9,6 +9,7 @@ export declare const html: (v: any) => string;
 export declare const prose: (v: any) => string;
 export declare const cell: (v: any) => string;
 export declare const code: (v: any) => string;
+export declare function entityPage(name: string): string;
 export declare function fence(text: string, language?: string): string;
 export declare function rows(map: any): any[];
 export declare function repoLinkFor(model: any): {

@@ -40,6 +40,62 @@ function fixture(m = model()) {
     }
     return { root, m, write, read: (p) => node_fs_1.default.readFileSync(node_path_1.default.join(root, p), 'utf8'), clean: () => node_fs_1.default.rmSync(root, { recursive: true, force: true }) };
 }
+(0, node_test_1.test)('a feature page never renders a heading with nothing under it', async () => {
+    // univec's `proxy` is an ACTIVE feature whose 11 declared hooks are all
+    // `active: false`. rows() drops inactive entries, correctly, but the headings
+    // were emitted unconditionally — so the published page carried a "Pipeline
+    // stages" section with no body:
+    // https://voxgig-sdk.github.io/univec-sdk/features/proxy.html
+    const m = model();
+    m.main.kit.feature.proxy = { name: 'proxy', title: 'Outbound proxy', active: true,
+        config: { options: {} },
+        hook: { PreFetch: { active: false }, PostFetch: { active: false } } };
+    const f = fixture(m);
+    try {
+        await (0, docgen_1.generate)({ folder: f.root, model: m });
+        const page = f.read('docs/features/proxy.html');
+        // Both sections still appear — a reader asking whether proxy hooks into the
+        // pipeline should get an answer, not a missing section.
+        strict_1.default.match(page, /Pipeline stages/);
+        strict_1.default.match(page, /No pipeline stages are enabled for this feature/);
+        strict_1.default.match(page, /This feature takes no configuration options/);
+        // And a feature that DOES have active stages still lists them.
+        const test = f.read('docs/features/retry.html');
+        strict_1.default.match(test, /PreFetch/);
+        strict_1.default.ok(!/No pipeline stages are enabled/.test(test));
+    }
+    finally {
+        f.clean();
+    }
+});
+(0, node_test_1.test)('an entity named index does not collide with the API landing page', async () => {
+    // `api/index.html` is the API section's own overview, and a web server serves
+    // it for the directory, so it cannot move. An entity named `index` used to
+    // claim the same path and generation died with
+    // "Duplicate documentation page: api/index" — which is how 4 of the 609
+    // freepublicapis SDKs (4chan among them) could not be documented at all.
+    const m = model();
+    m.main.kit.entity.index = { name: 'index', active: true, fields: [{ name: 'id', type: 'string', req: true }],
+        op: { list: { name: 'list', points: [{ method: 'GET', orig: '/index' }] } } };
+    const f = fixture(m);
+    try {
+        await (0, docgen_1.generate)({ folder: f.root, model: m });
+        // Both pages exist, and they are different pages.
+        const overview = f.read('docs/api/index.html');
+        const entity = f.read('docs/api/index-entity.html');
+        // Both exist and are genuinely different pages. Not "the entity page lacks
+        // the words API overview" — every page renders the nav, which links to it.
+        strict_1.default.match(overview, /API overview/);
+        strict_1.default.notEqual(overview, entity);
+        strict_1.default.match(entity, /<h1[^>]*>Index<\/h1>/);
+        // And the overview LINKS to the moved page, not to itself — a page that
+        // moves without its links is worse than the collision.
+        strict_1.default.match(overview, /index-entity\.html/);
+    }
+    finally {
+        f.clean();
+    }
+});
 (0, node_test_1.test)('default scaffold contains summary and Pages, without Slidev', () => {
     const files = (0, docgen_1.scaffoldDefaults)();
     strict_1.default.ok(files['model/edition/summary.aon']);

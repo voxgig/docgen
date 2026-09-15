@@ -34,6 +34,56 @@ function fixture(m: any = model()) {
   }
   return {root,m,write,read:(p:string)=>Fs.readFileSync(Path.join(root,p),'utf8'),clean:()=>Fs.rmSync(root,{recursive:true,force:true})}
 }
+test('a feature page never renders a heading with nothing under it',async()=>{
+  // univec's `proxy` is an ACTIVE feature whose 11 declared hooks are all
+  // `active: false`. rows() drops inactive entries, correctly, but the headings
+  // were emitted unconditionally — so the published page carried a "Pipeline
+  // stages" section with no body:
+  // https://voxgig-sdk.github.io/univec-sdk/features/proxy.html
+  const m=model()
+  ;(m.main.kit.feature as any).proxy={name:'proxy',title:'Outbound proxy',active:true,
+    config:{options:{}},
+    hook:{PreFetch:{active:false},PostFetch:{active:false}}}
+  const f=fixture(m)
+  try {
+    await generate({folder:f.root,model:m})
+    const page=f.read('docs/features/proxy.html')
+    // Both sections still appear — a reader asking whether proxy hooks into the
+    // pipeline should get an answer, not a missing section.
+    Assert.match(page,/Pipeline stages/)
+    Assert.match(page,/No pipeline stages are enabled for this feature/)
+    Assert.match(page,/This feature takes no configuration options/)
+    // And a feature that DOES have active stages still lists them.
+    const test=f.read('docs/features/retry.html')
+    Assert.match(test,/PreFetch/)
+    Assert.ok(!/No pipeline stages are enabled/.test(test))
+  } finally { f.clean() }
+})
+test('an entity named index does not collide with the API landing page',async()=>{
+  // `api/index.html` is the API section's own overview, and a web server serves
+  // it for the directory, so it cannot move. An entity named `index` used to
+  // claim the same path and generation died with
+  // "Duplicate documentation page: api/index" — which is how 4 of the 609
+  // freepublicapis SDKs (4chan among them) could not be documented at all.
+  const m=model()
+  ;(m.main.kit.entity as any).index={name:'index',active:true,fields:[{name:'id',type:'string',req:true}],
+    op:{list:{name:'list',points:[{method:'GET',orig:'/index'}]}}}
+  const f=fixture(m)
+  try {
+    await generate({folder:f.root,model:m})
+    // Both pages exist, and they are different pages.
+    const overview=f.read('docs/api/index.html')
+    const entity=f.read('docs/api/index-entity.html')
+    // Both exist and are genuinely different pages. Not "the entity page lacks
+    // the words API overview" — every page renders the nav, which links to it.
+    Assert.match(overview,/API overview/)
+    Assert.notEqual(overview,entity)
+    Assert.match(entity,/<h1[^>]*>Index<\/h1>/)
+    // And the overview LINKS to the moved page, not to itself — a page that
+    // moves without its links is worse than the collision.
+    Assert.match(overview,/index-entity\.html/)
+  } finally { f.clean() }
+})
 test('default scaffold contains summary and Pages, without Slidev',()=>{
   const files=scaffoldDefaults();Assert.ok(files['model/edition/summary.aon']);Assert.ok(files['model/edition/github-pages.aon']);Assert.ok(!Object.keys(files).some(p=>p.includes('presentation')))
 })
