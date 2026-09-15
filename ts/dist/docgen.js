@@ -229,11 +229,7 @@ function renderEdition(props) {
                 all.filter(p => p.group === group).map(navLink).join('\n') + '</details>').join('\n');
             const presentationLinks = nestedPresentations(props.model, edition)
                 .filter(e => e.active !== false && e.site?.active !== false)
-                .flatMap(e => {
-                const at = base + relativePath(e.output.path).slice(prefix.length);
-                return ['<a class="presentation-link" href="' + (0, content_1.html)(at + '/index.html') + '">' + (0, content_1.html)(e.title || 'Presentation') + '</a>',
-                    '<a class="presentation-link presentation-preview" href="' + (0, content_1.html)(at + '/preview.html') + '">' + (0, content_1.html)((e.title || 'Presentation') + ' (static)') + '</a>'];
-            }).join('\n');
+                .map(e => '<a class="presentation-link" href="' + (0, content_1.html)(base + relativePath(e.output.path).slice(prefix.length) + '/index.html') + '">' + (0, content_1.html)(e.title || 'Presentation') + '</a>').join('\n');
             put(prefix + page.path + '.html', template(props, 'page.html', {
                 ...branding, notice: safeMarkdown(brand.notice || '', true), title: (0, content_1.html)(page.title), site: (0, content_1.html)(v.title), content: safeMarkdown(page.markdown), nav, base, presentationLinks, section: (0, content_1.html)(page.group),
                 logo: logo ? '<img class="logo" src="' + base + 'assets/' + logo + '" alt="' + (0, content_1.html)(v.title) + '">' : '',
@@ -251,40 +247,6 @@ function renderEdition(props) {
         put(prefix + 'style.css', '@import "./assets/style.css";\n');
         put(prefix + 'package.json', template(props, 'package.json', {}));
         put(prefix + 'uno.config.ts', template(props, 'uno.config.ts', {}));
-        // A STATIC preview of the same slides, alongside the deck.
-        //
-        // A built Slidev deck is a single-page application: index.html is a ~1KB
-        // shell around a module script, and it renders NOTHING without JavaScript.
-        // So the deck is unreadable from a file view, from a checkout that has
-        // never run the build, and from any reader that does not execute scripts.
-        // This page is the same slide bodies as ordinary HTML, no script at all,
-        // and stageSite deploys it from SOURCE rather than from dist — so it is
-        // there even when the deck build is not.
-        const style = styleFor(props.model, edition);
-        const dark = style.mode === 'dark';
-        // Only the two ground tokens: --card and --line derive from them, so the
-        // dark palette cannot drift out of step with the light one.
-        const darkTokens = '  --bg: ' + style.color.darkBackground + '; --fg: ' + style.color.darkText + '; }';
-        put(prefix + 'preview.html', template(props, 'preview.html', {
-            title: (0, content_1.html)(v.title), mode: style.mode,
-            notice: safeMarkdown(v.info.summary || v.description || '', true),
-            logoImage: logo ? '<img src="./assets/' + logo + '" alt="">' : '',
-            font: style.font, headingFont: style.headingFont, mono: style.mono,
-            background: dark ? style.color.darkBackground : style.color.background,
-            text: dark ? style.color.darkText : style.color.text,
-            primary: style.color.primary, accent: style.color.accent,
-            darkBlock: 'auto' === style.mode
-                ? ':root { color-scheme: light dark; }\n@media (prefers-color-scheme: dark) { :root {' + darkTokens + ' }'
-                : dark ? ':root { color-scheme: dark; }' : '',
-            slides: (0, content_1.slideBodies)(v, examples.ts ? '\n```ts\n' + examples.ts + '\n```\n' : '')
-                .map((body, i) => {
-                const brk = body.indexOf('\n');
-                const heading = -1 === brk ? body : body.slice(0, brk);
-                const rest = -1 === brk ? '' : body.slice(brk + 1).trim();
-                return '<section class="slide">\n<span class="n">Slide ' + (i + 1) + '</span>\n<h2>' +
-                    safeMarkdown(heading, true) + '</h2>\n' + (rest ? safeMarkdown(rest) : '') + '\n</section>';
-            }).join('\n')
-        }), true);
     }
     else
         throw new Error('Unknown documentation edition kind: ' + edition.kind);
@@ -401,15 +363,8 @@ async function generate(opts) {
     if (!editions.length)
         return { editions: [], files: [] };
     Object.assign(files, qaResources(model));
-    // EVERY active presentation, not only the ones nested under a website.
-    //
-    // A deck's index.html is a build artifact at <deck>/dist/index.html wherever
-    // the deck lives, and preview.html links to it from inside the deck
-    // directory. Restricted to nested decks, this map left that link unresolvable
-    // for a standalone deck, and the link gate then reported the deck's own
-    // entry point as broken.
-    const routes = Object.fromEntries(editions.filter(e => e.kind === 'presentation' && e.active !== false)
-        .map(e => [relativePath(e.output.path) + '/index.html', relativePath(e.output.path) + '/dist/index.html']));
+    const routes = Object.fromEntries(editions.filter(e => e.kind === 'github-pages').flatMap(site => nestedPresentations(model, site).filter(e => e.active !== false && e.site?.active !== false)
+        .map(e => [e.output.path + '/index.html', e.output.path + '/dist/index.html'])));
     files['.sdk/doc/qa-manifest.json'] = JSON.stringify({ files: [...new Set(qa)].sort(), config: '.sdk/doc/qa/vale.ini', routes }, null, 2) + '\n';
     if (doc.ci?.active !== false) {
         const sites = editions.filter(e => e.kind === 'github-pages');
@@ -483,17 +438,6 @@ function stageSite(root, name) {
                 throw new Error('Presentation build overlaps website output: ' + relative);
             sources.push({ from: inside(root, output + '/dist/' + file, node_fs_1.default), relative });
         }
-        // The static preview ships from SOURCE, not from dist.
-        //
-        // Everything else under a presentation directory is deck source and is
-        // filtered out above; preview.html is the one generated file there that is
-        // meant for readers. Copying it here rather than routing it through
-        // public/ keeps it independent of whether the Slidev build ran.
-        const preview = node_path_1.default.join(inside(root, output, node_fs_1.default), 'preview.html');
-        const previewRelative = relativePath(output.slice(prefix.length) + '/preview.html');
-        if (node_fs_1.default.existsSync(preview) && !sources.some(existing => existing.relative === previewRelative)) {
-            sources.push({ from: preview, relative: previewRelative });
-        }
     }
     const destination = node_fs_1.default.mkdtempSync(node_path_1.default.join(node_os_1.default.tmpdir(), 'docgen-pages-'));
     for (const file of sources) {
@@ -562,10 +506,8 @@ function prepareProject(root) {
 // Installation is deliberately once-per-project: the setup marker stops npm
 // install from reverting a template the project has customised. But that also
 // meant a package-owned template file added in a later docgen version never
-// arrived, and generation then died on the file it had just been taught to
-// render:
-//
-//   ENOENT: open '.sdk/tm/edition/presentation/preview.html'
+// arrived, and generation then died with an ENOENT naming a template the
+// project had never been given.
 //
 // So top up instead of doing nothing: for an edition tree the project ALREADY
 // has, copy in the package files it is MISSING. An existing file is never

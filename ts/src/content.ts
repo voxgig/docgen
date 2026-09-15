@@ -514,9 +514,8 @@ export function pages(v: ReturnType<typeof view>, examples: Record<string,string
 }
 // The slide bodies, one string per slide, WITHOUT the leading `# `.
 //
-// Split out of slides() because the presentation edition emits two things from
-// the same source: the Slidev deck, and a static preview page that needs each
-// slide separately. One builder, so the two can never drift.
+// Separate from slides() so the deck's content can be asserted slide by slide
+// rather than by matching against one joined string.
 //
 // THREE ACTS, in the order someone meets the SDK:
 //
