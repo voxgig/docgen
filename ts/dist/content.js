@@ -547,8 +547,22 @@ function slideBodies(v, example = '') {
         'An entity groups related operations, and each operation may cover several routes. ' +
         'The SDK exposes both using the conventions of your language, so you write ' +
         (first ? (0, exports.code)('client') + ' calls rather than HTTP requests.' : 'code rather than HTTP requests.'));
-    if (v.entities.length)
-        titled('API capabilities', group(v.entities.map(e => '- ' + (0, exports.prose)(e.Name) + ': ' + rows(e.op).map(o => (0, exports.code)(o.name)).join(', ')), 6));
+    // CAPPED AT THREE SLIDES. A deck is not a reference.
+    //
+    // One line per entity, six to a slide, is fine for a small API and absurd for
+    // a large one: NoFrixion's 49 entities produced NINE consecutive slides of
+    // list before the reader reached anything they could act on. The reference
+    // pages carry the full set, and they are linked; the deck's job is to convey
+    // the shape and the scale.
+    if (v.entities.length) {
+        const CAP = 3, PER = 6;
+        const shown = v.entities.slice(0, CAP * PER);
+        const rest = v.entities.length - shown.length;
+        const lines = shown.map(e => '- ' + (0, exports.prose)(e.Name) + ': ' + rows(e.op).map(o => (0, exports.code)(o.name)).join(', '));
+        if (0 < rest)
+            lines.push('- and ' + rest + ' more, in the API reference');
+        titled('API capabilities', group(lines, PER));
+    }
     chunks.push('Authentication\n\n' + (v.info.security?.type
         ? 'The API uses ' + (0, exports.code)(v.info.security.type) + ' authentication. Pass the credential when you construct the client, and read it from the environment rather than from source.'
         : 'The API model declares no authentication scheme, so no credential is required.'));

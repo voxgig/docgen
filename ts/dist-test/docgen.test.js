@@ -599,6 +599,10 @@ function fixture(m = model()) {
         strict_1.default.ok(-1 < at('API capabilities'));
         strict_1.default.ok(at('API capabilities') < at('Tutorial: your first call'));
         strict_1.default.ok(at('Tutorial: your first call') < at('This SDK is generated'));
+        // The capabilities section is CAPPED. A 49-entity API produced nine
+        // consecutive slides of list before the reader reached anything actionable.
+        const capabilitySlides = (deck.match(/# API capabilities/g) || []).length;
+        strict_1.default.ok(4 > capabilitySlides, 'capabilities capped at three slides, got ' + capabilitySlides);
         // Act one states what comes with the SDK, features included. They were
         // absent from the deck entirely, though they are half of what it offers.
         strict_1.default.match(deck, /Built-in features/);

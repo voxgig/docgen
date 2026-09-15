@@ -508,6 +508,11 @@ test('the deck teaches capabilities, then a tutorial, then extending with sdkgen
     Assert.ok(at('API capabilities') < at('Tutorial: your first call'))
     Assert.ok(at('Tutorial: your first call') < at('This SDK is generated'))
 
+    // The capabilities section is CAPPED. A 49-entity API produced nine
+    // consecutive slides of list before the reader reached anything actionable.
+    const capabilitySlides = (deck.match(/# API capabilities/g) || []).length
+    Assert.ok(4 > capabilitySlides, 'capabilities capped at three slides, got ' + capabilitySlides)
+
     // Act one states what comes with the SDK, features included. They were
     // absent from the deck entirely, though they are half of what it offers.
     Assert.match(deck, /Built-in features/)
