@@ -518,11 +518,32 @@ function scaffoldDefaults() {
                 out[tree + name + '/' + file] = node_fs_1.default.readFileSync(node_path_1.default.join(dir, file), 'utf8');
         }
     }
-    out['model/edition/edition-index.aon'] = defaults.map(n => '@"' + n + '.aon"').join('\n') + '\n';
+    // `./` — aontu 0.65 reads a bare single-segment include as a PACKAGE name
+    // (ADR-039), so `@"summary.aon"` resolves against the package stores and is
+    // refused. A sibling file has to say it is one.
+    out['model/edition/edition-index.aon'] = defaults.map(n => '@"./' + n + '.aon"').join('\n') + '\n';
     return out;
 }
 // Called by the scaffold's postinstall and generation entry points. Installation
 // is once per project, so npm install never reverts custom edition templates.
+// Two include lines naming the same file, whichever way the `./` falls.
+//
+// EXISTING PROJECTS CARRY THE BARE SPELLING. Every `.sdk` generated before
+// aontu 0.65 has `@"summary.aon"` and `@"edition/edition-index.aon"` with no
+// prefix, and those files are the project's own -- they change when the
+// project regenerates, not when docgen releases. Both call sites below decide
+// whether to APPEND, by exact line comparison. Against a bare line, the
+// prefixed spelling does not compare equal, so `prepareProject` would add a
+// second include of a file already included -- silently, on install, to every
+// existing repo.
+//
+// Normalising the prefix away on BOTH sides is the whole fix: the comparison
+// asks which file the line names, which is the question it was always meant
+// to be asking.
+function sameInclude(a, b) {
+    const norm = (s) => s.trim().replace(/^@"\.\//, '@"');
+    return norm(a) === norm(b);
+}
 function prepareProject(root) {
     root = node_path_1.default.resolve(root);
     const sdk = node_path_1.default.join(root, '.sdk');
@@ -538,7 +559,7 @@ function prepareProject(root) {
         if (rel.endsWith('edition-index.aon')) {
             let index = node_fs_1.default.existsSync(file) ? node_fs_1.default.readFileSync(file, 'utf8') : '';
             for (const line of text.trim().split('\n'))
-                if (!index.split('\n').some(s => s.trim() === line))
+                if (!index.split('\n').some(s => sameInclude(s, line)))
                     index += '\n' + line + '\n';
             writes[file] = index;
         }
@@ -548,8 +569,8 @@ function prepareProject(root) {
     const modelPath = inside(root, '.sdk/model/sdk.aon', node_fs_1.default);
     if (!node_fs_1.default.existsSync(modelPath))
         throw new Error('Docgen requires .sdk/model/sdk.aon');
-    const model = node_fs_1.default.readFileSync(modelPath, 'utf8'), include = '@"edition/edition-index.aon"';
-    if (!model.split('\n').some(s => s.trim() === include))
+    const model = node_fs_1.default.readFileSync(modelPath, 'utf8'), include = '@"./edition/edition-index.aon"';
+    if (!model.split('\n').some(s => sameInclude(s, include)))
         writes[modelPath] = model + '\n' + include + '\n';
     for (const [path, text] of Object.entries(writes)) {
         node_fs_1.default.mkdirSync(node_path_1.default.dirname(path), { recursive: true });

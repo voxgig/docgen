@@ -440,12 +440,35 @@ export function scaffoldDefaults(): Record<string, string> {
       for (const file of walk(Fs, dir)) out[tree + name + '/' + file] = Fs.readFileSync(Path.join(dir,file),'utf8')
     }
   }
-  out['model/edition/edition-index.aon'] = defaults.map(n => '@"' + n + '.aon"').join('\n') + '\n'
+  // `./` — aontu 0.65 reads a bare single-segment include as a PACKAGE name
+  // (ADR-039), so `@"summary.aon"` resolves against the package stores and is
+  // refused. A sibling file has to say it is one.
+  out['model/edition/edition-index.aon'] = defaults.map(n => '@"./' + n + '.aon"').join('\n') + '\n'
   return out
 }
 
 // Called by the scaffold's postinstall and generation entry points. Installation
 // is once per project, so npm install never reverts custom edition templates.
+// Two include lines naming the same file, whichever way the `./` falls.
+//
+// EXISTING PROJECTS CARRY THE BARE SPELLING. Every `.sdk` generated before
+// aontu 0.65 has `@"summary.aon"` and `@"edition/edition-index.aon"` with no
+// prefix, and those files are the project's own -- they change when the
+// project regenerates, not when docgen releases. Both call sites below decide
+// whether to APPEND, by exact line comparison. Against a bare line, the
+// prefixed spelling does not compare equal, so `prepareProject` would add a
+// second include of a file already included -- silently, on install, to every
+// existing repo.
+//
+// Normalising the prefix away on BOTH sides is the whole fix: the comparison
+// asks which file the line names, which is the question it was always meant
+// to be asking.
+function sameInclude(a: string, b: string): boolean {
+  const norm = (s: string) => s.trim().replace(/^@"\.\//, '@"')
+  return norm(a) === norm(b)
+}
+
+
 export function prepareProject(root: string): void {
   root = Path.resolve(root)
   const sdk = Path.join(root, '.sdk')
@@ -458,14 +481,14 @@ export function prepareProject(root: string): void {
     const file = inside(root, '.sdk/' + rel, Fs)
     if (rel.endsWith('edition-index.aon')) {
       let index = Fs.existsSync(file) ? Fs.readFileSync(file,'utf8') : ''
-      for (const line of text.trim().split('\n')) if (!index.split('\n').some(s=>s.trim() === line)) index += '\n' + line + '\n'
+      for (const line of text.trim().split('\n')) if (!index.split('\n').some(s=>sameInclude(s, line))) index += '\n' + line + '\n'
       writes[file] = index
     } else if (!Fs.existsSync(file)) writes[file] = text
   }
   const modelPath = inside(root, '.sdk/model/sdk.aon', Fs)
   if (!Fs.existsSync(modelPath)) throw new Error('Docgen requires .sdk/model/sdk.aon')
-  const model = Fs.readFileSync(modelPath,'utf8'), include='@"edition/edition-index.aon"'
-  if (!model.split('\n').some(s=>s.trim() === include)) writes[modelPath]=model+'\n'+include+'\n'
+  const model = Fs.readFileSync(modelPath,'utf8'), include='@"./edition/edition-index.aon"'
+  if (!model.split('\n').some(s=>sameInclude(s, include))) writes[modelPath]=model+'\n'+include+'\n'
   for (const [path,text] of Object.entries(writes)) {Fs.mkdirSync(Path.dirname(path),{recursive:true});Fs.writeFileSync(path,text)}
   Fs.mkdirSync(Path.dirname(marker),{recursive:true});Fs.writeFileSync(marker,JSON.stringify({version:1})+'\n')
 }
