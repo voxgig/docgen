@@ -153,7 +153,15 @@ export function summary(v: ReturnType<typeof view>): string {
     const descriptions: Record<string, string> = {}
     const describe = (schema: any) => {
       if (!schema || typeof schema !== 'object') return
-      for (const [name, field] of Object.entries<any>(schema.properties || {})) if (field.description && !descriptions[name]) descriptions[name] = field.description
+      // `field` CAN BE NULL. A properties map is not guaranteed to hold
+      // schema objects: HubSpot's Events and Scheduler documents carry
+      // `properties: { <name>: null }`, and reading `.description` off it
+      // killed the whole regeneration with `TypeError: Cannot read
+      // properties of null (reading 'description')` — a message that names
+      // neither the document nor the property.
+      for (const [name, field] of Object.entries<any>(schema.properties || {})) {
+        if (field && field.description && !descriptions[name]) descriptions[name] = field.description
+      }
       Object.values(schema).forEach(value => { if (value && typeof value === 'object') describe(value) })
     }
     entityRoutes.forEach(r => describe(r.facts.responses))
