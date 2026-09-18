@@ -169,7 +169,7 @@ function nestedPresentations(model, site) {
 // Edition components can wrap or replace this function. All output is emitted
 // through the same Jostraca pass and included in ownership and QA manifests.
 function renderEdition(props) {
-    const { edition } = props, v = (0, content_1.view)(props.model, edition);
+    const { edition } = props, v = (0, content_1.view)(props.model, edition, props.resolved);
     const path = relativePath(edition.output.path);
     const brand = { ...v.kit.doc?.brand, ...edition.brand };
     if (brand.url && !/^https?:\/\//i.test(brand.url))
@@ -342,6 +342,10 @@ async function generate(opts) {
     const model = opts.model;
     if (!model?.main?.kit)
         throw new Error('Docgen requires the compiled apidef/sdkgen model');
+    // apidef publishes the resolved definition; sdkgen forwards it on jostraca's
+    // `meta` when it calls docgen. Absent when docgen runs standalone, and the
+    // point's contract is read instead.
+    const resolved = opts.meta?.apidef;
     const doc = model.main.kit.doc;
     if (!doc || doc.active === false)
         return { editions: [], files: [] };
@@ -371,7 +375,7 @@ async function generate(opts) {
         // The compiler emits these customisable components; never fall back to a
         // different emitter when a project component is missing or broken.
         const Main = load(modulePath).Main;
-        const result = Main({ model, edition, root, fs });
+        const result = Main({ model, edition, root, fs, resolved });
         for (const [file, content] of Object.entries(result.files)) {
             if (file !== path && !file.startsWith(path + '/'))
                 throw new Error('Edition emitted outside its output: ' + file);

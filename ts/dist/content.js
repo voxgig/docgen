@@ -74,13 +74,13 @@ function specLink(model) {
     return repoLinkFor(model).url + '/blob/' + encodeURIComponent(branch) +
         '/.sdk/def/' + encodeURIComponent(def);
 }
-function view(model, edition) {
+function view(model, edition, resolved) {
     const kit = model.main.kit;
     const entities = pick(rows(kit.entity), edition.filter?.entities);
     const targets = pick(rows(kit.target), edition.filter?.targets);
     const features = pick(rows(kit.feature), edition.filter?.features);
     entities.forEach(e => (0, jostraca_1.names)(e, e.name));
-    return { model, kit, edition, entities, targets, features, title: edition.title || kit.info?.title || model.name,
+    return { model, kit, edition, resolved, entities, targets, features, title: edition.title || kit.info?.title || model.name,
         description: kit.info?.description || kit.info?.summary || '', info: kit.info ?? {} };
 }
 function surface(target, kit) {
@@ -93,7 +93,7 @@ function installation(model, target) {
 function summary(v) {
     const sdks = v.targets.filter(t => surface(t, v.kit) === 'sdk');
     const tools = v.targets.filter(t => surface(t, v.kit) !== 'sdk');
-    const routes = v.entities.flatMap(entity => rows(entity.op).flatMap(op => (op.points ?? []).filter((p) => p.active !== false).map((point) => ({ entity, op, point, facts: contract(point) }))));
+    const routes = v.entities.flatMap(entity => rows(entity.op).flatMap(op => (op.points ?? []).filter((p) => p.active !== false).map((point) => ({ entity, op, point, facts: contract(point, v.resolved) }))));
     const anonymous = (facts) => Array.isArray(facts.security) && (!facts.security.length || facts.security.some((s) => s && !Object.keys(s).length));
     const website = rows(v.kit.doc?.edition).find(e => e.kind === 'github-pages');
     const base = node_path_1.default.posix.dirname(v.edition.output?.path || 'SUMMARY.md');
@@ -189,7 +189,13 @@ function fieldsTable(fields) {
         ...fields.filter(f => f.active !== false).map(f => '| ' + (0, exports.code)(f.name) + ' | ' + (0, exports.code)(String(f.type || 'any').replace(/[`$]/g, '').toLowerCase()) + ' | ' +
             (f.req || f.required ? 'Yes' : 'No') + ' | ' + (0, exports.cell)(f.short || f.description || '') + ' |')].join('\n');
 }
-function contract(point) {
+// The resolved specification facts for one operation. apidef publishes them
+// as a capability; a model built before it, or a docgen run outside a model
+// build, still carries them in the point's contract.
+function contract(point, resolved) {
+    const facts = resolved?.operation?.(point?.method, point?.orig);
+    if (null != facts)
+        return facts;
     if (!point.contract?.json)
         return {};
     try {
@@ -317,18 +323,18 @@ function succeeds(c) {
     }
     return '';
 }
-function routesOf(entity) {
+function routesOf(entity, resolved) {
     return rows(entity.op).flatMap((op) => (op.points ?? []).filter((p) => p.active !== false).map((point) => {
         const method = String(point.method || '').toUpperCase();
         const path = String(point.orig || '');
         const heading = (0, exports.code)(method) + ' ' + path;
-        return { op, point, method, path, heading, id: slugFor(heading), c: contract(point) };
+        return { op, point, method, path, heading, id: slugFor(heading), c: contract(point, resolved) };
     }));
 }
 // One entity page: the routes it exposes, its fields, then a reference
 // section per route, each with its own anchor so the sidebar can link to it.
-function entityReference(entity) {
-    const routes = routesOf(entity);
+function entityReference(entity, resolved) {
+    const routes = routesOf(entity, resolved);
     const lines = [];
     if (routes.length) {
         lines.push('## Operations', '', 'Every route this entity exposes. Each route links to its own reference on this page.', '', '| Method | Route | SDK operation | Returns |', '| --- | --- | --- | --- |', ...routes.map(r => '| ' + (0, exports.code)(r.method) + ' | [' + (0, exports.code)(r.path) + '](#' + r.id + ') | ' +
@@ -394,7 +400,7 @@ function pages(v, examples = {}) {
     add('guides/concepts', 'Entities, SDKs, and tools', 'Guides', 'The API model defines entities, operations, fields, and endpoint contracts. SDK targets expose those operations in a programming language. Additional targets expose a command interface, an MCP server, or a data integration.\n\n' +
         'SDKs expose the API operations using each language’s conventions. Read the language reference for configuration and return values.');
     for (const entity of v.entities) {
-        const reference = entityReference(entity);
+        const reference = entityReference(entity, v.resolved);
         add('api/' + entityPage(entity.name), entity.Name, 'API', [(0, exports.prose)(v.info.entity_desc?.[entity.name] || entity.desc || entity.short || ''), '',
             reference.markdown].join('\n'));
         out[out.length - 1].sections = reference.sections;

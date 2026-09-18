@@ -18,6 +18,7 @@ export type EditionProps = {
     edition: any;
     root: string;
     fs: any;
+    resolved?: any;
 };
 export declare function relativePath(value: string): string;
 export declare function styleFor(model: any, edition: any): any;
