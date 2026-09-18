@@ -79,3 +79,15 @@ publish:
 	gh workflow run publish.yml --ref main -f expect_sha=$$(git rev-parse HEAD)
 	@echo
 	@echo "dispatched. watch with:  gh run list --workflow=publish.yml --limit 1"
+
+.PHONY: comments comments-test hooks
+comments:
+	node tools/comment-gate.cjs
+
+comments-test:
+	node --test tools/comment-gate.test.cjs
+
+hooks:
+	git config core.hooksPath .githooks
+
+test: comments

@@ -24,32 +24,8 @@ const node_path_1 = __importDefault(require("node:path"));
 const sdkgen_1 = require("@voxgig/sdkgen");
 const html = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 exports.html = html;
-// Accidental doubled words in UPSTREAM text, collapsed.
-//
-// prose() already normalises Latin abbreviations and em dashes from the
-// specification, because the generated pages are our documentation whatever
-// the source of the words. A doubled word belongs in the same bucket:
-// NoFrixion's own spec says "get the the FX held rates for", and that reaches
-// the reader as a visible defect on a page we published.
-//
-// Restricted to words whose repetition is NEVER correct. English has genuine
-// doublings ("had had", "that that", "is is" in a quotation), so a blanket
-// \b(\w+) \1\b rule would corrupt meaning to tidy a typo. This list cannot.
 const NEVER_DOUBLED = ['the', 'a', 'an', 'of', 'to', 'and', 'in', 'for', 'on', 'at', 'by', 'with', 'from'];
 const undouble = (s) => s.replace(new RegExp('\\b(' + NEVER_DOUBLED.join('|') + ')([ \\t]+\\1)+\\b', 'gi'), '$1');
-// Line-break markup and stray whitespace in UPSTREAM text.
-//
-// A specification description is written for a rendering docgen does not
-// control. NoFrixion's security scheme carries literal <br/> tags, CRLF, and
-// the YAML block's own indentation, so it reached the page as
-//
-//   JWT Authorization header using the Bearer scheme.&lt;br/&gt;
-//                         Enter your JWT access token in the text input below.
-//
-// with the markup escaped into view and the indentation preserved. The tags
-// become spaces and the whitespace collapses, which is what every consumer of
-// that description has to do anyway. Escaping still happens afterwards, so no
-// markup survives into the page.
 const unwrap = (s) => s.replace(/<\s*br\s*\/?\s*>/gi, ' ').replace(/<\/?\s*p\s*>/gi, ' ').replace(/\s+/g, ' ').trim();
 const prose = (v) => (0, exports.html)(unwrap(undouble(String(v ?? ''))).replace(/\be\.g\.?(?![a-z])/gi, 'for example').replace(/\bi\.e\.?(?![a-z])/gi, 'that is').replace(/\s*—\s*/g, ', ')).replace(/\{/g, '&#123;').replace(/\}/g, '&#125;');
 exports.prose = prose;
@@ -57,25 +33,6 @@ const cell = (v) => (0, exports.prose)(v).replace(/\|/g, '\\|').replace(/[\r\n]+
 exports.cell = cell;
 const code = (v) => '`' + String(v ?? '').replace(/`/g, '') + '`';
 exports.code = code;
-// AN ENTITY PAGE PATH, which is not simply its encoded name.
-//
-// Entity pages live at `api/<name>.html`, and the API section's own landing page
-// is `api/index.html`. An entity actually named `index` therefore claims the
-// path the overview already owns, and generation dies with
-//
-//   Error: Duplicate documentation page: api/index
-//
-// Four of the 609 freepublicapis SDKs are built from specs carrying such an
-// entity — 4chan's board `index` among them — so they could not be documented
-// at all.
-//
-// THE LANDING PAGE CANNOT MOVE: `index.html` is what a web server returns for
-// the directory. So the entity moves instead, and it moves in ONE place,
-// because five call sites build this path and a page that moves without its
-// links is worse than the collision it fixed.
-//
-// `api/` is the only section with a landing page, so it is the only section
-// that can collide.
 const RESERVED_API_PAGES = new Set(['index']);
 function entityPage(name) {
     const slug = encodeURIComponent(name);
@@ -172,12 +129,6 @@ function summary(v) {
         const describe = (schema) => {
             if (!schema || typeof schema !== 'object')
                 return;
-            // `field` CAN BE NULL. A properties map is not guaranteed to hold
-            // schema objects: HubSpot's Events and Scheduler documents carry
-            // `properties: { <name>: null }`, and reading `.description` off it
-            // killed the whole regeneration with `TypeError: Cannot read
-            // properties of null (reading 'description')` — a message that names
-            // neither the document nor the property.
             for (const [name, field] of Object.entries(schema.properties || {})) {
                 if (field && field.description && !descriptions[name])
                     descriptions[name] = field.description;
@@ -248,17 +199,6 @@ function contract(point) {
         throw new Error('Invalid model contract: ' + point.contract.id);
     }
 }
-// SWAGGER-STYLE REFERENCE, GROUPED BY ENTITY (not by OpenAPI tag).
-//
-// Requests and responses used to print as raw JSON Schema dumps, which is the
-// one thing a reader cannot skim: learning that `data.embeddings` is a
-// required array of numbers meant parsing nested `properties` / `items` /
-// `required` by eye. These helpers render the same schema as a property
-// table, the shape every API reference a reader has already used presents.
-//
-// The grouping stays the ENTITY, because that is what the SDKs expose. A tag
-// is a spec-authoring convention; `client.convert.create(...)` is what the
-// reader actually calls, so the reference is organised the way the code is.
 // How deep a nested schema is flattened before a row just names the type.
 // A reference that unrolls a recursive schema forever is worse than one that
 // says `object` and lets the linked specification answer the rest.
@@ -489,27 +429,8 @@ function pages(v, examples = {}) {
         add((kind === 'sdk' ? 'sdks/' : 'tools/') + encodeURIComponent(target.name), target.title || target.name, kind === 'sdk' ? 'SDKs' : 'Tools', text.join('\n'));
     }
     for (const feature of v.features) {
-        // A HEADING WITH NOTHING UNDER IT IS A BUG, not a blank line.
-        //
-        // `rows` drops entries marked `active: false`, which is right — an inactive
-        // hook is not part of the pipeline. But the headings were emitted
-        // unconditionally, so a feature that is itself ENABLED while every one of
-        // its hooks is off rendered "## Pipeline stages" followed by nothing.
-        // univec's `proxy` is exactly that: active feature, 11 declared hooks, 0 of
-        // them active, and a published page with an empty section.
-        //
-        // Say so instead, which is what this file already does for an absent
-        // security scheme and an absent first call. A reader asking whether proxy
-        // hooks into the pipeline then gets an answer rather than silence.
         const stages = rows(feature.hook);
         const options = feature.config?.options ?? {};
-        // A FEATURE PAGE HAS TO EXPLAIN ITSELF.
-        //
-        // It used to be a one-line description, a bare JSON blob, and two headings:
-        // a reader who did not already know what a feature was, whether it was on,
-        // or what a "pipeline stage" meant got no help from the page. Each section
-        // now says what it is and what to do with it, which costs three sentences
-        // and makes the page readable on its own.
         add('features/' + encodeURIComponent(feature.name), feature.title || feature.name, 'Features', [(0, exports.prose)(feature.description || feature.short || ''), '',
             'A feature adds behaviour around API calls without changing how you call the API.'
                 + ' Being documented here does not mean it is switched on: features are off by'
@@ -532,28 +453,6 @@ function pages(v, examples = {}) {
     }
     return out;
 }
-// The slide bodies, one string per slide, WITHOUT the leading `# `.
-//
-// Separate from slides() so the deck's content can be asserted slide by slide
-// rather than by matching against one joined string.
-//
-// THREE ACTS, in the order someone meets the SDK:
-//
-//   1. What it gives you   the API surface, the authentication, the features
-//                          that come built in, and the languages it ships in.
-//   2. A tutorial          install, construct a client, make one real call,
-//                          handle the failure, turn a feature on.
-//   3. Extending it        the SDK is generated, so the interesting question
-//                          is what you can regenerate and what survives it.
-//
-// It used to be a flat list: capabilities, then authentication, then four
-// generic instructions that named no operation and showed no code, then five
-// slides of install commands. A reader reached the end knowing the API existed
-// and not one thing they could type.
-//
-// Everything here comes from the model. A deck for an API with no entities, no
-// features or no targets drops those slides rather than asserting something
-// the model does not say.
 function slideBodies(v, example = '') {
     const chunks = [];
     const group = (items, size) => Array.from({ length: Math.ceil(items.length / size) }, (_, i) => items.slice(i * size, i * size + size));
@@ -569,8 +468,6 @@ function slideBodies(v, example = '') {
     // --- ACT ONE: what the SDK gives you --------------------------------------
     chunks.push((0, exports.prose)(v.title) + '\n\n' + (0, exports.prose)(v.info.summary || v.description) +
         (v.kit.doc?.brand?.notice ? '\n\n' + (0, exports.prose)(v.kit.doc.brand.notice) : ''));
-    // A deck for a one-entity API should not read "1 entities across 1 HTTP
-    // routes". The counts are the model's, so they are as small as the model is.
     const many = (n, one, more = one + 's') => n + ' ' + (1 === n ? one : more);
     const scale = [
         v.entities.length ? '- ' + many(v.entities.length, 'entity', 'entities') + ' across ' + many(routes.length, 'HTTP route') : '',
@@ -581,18 +478,7 @@ function slideBodies(v, example = '') {
         'An entity groups related operations, and each operation may cover several routes. ' +
         'The SDK exposes both using the conventions of your language, so you write ' +
         (first ? (0, exports.code)('client') + ' calls rather than HTTP requests.' : 'code rather than HTTP requests.'));
-    // CAPPED AT THREE SLIDES. A deck is not a reference.
-    //
-    // One line per entity, six to a slide, is fine for a small API and absurd for
-    // a large one: NoFrixion's 49 entities produced NINE consecutive slides of
-    // list before the reader reached anything they could act on. The reference
-    // pages carry the full set, and they are linked; the deck's job is to convey
-    // the shape and the scale.
     if (v.entities.length) {
-        // The remainder line COUNTS against the cap. Taking CAP * PER entities and
-        // then appending "and N more" makes CAP * PER + 1 lines, which spills a
-        // single bullet onto one extra slide: NoFrixion's 49 entities produced four
-        // slides from a cap of three, the last of them one line long.
         const CAP = 3, PER = 6;
         const room = CAP * PER;
         const overflows = v.entities.length > room;
@@ -626,10 +512,6 @@ function slideBodies(v, example = '') {
         chunks.push('Step 2: construct a client\n\n' + example.trim() + '\n\n' +
             'The credential is read from the environment, so nothing secret reaches your source tree.');
         if (first) {
-            // The dotted form is sdkgen's own: an entity accessor, then the
-            // operation. Emitted for ts and js only, the two targets whose generated
-            // shape this is verified against; every other language gets the same
-            // fact in prose, which is true everywhere.
             const call = ['ts', 'js'].includes(lang)
                 ? fence('const result = await client.' + first.e.Name + '().' + first.op.name + '({\n  // the input this operation requires\n})', lang).trim()
                 : 'Call ' + (0, exports.code)(first.op.name) + ' on the ' + (0, exports.prose)(first.e.Name) + ' entity.';

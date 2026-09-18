@@ -14,13 +14,6 @@ const node_child_process_1 = require("node:child_process");
 const MarkdownIt = require('markdown-it');
 const md = new MarkdownIt({ html: false });
 const PACKAGE = node_path_1.default.resolve(__dirname, '..');
-// The local gate and Vale consume this exact extracted prose and vocabulary.
-// Fenced examples, inline identifiers, HTML code, scripts, and styles are not prose.
-// A URL IS NOT PROSE. Its characters are a path, not English, and every word
-// rule here will eventually trip over one: a Microsoft docs link in NoFrixion's
-// spec carries `en-us`, the hyphen is a word boundary, and `us` failed the
-// neutral-voice check on five generated pages. Stripped before any check runs,
-// the same way code blocks already are.
 const stripUrls = (s) => s.replace(/\b[a-z][a-z0-9+.-]*:\/\/[^\s<>"')\]]+/gi, ' ');
 function proseText(source, format = 'md') {
     if (format === 'html' || format === 'vue') {
@@ -40,12 +33,6 @@ function proseText(source, format = 'md') {
     }).join(' ');
     return stripUrls(collect(md.parse(source, {}))).replace(/[ \t]+/g, ' ').replace(/ *\n */g, '\n').replace(/\n{3,}/g, '\n\n').trim();
 }
-// The prose docgen itself WROTE, as opposed to the prose it QUOTED from the
-// API definition: everything except table cells, which is where every field,
-// parameter and response description lands.
-//
-// The split is not marginal. On NoFrixion's documentation, 93% of the rendered
-// prose is the upstream author's words and 7% is ours.
 function authored(source, format) {
     const stripped = 'html' === format || 'vue' === format
         ? source.replace(/<td\b[^>]*>[\s\S]*?<\/td>/gi, ' ')
@@ -62,19 +49,6 @@ function checkText(source, format = 'md', rejectFile = node_path_1.default.join(
         errors.push('Remove the repeated word');
     if (/—/.test(text))
         errors.push('Use a comma, colon, parentheses, or a new sentence instead of an em dash');
-    // THE VOICE RULE DOES NOT READ TABLE CELLS.
-    //
-    // Tables are where QUOTED specification text lives: every field and parameter
-    // description in the API reference is the upstream author's sentence, not
-    // ours. NoFrixion's spec says "the ID returned by the service provider
-    // initiating the payment for us", and five generated pages failed a rule that
-    // exists to keep DOCGEN's own voice neutral. Policing someone else's spec
-    // makes the gate unpassable for any API whose descriptions use first person,
-    // and there will be many.
-    //
-    // Only this rule is narrowed. Banned phrases, em dashes, emoji, exclamation
-    // marks and repeated words still apply everywhere, because those are defects
-    // on the page whoever wrote them.
     if (/\b(I|me|my|mine|we|us|our|ours)\b/i.test(authored(source, format)))
         errors.push('Use neutral or second-person prose');
     if (/\p{Extended_Pictographic}/u.test(text))
@@ -120,34 +94,11 @@ function runQA(manifestPath, root = process.cwd(), vale = true) {
                     }
                 }
             }
-            // VALE SEES THE PROSE WE WROTE, NOT THE PROSE WE QUOTED.
-            //
-            // It used to see the whole rendered page, so it spell-checked the API
-            // definition. NoFrixion's reported 9,819 spelling errors: `Xero`,
-            // `payin`, `pisp`, `jwk` and the rest are that API's vocabulary, and
-            // `remvoed`, `amound` and `wehn` are typos in their spec. Neither is
-            // ours to fix, and failing the build on them makes the gate unpassable
-            // for any API with a large surface.
-            //
-            // It also made the gate slow for no return: 3MB of text per run, 93% of
-            // it quoted.
-            //
-            // The checks that find defects on the PAGE rather than in the VOICE,
-            // above in checkText, still read everything.
             const dest = node_path_1.default.join(temp, index + '.txt');
             node_fs_1.default.writeFileSync(dest, authored(text, format));
             inputs.push(dest);
         }
         if (vale) {
-            // maxBuffer, because the default is 1MB and Vale's report scales with the
-            // documentation. A 49-entity API produces 64 pages, and the run died on
-            //
-            //   Vale is required for text QA: spawnSync vale ENOBUFS
-            //
-            // which reads as a missing binary and is nothing of the kind: Vale ran,
-            // found plenty, and its own output overflowed the pipe. Small doc sets
-            // never reach it, so this only ever appears on the projects whose reports
-            // matter most.
             const result = (0, node_child_process_1.spawnSync)('vale', ['--config=' + config, '--minAlertLevel=error', ...inputs], { encoding: 'utf8', cwd: root, maxBuffer: 64 * 1024 * 1024 });
             if (result.error)
                 errors.push('Vale is required for text QA: ' + result.error.message);

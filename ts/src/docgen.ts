@@ -15,10 +15,6 @@ markdown.renderer.rules.heading_open = (tokens: any[], index: number, options: a
   const count = env.headings[slug] || 0
   env.headings[slug] = count + 1
   tokens[index].attrSet('id', slug + (count ? '-' + count : ''))
-  // Classify the two heading kinds the API reference generates, so the
-  // stylesheet can give a route its method badge and a response its status
-  // colour. The heading TEXT still comes from markdown and is still escaped;
-  // only the attributes are added here.
   const operation = OPERATION_RE.exec(title)
   if (operation) {
     tokens[index].attrJoin('class', 'operation')
@@ -223,10 +219,6 @@ export function renderEdition(props: EditionProps): EditionResult {
   return result
 }
 
-// The CAPITALISED entity name, as the pages spell it. `view()` derives it with
-// jostraca's names() at render time and it is not stored on the model, so an
-// accept list built from the raw model carried `i_payment` while every page
-// that lists entities said `IPayment`.
 function entityNames(name: string): string {
   const n: any = {}
   names(n, name)
@@ -238,29 +230,10 @@ function qaResources(model: any): Record<string, string> {
   for (const file of walk(Fs, Path.join(PACKAGE, 'qa'))) files['.sdk/doc/qa/' + file] = Fs.readFileSync(Path.join(PACKAGE, 'qa', file), 'utf8')
   const vocabulary = model.main.kit.doc?.qa?.vocabulary ?? []
   if (vocabulary.some((s: any) => typeof s !== 'string' || !/^[\w -]+$/.test(s))) throw new Error('QA vocabulary entries must be literal words or phrases')
-  // Identifiers the generated prose now CARRIES have to be spellable.
-  //
-  // The reference used to print request and response schemas as fenced JSON,
-  // which the prose gate skips entirely. Rendering them as property tables
-  // puts the specification's own descriptions into prose, and those
-  // descriptions cross-reference operations by id ("see listModels"). Those
-  // ids are the API's vocabulary, not typing errors, so the accept list this
-  // function already builds from model names covers them too.
   const operationIds = rows(model.main.kit.entity).flatMap((entity: any) =>
     rows(entity.op).flatMap((op: any) => (op.points ?? []).map((point: any) => {
       try { return JSON.parse(point?.contract?.json || '{}').operationId } catch { return '' }
     })))
-  // AND THE WORDS THE DEFINITION ITSELF USES.
-  //
-  // Vale now reads only the prose docgen wrote, but spec text still reaches a
-  // few renderings that are not tables: the summary joins operation
-  // descriptions into a sentence, for one. What leaks through is the API's own
-  // vocabulary (`payruns`, `pisp`, `jwk`, `Xero`) and, unavoidably, the API's
-  // own typos (`accoutt`, `remvoed`). Neither is ours to fix, and neither
-  // should fail a build.
-  //
-  // Harvested from description text only, never from our own strings, so this
-  // widens the dictionary by exactly the domain the documentation covers.
   const described: string[] = []
   const harvest = (node: any, depth = 0): void => {
     if (!node || 24 < depth) return
@@ -270,11 +243,6 @@ function qaResources(model: any): Record<string, string> {
     for (const key of ['desc', 'description', 'short', 'title', 'summary']) {
       if ('string' === typeof node[key]) described.push(node[key])
     }
-    // The contract is a SERIALISED OpenAPI fragment, and most of the
-    // specification's prose lives inside it: the schema descriptions the
-    // reference tables render. Left unparsed, `csv`, `arithemtic` and the rest
-    // of this API's vocabulary stayed invisible to the accept list while being
-    // perfectly visible on the page.
     if ('string' === typeof node.json) {
       try { harvest(JSON.parse(node.json), depth + 1) } catch { /* not JSON, nothing to harvest */ }
     }
@@ -440,29 +408,10 @@ export function scaffoldDefaults(): Record<string, string> {
       for (const file of walk(Fs, dir)) out[tree + name + '/' + file] = Fs.readFileSync(Path.join(dir,file),'utf8')
     }
   }
-  // `./` — aontu 0.65 reads a bare single-segment include as a PACKAGE name
-  // (ADR-039), so `@"summary.aon"` resolves against the package stores and is
-  // refused. A sibling file has to say it is one.
   out['model/edition/edition-index.aon'] = defaults.map(n => '@"./' + n + '.aon"').join('\n') + '\n'
   return out
 }
 
-// Called by the scaffold's postinstall and generation entry points. Installation
-// is once per project, so npm install never reverts custom edition templates.
-// Two include lines naming the same file, whichever way the `./` falls.
-//
-// EXISTING PROJECTS CARRY THE BARE SPELLING. Every `.sdk` generated before
-// aontu 0.65 has `@"summary.aon"` and `@"edition/edition-index.aon"` with no
-// prefix, and those files are the project's own -- they change when the
-// project regenerates, not when docgen releases. Both call sites below decide
-// whether to APPEND, by exact line comparison. Against a bare line, the
-// prefixed spelling does not compare equal, so `prepareProject` would add a
-// second include of a file already included -- silently, on install, to every
-// existing repo.
-//
-// Normalising the prefix away on BOTH sides is the whole fix: the comparison
-// asks which file the line names, which is the question it was always meant
-// to be asking.
 function sameInclude(a: string, b: string): boolean {
   const norm = (s: string) => s.trim().replace(/^@"\.\//, '@"')
   return norm(a) === norm(b)
@@ -493,19 +442,6 @@ export function prepareProject(root: string): void {
   Fs.mkdirSync(Path.dirname(marker),{recursive:true});Fs.writeFileSync(marker,JSON.stringify({version:1})+'\n')
 }
 
-// A DOCGEN UPGRADE THAT ADDS A TEMPLATE FILE HAS TO REACH EXISTING PROJECTS.
-//
-// Installation is deliberately once-per-project: the setup marker stops npm
-// install from reverting a template the project has customised. But that also
-// meant a package-owned template file added in a later docgen version never
-// arrived, and generation then died with an ENOENT naming a template the
-// project had never been given.
-//
-// So top up instead of doing nothing: for an edition tree the project ALREADY
-// has, copy in the package files it is MISSING. An existing file is never
-// touched, whatever its contents, so a customised template is as safe as
-// before; and no new edition is introduced, so a project without the
-// presentation edition does not acquire one.
 function topUpEditionTemplates(root: string): void {
   for (const tree of ['src/cmp/edition/', 'tm/edition/']) {
     const packageTree = Path.join(PACKAGE, 'project/.sdk', tree)

@@ -36,8 +36,6 @@ function toolContracts(model, target, entities) {
         return Object.keys(defined).sort().map(name => ({ name, ...defined[name] }));
     if ((target.origname || target.name) !== 'go-mcp')
         return [];
-    // The go-mcp target exposes these two dispatch tools. The supported entity
-    // values and the operations they accept still come entirely from the model.
     return ['list', 'load'].map(op => ({ name: model.name.toLowerCase() + '_' + op,
         description: op === 'list' ? 'List records for an entity.' : 'Load one record for an entity.',
         operation: op,
