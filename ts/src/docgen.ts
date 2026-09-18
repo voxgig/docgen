@@ -34,7 +34,7 @@ export type GenerateOptions = {
   existing?: any, [key: string]: any,
 }
 export type EditionResult = { files: Record<string, string | Buffer>, qa: string[] }
-export type EditionProps = { model: any, edition: any, root: string, fs: any }
+export type EditionProps = { model: any, edition: any, root: string, fs: any, resolved?: any }
 
 export function relativePath(value: string): string {
   if (!value || value.includes('\\') || Path.isAbsolute(value) ||
@@ -149,7 +149,7 @@ function nestedPresentations(model: any, site: any): any[] {
 // Edition components can wrap or replace this function. All output is emitted
 // through the same Jostraca pass and included in ownership and QA manifests.
 export function renderEdition(props: EditionProps): EditionResult {
-  const { edition } = props, v = view(props.model, edition)
+  const { edition } = props, v = view(props.model, edition, props.resolved)
   const path = relativePath(edition.output.path)
   const brand = { ...v.kit.doc?.brand, ...edition.brand }
   if (brand.url && !/^https?:\/\//i.test(brand.url)) throw new Error('Documentation brand URL must use HTTP or HTTPS')
@@ -291,6 +291,11 @@ export async function generate(opts: GenerateOptions) {
   if (!fs.existsSync(Path.join(root, '.sdk'))) throw new Error('Docgen requires an existing .sdk setup')
   const model = opts.model
   if (!model?.main?.kit) throw new Error('Docgen requires the compiled apidef/sdkgen model')
+
+  // apidef publishes the resolved definition; sdkgen forwards it on jostraca's
+  // `meta` when it calls docgen. Absent when docgen runs standalone, and the
+  // point's contract is read instead.
+  const resolved = opts.meta?.apidef
   const doc = model.main.kit.doc
   if (!doc || doc.active === false) return { editions: [], files: [] }
   const editions = Object.keys(doc.edition ?? {}).sort().map(name => ({ ...doc.edition[name], name })).filter(e => e.active !== false)
@@ -316,7 +321,7 @@ export async function generate(opts: GenerateOptions) {
     // The compiler emits these customisable components; never fall back to a
     // different emitter when a project component is missing or broken.
     const Main = load(modulePath).Main
-    const result: EditionResult = Main({ model, edition, root, fs })
+    const result: EditionResult = Main({ model, edition, root, fs, resolved })
     for (const [file, content] of Object.entries(result.files)) {
       if (file !== path && !file.startsWith(path + '/')) throw new Error('Edition emitted outside its output: ' + file)
       if (edition.kind === 'github-pages' && nestedPresentations(model, edition).some(e => file === e.output.path || file.startsWith(e.output.path + '/'))) throw new Error('Website output overlaps presentation: ' + file)

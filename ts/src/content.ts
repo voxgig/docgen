@@ -59,13 +59,13 @@ export function specLink(model: any): string {
     '/.sdk/def/' + encodeURIComponent(def)
 }
 
-export function view(model: any, edition: any) {
+export function view(model: any, edition: any, resolved?: any) {
   const kit = model.main.kit
   const entities = pick(rows(kit.entity), edition.filter?.entities)
   const targets = pick(rows(kit.target), edition.filter?.targets)
   const features = pick(rows(kit.feature), edition.filter?.features)
   entities.forEach(e => names(e, e.name))
-  return { model, kit, edition, entities, targets, features, title: edition.title || kit.info?.title || model.name,
+  return { model, kit, edition, resolved, entities, targets, features, title: edition.title || kit.info?.title || model.name,
     description: kit.info?.description || kit.info?.summary || '', info: kit.info ?? {} }
 }
 export function surface(target: any, kit: any): string {
@@ -79,7 +79,7 @@ export function summary(v: ReturnType<typeof view>): string {
   const sdks = v.targets.filter(t => surface(t, v.kit) === 'sdk')
   const tools = v.targets.filter(t => surface(t, v.kit) !== 'sdk')
   const routes = v.entities.flatMap(entity => rows(entity.op).flatMap(op =>
-    (op.points ?? []).filter((p: any) => p.active !== false).map((point: any) => ({ entity, op, point, facts: contract(point) }))))
+    (op.points ?? []).filter((p: any) => p.active !== false).map((point: any) => ({ entity, op, point, facts: contract(point, v.resolved) }))))
   const anonymous = (facts: any) => Array.isArray(facts.security) && (!facts.security.length || facts.security.some((s: any) => s && !Object.keys(s).length))
   const website = rows(v.kit.doc?.edition).find(e => e.kind === 'github-pages')
   const base = Path.posix.dirname(v.edition.output?.path || 'SUMMARY.md')
@@ -183,7 +183,12 @@ function fieldsTable(fields: any[]): string {
     ...fields.filter(f => f.active !== false).map(f => '| ' + code(f.name) + ' | ' + code(String(f.type || 'any').replace(/[`$]/g, '').toLowerCase()) + ' | ' +
       (f.req || f.required ? 'Yes' : 'No') + ' | ' + cell(f.short || f.description || '') + ' |')].join('\n')
 }
-function contract(point: any): any {
+// The resolved specification facts for one operation. apidef publishes them
+// as a capability; a model built before it, or a docgen run outside a model
+// build, still carries them in the point's contract.
+function contract(point: any, resolved?: any): any {
+  const facts = resolved?.operation?.(point?.method, point?.orig)
+  if (null != facts) return facts
   if (!point.contract?.json) return {}
   try { return JSON.parse(point.contract.json) } catch { throw new Error('Invalid model contract: ' + point.contract.id) }
 }
@@ -240,7 +245,10 @@ function schemaRows(schema: any, prefix = '', depth = 0): SchemaRow[] {
   if (!properties || 'object' !== typeof properties) return []
   const required: string[] = Array.isArray(schema.required) ? schema.required : []
   const out: SchemaRow[] = []
-  for (const [name, field] of Object.entries<any>(properties)) {
+  // By name: the order is a decision here, not a consequence of how the
+  // facts arrived. See docs/design/reference-order.md
+  for (const [name, field] of Object.entries<any>(properties).sort(
+    (a, b) => a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)) {
     const path = prefix + name
     out.push({
       name: path,
@@ -265,8 +273,20 @@ function schemaTable(schema: any): string {
 }
 
 
-// A media type block: the property table when the schema has properties, the
-// bare type when it has none, and the specification's own example.
+// A rendered example, keyed in name order for the same reason the tables
+// are. See docs/design/reference-order.md
+function stableJson(value: any, indent = 2): string {
+  const sort = (v: any): any => {
+    if (Array.isArray(v)) return v.map(sort)
+    if (!v || 'object' !== typeof v) return v
+    const out: any = {}
+    for (const k of Object.keys(v).sort()) out[k] = sort(v[k])
+    return out
+  }
+  return JSON.stringify(sort(value), null, indent)
+}
+
+
 function bodyText(content: any, label: string): string[] {
   const lines: string[] = []
   for (const [mime, body] of Object.entries<any>(content ?? {})) {
@@ -274,7 +294,7 @@ function bodyText(content: any, label: string): string[] {
     const table = schemaTable(body?.schema)
     if (table) lines.push(table, '')
     else if (body?.schema) lines.push('The ' + label + ' is ' + code(typeName(body.schema)) + '.', '')
-    if (body?.example) lines.push('Example ' + label + ':', fence(JSON.stringify(body.example, null, 2)))
+    if (body?.example) lines.push('Example ' + label + ':', fence(stableJson(body.example)))
   }
   return lines
 }
@@ -320,21 +340,21 @@ type Route = {
   heading: string, id: string, c: any,
 }
 
-function routesOf(entity: any): Route[] {
+function routesOf(entity: any, resolved?: any): Route[] {
   return rows(entity.op).flatMap((op: any) =>
     (op.points ?? []).filter((p: any) => p.active !== false).map((point: any) => {
       const method = String(point.method || '').toUpperCase()
       const path = String(point.orig || '')
       const heading = code(method) + ' ' + path
-      return { op, point, method, path, heading, id: slugFor(heading), c: contract(point) }
+      return { op, point, method, path, heading, id: slugFor(heading), c: contract(point, resolved) }
     }))
 }
 
 
 // One entity page: the routes it exposes, its fields, then a reference
 // section per route, each with its own anchor so the sidebar can link to it.
-function entityReference(entity: any): { markdown: string, sections: Section[] } {
-  const routes = routesOf(entity)
+function entityReference(entity: any, resolved?: any): { markdown: string, sections: Section[] } {
+  const routes = routesOf(entity, resolved)
   const lines: string[] = []
 
   if (routes.length) {
@@ -398,7 +418,7 @@ export function pages(v: ReturnType<typeof view>, examples: Record<string,string
   add('guides/authentication', 'Authentication', 'Guides',
     v.info.security && Object.keys(v.info.security).length ?
       'Configure credentials for the scheme described by the API model. Keep credentials outside source control.\n' +
-      fence(JSON.stringify(v.info.security, null, 2)) : 'No authentication scheme is documented.')
+      fence(stableJson(v.info.security)) : 'No authentication scheme is documented.')
   const first = v.entities.flatMap(e => rows(e.op).flatMap(op => (op.points || []).map((p: any) => ({ e, op, p })) ))[0]
   add('guides/first-call', 'Make your first API call', 'Guides', first ?
     '1. Choose an SDK from the SDK section and follow its installation instructions.\n' +
@@ -414,7 +434,7 @@ export function pages(v: ReturnType<typeof view>, examples: Record<string,string
     'The API model defines entities, operations, fields, and endpoint contracts. SDK targets expose those operations in a programming language. Additional targets expose a command interface, an MCP server, or a data integration.\n\n' +
     'SDKs expose the API operations using each language’s conventions. Read the language reference for configuration and return values.')
   for (const entity of v.entities) {
-    const reference = entityReference(entity)
+    const reference = entityReference(entity, v.resolved)
     add('api/' + entityPage(entity.name), entity.Name, 'API',
       [prose(v.info.entity_desc?.[entity.name] || entity.desc || entity.short || ''), '',
         reference.markdown].join('\n'))

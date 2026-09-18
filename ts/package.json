@@ -62,8 +62,8 @@
     "typescript": "7.0.2"
   },
   "peerDependencies": {
-    "@voxgig/sdkgen": ">=4.17.0",
-    "aontu": ">=0.52",
+    "@voxgig/sdkgen": ">=4.22.0",
+    "aontu": ">=0.68",
     "jostraca": ">=0.33.1"
   },
   "dependencies": {

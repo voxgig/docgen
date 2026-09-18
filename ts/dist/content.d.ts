@@ -17,10 +17,11 @@ export declare function repoLinkFor(model: any): {
     path: string;
 };
 export declare function specLink(model: any): string;
-export declare function view(model: any, edition: any): {
+export declare function view(model: any, edition: any, resolved?: any): {
     model: any;
     kit: any;
     edition: any;
+    resolved: any;
     entities: any[];
     targets: any[];
     features: any[];
