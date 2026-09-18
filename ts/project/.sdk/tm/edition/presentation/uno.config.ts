@@ -1,5 +1,3 @@
-// Slidev 52.19.1 loads this list as a module namespace in development.
-// Supply its default export explicitly so controls retain layout and auto-hide.
 import Path from 'node:path'
 import { createRequire } from 'node:module'
 import slidevTokens from '@slidev/client/.generated/unocss-tokens.ts'

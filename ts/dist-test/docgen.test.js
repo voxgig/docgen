@@ -41,9 +41,6 @@ function fixture(m = model()) {
     return { root, m, write, read: (p) => node_fs_1.default.readFileSync(node_path_1.default.join(root, p), 'utf8'), clean: () => node_fs_1.default.rmSync(root, { recursive: true, force: true }) };
 }
 (0, node_test_1.test)('a feature page explains itself to a reader who knows none of this', async () => {
-    // The page used to be a one-line description, a bare JSON blob and two
-    // headings. Nothing said what a feature was, whether it was on, or what a
-    // "pipeline stage" meant.
     const m = model();
     const f = fixture(m);
     try {
@@ -62,11 +59,6 @@ function fixture(m = model()) {
     }
 });
 (0, node_test_1.test)('a feature page never renders a heading with nothing under it', async () => {
-    // univec's `proxy` is an ACTIVE feature whose 11 declared hooks are all
-    // `active: false`. rows() drops inactive entries, correctly, but the headings
-    // were emitted unconditionally — so the published page carried a "Pipeline
-    // stages" section with no body:
-    // https://voxgig-sdk.github.io/univec-sdk/features/proxy.html
     const m = model();
     m.main.kit.feature.proxy = { name: 'proxy', title: 'Outbound proxy', active: true,
         config: { options: {} },
@@ -90,11 +82,6 @@ function fixture(m = model()) {
     }
 });
 (0, node_test_1.test)('an entity named index does not collide with the API landing page', async () => {
-    // `api/index.html` is the API section's own overview, and a web server serves
-    // it for the directory, so it cannot move. An entity named `index` used to
-    // claim the same path and generation died with
-    // "Duplicate documentation page: api/index" — which is how 4 of the 609
-    // freepublicapis SDKs (4chan among them) could not be documented at all.
     const m = model();
     m.main.kit.entity.index = { name: 'index', active: true, fields: [{ name: 'id', type: 'string', req: true }],
         op: { list: { name: 'list', points: [{ method: 'GET', orig: '/index' }] } } };
@@ -213,10 +200,6 @@ function fixture(m = model()) {
 (0, node_test_1.test)('the prose gate reads what docgen wrote, not what the definition said', () => {
     const { authored, proseText } = require('../dist/qa');
     const { prose } = require('../dist/content');
-    // Vale used to read the whole rendered page, so it spell-checked the API
-    // definition. On NoFrixion that was 9,819 errors: `Xero`, `payin`, `pisp`
-    // and `jwk` are that API's vocabulary, and `remvoed`, `amound` and `wehn`
-    // are typos in their spec. Neither is ours to fix.
     const page = '<p>Docgen wrote this.</p><table><tr><td>remvoed amound wehn</td></tr></table>';
     strict_1.default.match(authored(page, 'html'), /Docgen wrote this/);
     strict_1.default.doesNotMatch(authored(page, 'html'), /remvoed|amound|wehn/);
@@ -224,9 +207,6 @@ function fixture(m = model()) {
     const markdown = 'Docgen wrote this.\n\n| Field | Note |\n| --- | --- |\n| id | remvoed |\n';
     strict_1.default.match(authored(markdown, 'md'), /Docgen wrote this/);
     strict_1.default.doesNotMatch(authored(markdown, 'md'), /remvoed/);
-    // Line-break markup and the YAML block's indentation, both of which reached
-    // the page: NoFrixion's security scheme rendered as
-    // "the Bearer scheme.&lt;br/&gt;" followed by twenty spaces.
     strict_1.default.equal(prose('Bearer scheme.<br/>\r\n          Enter your token.'), 'Bearer scheme. Enter your token.');
     // Escaping still happens after the unwrapping, so no markup survives.
     strict_1.default.equal(prose('<script>alert(1)</script>'), '&lt;script&gt;alert(1)&lt;/script&gt;');
@@ -234,26 +214,16 @@ function fixture(m = model()) {
 (0, node_test_1.test)('the voice rule reads docgen prose, not quoted specification text', () => {
     const { checkText } = require('../dist/qa');
     const voice = 'Use neutral or second-person prose';
-    // Ours, and still caught.
     strict_1.default.ok(checkText('<p>We built this for you.</p>', 'html').includes(voice));
     strict_1.default.ok(checkText('We built this for you.', 'md').includes(voice));
-    // Theirs. Every field description in the API reference is the upstream
-    // author's sentence: NoFrixion's spec says "returned by the service provider
-    // initiating the payment for us", and five pages failed a rule that exists to
-    // keep docgen's own voice neutral.
     strict_1.default.ok(!checkText('<table><tr><td>returned for us</td></tr></table>', 'html').includes(voice));
     strict_1.default.ok(!checkText('| Field | Note |\n| --- | --- |\n| id | returned for us |', 'md').includes(voice));
     // Only that rule is narrowed. A defect is a defect wherever it appears.
     strict_1.default.ok(checkText('<table><tr><td>Fast! Really fast!</td></tr></table>', 'html').length > 0);
-    // A URL is not prose: `en-us` in a Microsoft docs link failed the voice rule.
     strict_1.default.ok(!checkText('<p>See https://docs.microsoft.com/en-us/dotnet/standard</p>', 'html').includes(voice));
 });
 (0, node_test_1.test)('upstream spec prose is normalised before it reaches the gate', () => {
     const { prose } = require('../dist/content');
-    // A LATIN ABBREVIATION WITHOUT ITS FINAL DOT. NoFrixion's spec says
-    // "Its 1 based. i.e firstpage is 1", and `i.e` tokenises as a bare "I", so
-    // nineteen generated pages failed the neutral-voice gate on the strength of
-    // one upstream typo. The rewrite used to require the trailing dot.
     strict_1.default.match(prose('Its 1 based. i.e firstpage is 1'), /that is firstpage/);
     strict_1.default.match(prose('e.g a value'), /for example a value/);
     strict_1.default.match(prose('i.e., the thing'), /that is, the thing/);
@@ -436,15 +406,6 @@ function fixture(m = model()) {
         f.clean();
     }
 });
-// The API section is an API REFERENCE, grouped by entity rather than by
-// OpenAPI tag: an entity is what the SDKs expose, so `pet.load(...)` is what
-// the reader actually calls. Every route of an entity lives on that entity's
-// page, and the page has to be navigable the way a reference is.
-//
-// What this pins is the structure, not the prose: an operations index whose
-// links resolve, a route heading that carries its method, a response heading
-// that carries its status, schemas as property tables rather than the JSON
-// Schema dumps this replaced, and a sidebar that reaches individual routes.
 (0, node_test_1.test)('the API reference is structured by entity, route and status', async () => {
     const m = model();
     m.main.kit.entity.pet.op.load.points[0].contract.json = JSON.stringify({
@@ -647,19 +608,11 @@ function fixture(m = model()) {
         await (0, docgen_1.generate)({ folder: f.root, model: m });
         const deck = f.read('docs/slidev/slides.md');
         const at = (heading) => deck.indexOf('# ' + heading);
-        // THE THREE ACTS, IN ORDER. The deck used to be a flat list that named no
-        // operation and showed no code, so a reader reached the end with nothing
-        // they could type.
         strict_1.default.ok(-1 < at('API capabilities'));
         strict_1.default.ok(at('API capabilities') < at('Tutorial: your first call'));
         strict_1.default.ok(at('Tutorial: your first call') < at('This SDK is generated'));
-        // The capabilities section is CAPPED. A 49-entity API produced nine
-        // consecutive slides of list before the reader reached anything actionable.
         const capabilitySlides = (deck.match(/# API capabilities/g) || []).length;
         strict_1.default.ok(4 > capabilitySlides, 'capabilities capped at three slides, got ' + capabilitySlides);
-        // With MANY entities, the cap holds and the remainder line fits INSIDE it.
-        // Appending "and N more" to a full three slices spilled one bullet onto a
-        // fourth slide, which is how NoFrixion's 49 entities produced four.
         const many = model();
         many.main.kit.doc.edition.deck = { kind: 'presentation', output: { path: 'docs/slidev' } };
         const pet = many.main.kit.entity.pet;
@@ -683,9 +636,6 @@ function fixture(m = model()) {
         // absent from the deck entirely, though they are half of what it offers.
         strict_1.default.match(deck, /Built-in features/);
         strict_1.default.match(deck, /Authentication/);
-        // Act two walks ONE REAL OPERATION from the model, not four generic
-        // instructions. The dotted form is sdkgen's own: entity accessor, then
-        // operation.
         strict_1.default.match(deck, /Step 1: install/);
         strict_1.default.match(deck, /Step 3: call an operation/);
         strict_1.default.match(deck, /await client\.Pet\(\)\.load\(/);
