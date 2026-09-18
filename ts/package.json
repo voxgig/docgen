@@ -63,7 +63,7 @@
   },
   "peerDependencies": {
     "@voxgig/sdkgen": ">=4.17.0",
-    "aontu": ">=0.52",
+    "aontu": ">=0.68",
     "jostraca": ">=0.33.1"
   },
   "dependencies": {

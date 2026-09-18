@@ -54,8 +54,7 @@ describe('resolved-parity', () => {
   })
 
   test('the capability wins when both are present', () => {
-    // A model that still carries contracts must render from the capability,
-    // or the two sources could disagree silently during the transition.
+    // A model that still carries contracts renders from the capability.
     const both = summary(view(model(true), EDITION, RESOLVED))
     assert.equal(both, summary(view(model(true), EDITION)))
   })

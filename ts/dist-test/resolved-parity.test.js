@@ -46,8 +46,7 @@ const EDITION = { name: 'summary', kind: 'summary', title: 'Thing', output: { pa
         node_assert_1.default.equal(fromCapability, fromContract);
     });
     (0, node_test_1.test)('the capability wins when both are present', () => {
-        // A model that still carries contracts must render from the capability,
-        // or the two sources could disagree silently during the transition.
+        // A model that still carries contracts renders from the capability.
         const both = (0, content_1.summary)((0, content_1.view)(model(true), EDITION, RESOLVED));
         node_assert_1.default.equal(both, (0, content_1.summary)((0, content_1.view)(model(true), EDITION)));
     });
