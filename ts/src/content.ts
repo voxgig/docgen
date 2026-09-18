@@ -245,7 +245,13 @@ function schemaRows(schema: any, prefix = '', depth = 0): SchemaRow[] {
   if (!properties || 'object' !== typeof properties) return []
   const required: string[] = Array.isArray(schema.required) ? schema.required : []
   const out: SchemaRow[] = []
-  for (const [name, field] of Object.entries<any>(properties)) {
+  // BY NAME, deliberately. The tables were alphabetical only as a side effect
+  // of the contract serialiser sorting its keys; reading the resolved facts
+  // gives specification order instead, which would reorder every published
+  // reference table. Sorting here makes the order a decision rather than a
+  // consequence, and keeps the pages stable.
+  for (const [name, field] of Object.entries<any>(properties).sort(
+    (a, b) => a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)) {
     const path = prefix + name
     out.push({
       name: path,
@@ -272,6 +278,22 @@ function schemaTable(schema: any): string {
 
 // A media type block: the property table when the schema has properties, the
 // bare type when it has none, and the specification's own example.
+// Key order in a rendered example was alphabetical only as a side effect of
+// the contract serialiser sorting its keys. Reading the resolved facts gives
+// specification order, which would rewrite every published example. Sorting
+// here makes the order a decision rather than a consequence.
+function stableJson(value: any, indent = 2): string {
+  const sort = (v: any): any => {
+    if (Array.isArray(v)) return v.map(sort)
+    if (!v || 'object' !== typeof v) return v
+    const out: any = {}
+    for (const k of Object.keys(v).sort()) out[k] = sort(v[k])
+    return out
+  }
+  return JSON.stringify(sort(value), null, indent)
+}
+
+
 function bodyText(content: any, label: string): string[] {
   const lines: string[] = []
   for (const [mime, body] of Object.entries<any>(content ?? {})) {
@@ -279,7 +301,7 @@ function bodyText(content: any, label: string): string[] {
     const table = schemaTable(body?.schema)
     if (table) lines.push(table, '')
     else if (body?.schema) lines.push('The ' + label + ' is ' + code(typeName(body.schema)) + '.', '')
-    if (body?.example) lines.push('Example ' + label + ':', fence(JSON.stringify(body.example, null, 2)))
+    if (body?.example) lines.push('Example ' + label + ':', fence(stableJson(body.example)))
   }
   return lines
 }
@@ -403,7 +425,7 @@ export function pages(v: ReturnType<typeof view>, examples: Record<string,string
   add('guides/authentication', 'Authentication', 'Guides',
     v.info.security && Object.keys(v.info.security).length ?
       'Configure credentials for the scheme described by the API model. Keep credentials outside source control.\n' +
-      fence(JSON.stringify(v.info.security, null, 2)) : 'No authentication scheme is documented.')
+      fence(stableJson(v.info.security)) : 'No authentication scheme is documented.')
   const first = v.entities.flatMap(e => rows(e.op).flatMap(op => (op.points || []).map((p: any) => ({ e, op, p })) ))[0]
   add('guides/first-call', 'Make your first API call', 'Guides', first ?
     '1. Choose an SDK from the SDK section and follow its installation instructions.\n' +
