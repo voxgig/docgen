@@ -253,21 +253,16 @@ function entityNames(name) {
     (0, jostraca_1.names)(n, name);
     return n.Name;
 }
-function qaResources(model) {
+function qaResources(model, resolved) {
     const files = {};
     for (const file of walk(node_fs_1.default, node_path_1.default.join(PACKAGE, 'qa')))
         files['.sdk/doc/qa/' + file] = node_fs_1.default.readFileSync(node_path_1.default.join(PACKAGE, 'qa', file), 'utf8');
     const vocabulary = model.main.kit.doc?.qa?.vocabulary ?? [];
     if (vocabulary.some((s) => typeof s !== 'string' || !/^[\w -]+$/.test(s)))
         throw new Error('QA vocabulary entries must be literal words or phrases');
-    const operationIds = (0, content_1.rows)(model.main.kit.entity).flatMap((entity) => (0, content_1.rows)(entity.op).flatMap((op) => (op.points ?? []).map((point) => {
-        try {
-            return JSON.parse(point?.contract?.json || '{}').operationId;
-        }
-        catch {
-            return '';
-        }
-    })));
+    const facts = (0, content_1.rows)(model.main.kit.entity).flatMap((entity) => (0, content_1.rows)(entity.op).flatMap((op) => (op.points ?? []).filter((point) => point.a !== false)
+        .map((point) => (0, content_1.operationFacts)(point, resolved))));
+    const operationIds = facts.map(fact => fact.operationId);
     const described = [];
     const harvest = (node, depth = 0) => {
         if (!node || 24 < depth)
@@ -283,15 +278,9 @@ function qaResources(model) {
         }
         if ('object' !== typeof node)
             return;
-        for (const key of ['desc', 'description', 'short', 'title', 'summary']) {
+        for (const key of ['desc', 'description', 'short', 'title', 'summary', 'sh', 'h']) {
             if ('string' === typeof node[key])
                 described.push(node[key]);
-        }
-        if ('string' === typeof node.json) {
-            try {
-                harvest(JSON.parse(node.json), depth + 1);
-            }
-            catch { /* not JSON, nothing to harvest */ }
         }
         for (const value of Object.values(node))
             if (value && 'object' === typeof value)
@@ -299,6 +288,7 @@ function qaResources(model) {
     };
     harvest(model.main.kit.entity);
     harvest(model.main.kit.info);
+    harvest(facts);
     const specWords = [...new Set(described.join(' ').match(/[A-Za-z][A-Za-z0-9]{1,}/g) ?? [])].slice(0, 20000);
     const words = [model.name, ...(0, content_1.rows)(model.main.kit.target).flatMap(t => [t.name, t.title]), ...(0, content_1.rows)(model.main.kit.entity).flatMap(e => [e.name, entityNames(e.name)]), ...operationIds, ...specWords, ...vocabulary]
         .filter(Boolean).map(w => Array.from(String(w), c => /[a-z]/i.test(c) ? '[' + c.toUpperCase() + c.toLowerCase() + ']' : c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join(''));
@@ -335,6 +325,19 @@ function emit(files) {
         nested(0);
     }
 }
+async function resolveDefinition(root, model, fs) {
+    if (!model.def)
+        return undefined;
+    const file = inside(root, '.sdk/def/' + relativePath(model.def), fs);
+    const load = (0, node_module_1.createRequire)(node_path_1.default.join(root, '.sdk/package.json'));
+    const { parse, operationFacts: facts } = load('@voxgig/apidef');
+    const graphql = /\.(graphqls?|gql|graphql\.json)$/i.test(model.def);
+    const kind = graphql ? 'GraphQL' : 'OpenAPI';
+    const def = await parse(kind, fs.readFileSync(file, 'utf8'), {
+        file, graphql: { endpoint: model.main.kit.info?.servers?.[0]?.url, title: model.name },
+    });
+    return { version: 1, kind, def, operation: (m, o) => facts(def, { m, o }) };
+}
 async function generate(opts) {
     const root = node_path_1.default.resolve(opts.folder), fs = typeof opts.fs === 'function' ? opts.fs() : opts.fs || node_fs_1.default;
     if (!fs.existsSync(node_path_1.default.join(root, '.sdk')))
@@ -342,14 +345,13 @@ async function generate(opts) {
     const model = opts.model;
     if (!model?.main?.kit)
         throw new Error('Docgen requires the compiled apidef/sdkgen model');
-    // apidef publishes the resolved definition; sdkgen forwards it on jostraca's
-    // `meta` when it calls docgen. Absent when docgen runs standalone, and the
-    // point's contract is read instead.
-    const resolved = opts.meta?.apidef;
     const doc = model.main.kit.doc;
     if (!doc || doc.active === false)
         return { editions: [], files: [] };
     const editions = Object.keys(doc.edition ?? {}).sort().map(name => ({ ...doc.edition[name], name })).filter(e => e.active !== false);
+    if (!editions.length)
+        return { editions: [], files: [] };
+    const resolved = opts.meta?.apidef || await resolveDefinition(root, model, fs);
     const files = {}, qa = [], claims = [];
     for (const edition of editions) {
         if (!/^[a-z][a-z0-9-]*$/.test(edition.name))
@@ -389,9 +391,7 @@ async function generate(opts) {
         // Always gate actual rendered text, even when a custom component omits qa.
         qa.push(...Object.keys(result.files).filter(p => /\.(md|html|vue)$/.test(p)));
     }
-    if (!editions.length)
-        return { editions: [], files: [] };
-    Object.assign(files, qaResources(model));
+    Object.assign(files, qaResources(model, resolved));
     const routes = Object.fromEntries(editions.filter(e => e.kind === 'github-pages').flatMap(site => nestedPresentations(model, site).filter(e => e.active !== false && e.site?.active !== false)
         .map(e => [e.output.path + '/index.html', e.output.path + '/dist/index.html'])));
     files['.sdk/doc/qa-manifest.json'] = JSON.stringify({ files: [...new Set(qa)].sort(), config: '.sdk/doc/qa/vale.ini', routes }, null, 2) + '\n';

@@ -1,8 +1,15 @@
 # docgen
 
 Docgen generates documentation editions from the existing apidef/sdkgen
-model in an SDK project's `.sdk/` directory. It does not parse OpenAPI or
-read generated SDK READMEs. SDK documentation components remain separate.
+model in an SDK project's `.sdk/` directory. Request and response details come
+from apidef's resolved specification. SDK documentation components remain separate.
+
+Model fields are keyed by name and use `n`, `h`, `t`, `r`, `a`, and `sh`.
+Operation points use `m`, `o`, and `a`. Embedded JSON contracts are not read.
+During an SDK build, docgen uses the resolved specification capability, including
+any guide overrides. Standalone `voxgig-docgen generate` parses the original
+`.sdk/def/<model.def>` file through the project's apidef installation. Use the
+normal SDK build when documentation must include guide overrides.
 
 | Edition | Default output | Content |
 | --- | --- | --- |

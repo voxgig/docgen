@@ -11,21 +11,27 @@ const node_path_1 = __importDefault(require("node:path"));
 const node_child_process_1 = require("node:child_process");
 const docgen_1 = require("../dist/docgen");
 const PACKAGE = node_path_1.default.resolve(__dirname, '..');
+const definitions = new WeakMap();
 function model() {
-    return { name: 'petstore', origin: 'acme', main: { kit: {
+    const m = { name: 'petstore', def: 'petstore.json', origin: 'acme', main: { kit: {
                 info: { title: 'Pet API', summary: 'Store and retrieve pet records.', security: { type: 'http', scheme: 'bearer' }, servers: [{ url: 'https://api.example.test' }] },
                 target: { ts: { name: 'ts', title: 'TypeScript', active: true, ext: 'ts', module: { name: 'petstore' }, publish: { registry: { active: false, state: 'pending' } } },
                     'go-mcp': { name: 'go-mcp', title: 'MCP server', active: true, module: { name: 'petstore' } } },
-                entity: { pet: { name: 'pet', active: true, fields: [{ name: 'id', type: 'number', req: true }],
-                        op: { load: { name: 'load', points: [{ method: 'GET', orig: '/pets/{id}', contract: {
-                                            json: JSON.stringify({ parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
-                                                responses: { '200': { description: 'Pet record', content: { 'application/json': { schema: { type: 'object' } } } } } })
-                                        } }] } }
+                entity: { pet: { name: 'pet', active: true,
+                        fields: { id: { n: 'id', h: 'Id', t: 'number', r: true } },
+                        op: { load: { name: 'load', points: [{ m: 'GET', o: '/pets/{id}', s: [{ lit: 'pets' }, { var: 'id' }] }] } }
                     } },
                 feature: { retry: { name: 'retry', title: 'Retry', active: true, config: { options: { active: false } }, hook: { PreFetch: { active: true } } } },
                 doc: { edition: { summary: { kind: 'summary', active: true, output: { path: 'SUMMARY.md' } }, 'github-pages': { kind: 'github-pages', active: true, output: { path: 'docs' } } },
                     target: { 'go-mcp': { kind: 'mcp', tool: { petstore_load: { description: 'Load a pet.', input: { type: 'object', properties: { id: { type: 'integer' } } } } } } } }
             } } };
+    definitions.set(m, { openapi: '3.0.3', info: { title: 'Pet API', version: '1' }, paths: {
+            '/pets/{id}': { get: {
+                    parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
+                    responses: { '200': { description: 'Pet record', content: { 'application/json': { schema: { type: 'object' } } } } },
+                } },
+        } });
+    return m;
 }
 function fixture(m = model()) {
     const root = node_fs_1.default.mkdtempSync(node_path_1.default.join(node_os_1.default.tmpdir(), 'docgen-editions-'));
@@ -33,6 +39,10 @@ function fixture(m = model()) {
     for (const [p, s] of Object.entries((0, docgen_1.scaffoldDefaults)()))
         write('.sdk/' + p, s);
     write('.sdk/package.json', '{}');
+    write('.sdk/def/' + m.def, JSON.stringify(definitions.get(m)));
+    const apidef = node_path_1.default.dirname(require.resolve('@voxgig/apidef/package.json'));
+    node_fs_1.default.mkdirSync(node_path_1.default.join(root, '.sdk/node_modules/@voxgig'), { recursive: true });
+    node_fs_1.default.symlinkSync(apidef, node_path_1.default.join(root, '.sdk/node_modules/@voxgig/apidef'), 'dir');
     for (const [name, e] of Object.entries(m.main.kit.doc.edition)) {
         const from = node_path_1.default.join(PACKAGE, 'project/.sdk/tm/edition', e.kind);
         node_fs_1.default.cpSync(from, node_path_1.default.join(root, '.sdk/tm/edition', name), { recursive: true });
@@ -83,8 +93,8 @@ function fixture(m = model()) {
 });
 (0, node_test_1.test)('an entity named index does not collide with the API landing page', async () => {
     const m = model();
-    m.main.kit.entity.index = { name: 'index', active: true, fields: [{ name: 'id', type: 'string', req: true }],
-        op: { list: { name: 'list', points: [{ method: 'GET', orig: '/index' }] } } };
+    m.main.kit.entity.index = { name: 'index', active: true, fields: { id: { n: 'id', h: 'Id', t: 'string', r: true } },
+        op: { list: { name: 'list', points: [{ m: 'GET', o: '/index', s: [{ lit: 'index' }] }] } } };
     const f = fixture(m);
     try {
         await (0, docgen_1.generate)({ folder: f.root, model: m });
@@ -377,7 +387,8 @@ function fixture(m = model()) {
 (0, node_test_1.test)('summary orients readers and links from a nested output location', async () => {
     const m = model();
     m.main.kit.info.description = 'Store pet records and retrieve the current catalogue.';
-    m.main.kit.entity.pet.op.list = { name: 'list', points: [{ method: 'GET', orig: '/pets', contract: { json: JSON.stringify({ security: [], responses: { 200: { description: 'Pet records' } } }) } }] };
+    m.main.kit.entity.pet.op.list = { name: 'list', points: [{ m: 'GET', o: '/pets', s: [{ lit: 'pets' }] }] };
+    definitions.get(m).paths['/pets'] = { get: { security: [], responses: { 200: { description: 'Pet records' } } } };
     m.main.kit.doc.edition.summary.output.path = 'overview/SUMMARY.md';
     const f = fixture(m);
     try {
@@ -408,7 +419,7 @@ function fixture(m = model()) {
 });
 (0, node_test_1.test)('the API reference is structured by entity, route and status', async () => {
     const m = model();
-    m.main.kit.entity.pet.op.load.points[0].contract.json = JSON.stringify({
+    definitions.get(m).paths['/pets/{id}'].get = {
         operationId: 'loadPet',
         parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' }, description: 'Pet identifier.' }],
         security: [{ bearerAuth: [] }],
@@ -425,7 +436,8 @@ function fixture(m = model()) {
                             }
                         } } } },
             '404': { description: 'No such pet' } }
-    });
+    };
+    definitions.get(m).components = { securitySchemes: { bearerAuth: { type: 'http', scheme: 'bearer' } } };
     const f = fixture(m);
     try {
         await (0, docgen_1.generate)({ folder: f.root, model: m });
@@ -699,6 +711,51 @@ function fixture(m = model()) {
     try {
         await strict_1.default.rejects((0, docgen_1.generate)({ folder: f.root, model: m }), /overlaps presentation|Duplicate edition output/);
         strict_1.default.ok(!node_fs_1.default.existsSync(node_path_1.default.join(f.root, 'docs/index.html')));
+    }
+    finally {
+        f.clean();
+    }
+});
+(0, node_test_1.test)('build facts supply reference content and QA vocabulary without reading the spec again', async () => {
+    const f = fixture();
+    try {
+        node_fs_1.default.unlinkSync(node_path_1.default.join(f.root, '.sdk/def/' + f.m.def));
+        const calls = [];
+        await (0, docgen_1.generate)({ folder: f.root, model: f.m, meta: { apidef: { operation: (method, path) => {
+                        calls.push(method + ' ' + path);
+                        return { operationId: 'astrochronometryLookup', responses: { 200: { description: 'Astrochronometry records' } } };
+                    } } } });
+        strict_1.default.ok(calls.every(key => key === 'GET /pets/{id}'));
+        strict_1.default.match(f.read('docs/api/pet.html'), /Astrochronometry records/);
+        const vocabulary = f.read('.sdk/doc/qa/styles/config/vocabularies/Docgen/accept.txt');
+        strict_1.default.ok(vocabulary.split('\n').some(line => line && new RegExp('^' + line + '$').test('astrochronometryLookup')));
+        strict_1.default.ok(vocabulary.split('\n').some(line => line && new RegExp('^' + line + '$').test('Astrochronometry')));
+        await strict_1.default.rejects((0, docgen_1.generate)({ folder: f.root, model: f.m }), /ENOENT/);
+    }
+    finally {
+        f.clean();
+    }
+});
+(0, node_test_1.test)('standalone CLI reads the local specification with compact model points', () => {
+    const f = fixture();
+    try {
+        f.write('.sdk/model/sdk.json', JSON.stringify(f.m));
+        const result = (0, node_child_process_1.spawnSync)(process.execPath, [node_path_1.default.join(PACKAGE, 'bin/voxgig-docgen'), 'generate', f.root], { encoding: 'utf8' });
+        strict_1.default.equal(result.status, 0, result.stderr);
+        strict_1.default.match(f.read('docs/api/pet.html'), /Pet record/);
+        strict_1.default.match(f.read('docs/api/pet.html'), /Parameters/);
+    }
+    finally {
+        f.clean();
+    }
+});
+(0, node_test_1.test)('inactive editions do not require a specification', async () => {
+    const f = fixture();
+    try {
+        node_fs_1.default.unlinkSync(node_path_1.default.join(f.root, '.sdk/def/' + f.m.def));
+        for (const edition of Object.values(f.m.main.kit.doc.edition))
+            edition.active = false;
+        strict_1.default.deepEqual(await (0, docgen_1.generate)({ folder: f.root, model: f.m }), { editions: [], files: [] });
     }
     finally {
         f.clean();

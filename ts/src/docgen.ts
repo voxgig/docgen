@@ -4,7 +4,7 @@ import Path from 'node:path'
 import Os from 'node:os'
 import { createRequire } from 'node:module'
 import { Jostraca, Project, Folder, File, Content, names } from 'jostraca'
-import { rows, view, summary, pages, slides, slideBodies, html, repoLinkFor, slugFor, METHODS, type Page } from './content'
+import { operationFacts, rows, view, summary, pages, slides, slideBodies, html, repoLinkFor, slugFor, METHODS, type Page } from './content'
 const MarkdownIt = require('markdown-it')
 const markdown = new MarkdownIt({ html: false, linkify: false, typographer: false })
 const OPERATION_RE = new RegExp('^`?(' + METHODS + ')`?\\s', 'i')
@@ -225,31 +225,29 @@ function entityNames(name: string): string {
   return n.Name
 }
 
-function qaResources(model: any): Record<string, string> {
+function qaResources(model: any, resolved?: any): Record<string, string> {
   const files: Record<string, string> = {}
   for (const file of walk(Fs, Path.join(PACKAGE, 'qa'))) files['.sdk/doc/qa/' + file] = Fs.readFileSync(Path.join(PACKAGE, 'qa', file), 'utf8')
   const vocabulary = model.main.kit.doc?.qa?.vocabulary ?? []
   if (vocabulary.some((s: any) => typeof s !== 'string' || !/^[\w -]+$/.test(s))) throw new Error('QA vocabulary entries must be literal words or phrases')
-  const operationIds = rows(model.main.kit.entity).flatMap((entity: any) =>
-    rows(entity.op).flatMap((op: any) => (op.points ?? []).map((point: any) => {
-      try { return JSON.parse(point?.contract?.json || '{}').operationId } catch { return '' }
-    })))
+  const facts = rows(model.main.kit.entity).flatMap((entity: any) =>
+    rows(entity.op).flatMap((op: any) => (op.points ?? []).filter((point: any) => point.a !== false)
+      .map((point: any) => operationFacts(point, resolved))))
+  const operationIds = facts.map(fact => fact.operationId)
   const described: string[] = []
   const harvest = (node: any, depth = 0): void => {
     if (!node || 24 < depth) return
     if ('string' === typeof node) { described.push(node); return }
     if (Array.isArray(node)) { for (const item of node) harvest(item, depth + 1); return }
     if ('object' !== typeof node) return
-    for (const key of ['desc', 'description', 'short', 'title', 'summary']) {
+    for (const key of ['desc', 'description', 'short', 'title', 'summary', 'sh', 'h']) {
       if ('string' === typeof node[key]) described.push(node[key])
-    }
-    if ('string' === typeof node.json) {
-      try { harvest(JSON.parse(node.json), depth + 1) } catch { /* not JSON, nothing to harvest */ }
     }
     for (const value of Object.values(node)) if (value && 'object' === typeof value) harvest(value, depth + 1)
   }
   harvest(model.main.kit.entity)
   harvest(model.main.kit.info)
+  harvest(facts)
   const specWords = [...new Set(described.join(' ').match(/[A-Za-z][A-Za-z0-9]{1,}/g) ?? [])].slice(0, 20000)
 
   const words = [model.name, ...rows(model.main.kit.target).flatMap(t => [t.name, t.title]), ...rows(model.main.kit.entity).flatMap(e => [e.name, entityNames(e.name)]), ...operationIds, ...specWords, ...vocabulary]
@@ -286,19 +284,30 @@ function emit(files: EditionResult['files']) {
     nested(0)
   }
 }
+async function resolveDefinition(root: string, model: any, fs: any): Promise<any> {
+  if (!model.def) return undefined
+  const file = inside(root, '.sdk/def/' + relativePath(model.def), fs)
+  const load = createRequire(Path.join(root, '.sdk/package.json'))
+  const { parse, operationFacts: facts } = load('@voxgig/apidef')
+  const graphql = /\.(graphqls?|gql|graphql\.json)$/i.test(model.def)
+  const kind = graphql ? 'GraphQL' : 'OpenAPI'
+  const def = await parse(kind, fs.readFileSync(file, 'utf8'), {
+    file, graphql: { endpoint: model.main.kit.info?.servers?.[0]?.url, title: model.name },
+  })
+  return { version: 1, kind, def, operation: (m: string, o: string) => facts(def, { m, o }) }
+}
+
 export async function generate(opts: GenerateOptions) {
   const root = Path.resolve(opts.folder), fs = typeof opts.fs === 'function' ? opts.fs() : opts.fs || Fs
   if (!fs.existsSync(Path.join(root, '.sdk'))) throw new Error('Docgen requires an existing .sdk setup')
   const model = opts.model
   if (!model?.main?.kit) throw new Error('Docgen requires the compiled apidef/sdkgen model')
 
-  // apidef publishes the resolved definition; sdkgen forwards it on jostraca's
-  // `meta` when it calls docgen. Absent when docgen runs standalone, and the
-  // point's contract is read instead.
-  const resolved = opts.meta?.apidef
   const doc = model.main.kit.doc
   if (!doc || doc.active === false) return { editions: [], files: [] }
   const editions = Object.keys(doc.edition ?? {}).sort().map(name => ({ ...doc.edition[name], name })).filter(e => e.active !== false)
+  if (!editions.length) return { editions: [], files: [] }
+  const resolved = opts.meta?.apidef || await resolveDefinition(root, model, fs)
   const files: EditionResult['files'] = {}, qa: string[] = [], claims: { path: string, kind: string }[] = []
   for (const edition of editions) {
     if (!/^[a-z][a-z0-9-]*$/.test(edition.name)) throw new Error('Invalid edition name: ' + edition.name)
@@ -332,8 +341,7 @@ export async function generate(opts: GenerateOptions) {
     // Always gate actual rendered text, even when a custom component omits qa.
     qa.push(...Object.keys(result.files).filter(p => /\.(md|html|vue)$/.test(p)))
   }
-  if (!editions.length) return { editions: [], files: [] }
-  Object.assign(files, qaResources(model))
+  Object.assign(files, qaResources(model, resolved))
   const routes = Object.fromEntries(editions.filter(e => e.kind === 'github-pages').flatMap(site =>
     nestedPresentations(model, site).filter(e => e.active !== false && e.site?.active !== false)
       .map(e => [e.output.path + '/index.html', e.output.path + '/dist/index.html'])))

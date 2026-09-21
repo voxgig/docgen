@@ -5,55 +5,58 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const node_test_1 = require("node:test");
-const node_assert_1 = __importDefault(require("node:assert"));
+const strict_1 = __importDefault(require("node:assert/strict"));
 const content_1 = require("../dist/content");
-// The capability and the contract must describe the same operation. If they
-// diverge, the reference pages change when contracts are removed — which is
-// exactly what removing them must not do.
 const FACTS = {
-    protocol: 'http',
-    operationId: 'listThings',
+    protocol: 'http', operationId: 'listThings',
     parameters: [{ in: 'query', name: 'q', schema: { type: 'string' } }],
-    responses: { 200: { description: 'ok' } },
+    responses: { 200: { description: 'Thing records', content: { 'application/json': {
+                    schema: { type: 'object', properties: {
+                            zebra: { type: 'string' }, alpha: { type: 'string', description: 'Alpha detail.' },
+                        } }, example: { zebra: 'z', alpha: 'a' },
+                } } } },
     security: [{ apiKeyAuth: [] }],
-    securitySource: 'definition',
     securitySchemes: { apiKeyAuth: { type: 'http', scheme: 'bearer' } },
 };
-function model(withContract) {
-    const point = { method: 'GET', orig: '/things', active: true };
-    if (withContract) {
-        point.contract = { version: 1, id: 'GET /things', json: JSON.stringify(FACTS) };
-    }
+function model() {
     return {
-        name: 'thing', def: 'thing.json',
+        name: 'thing',
         main: { kit: {
                 info: { title: 'Thing', version: '1', servers: [{ url: 'https://api.example.com' }] },
-                entity: { thing: { name: 'thing', active: true, fields: [],
-                        op: { list: { name: 'list', points: [point] } } } },
+                entity: { thing: { name: 'thing', active: true, fields: {
+                            alpha: { n: 'alpha', h: 'Alpha', t: '`$STRING`', r: true },
+                            hidden: { n: 'hidden', h: 'Hidden', t: '`$STRING`', r: false, a: false },
+                        }, op: { list: { name: 'list', points: [
+                                    { m: 'DELETE', o: '/hidden', a: false },
+                                    { m: 'GET', o: '/things', a: true },
+                                ] } } } },
                 target: {}, feature: {}, doc: {},
             } },
     };
 }
 const RESOLVED = {
-    version: 1, kind: 'openapi3', def: {},
     operation: (method, path) => ('GET' === method && '/things' === path) ? FACTS : undefined,
 };
 const EDITION = { name: 'summary', kind: 'summary', title: 'Thing', output: { path: 'SUMMARY.md' } };
-(0, node_test_1.describe)('resolved-parity', () => {
-    (0, node_test_1.test)('the summary is the same from the capability as from the contract', () => {
-        const fromContract = (0, content_1.summary)((0, content_1.view)(model(true), EDITION));
-        const fromCapability = (0, content_1.summary)((0, content_1.view)(model(false), EDITION, RESOLVED));
-        node_assert_1.default.equal(fromCapability, fromContract);
-    });
-    (0, node_test_1.test)('the capability wins when both are present', () => {
-        // A model that still carries contracts renders from the capability.
-        const both = (0, content_1.summary)((0, content_1.view)(model(true), EDITION, RESOLVED));
-        node_assert_1.default.equal(both, (0, content_1.summary)((0, content_1.view)(model(true), EDITION)));
-    });
-    (0, node_test_1.test)('with neither, rendering still succeeds', () => {
-        // A point with no contract and no capability has no facts to state; it
-        // must not throw.
-        node_assert_1.default.equal('string', typeof (0, content_1.summary)((0, content_1.view)(model(false), EDITION)));
-    });
+(0, node_test_1.test)('compact model renders specification facts and active routes across editions', () => {
+    const v = (0, content_1.view)(model(), EDITION, RESOLVED);
+    const text = (0, content_1.summary)(v);
+    strict_1.default.match(text, /Thing records/);
+    strict_1.default.match(text, /Alpha detail/);
+    strict_1.default.doesNotMatch(text, /\/hidden|undefined/);
+    const reference = (0, content_1.pages)(v, {}).find(p => p.path === 'api/thing').markdown;
+    strict_1.default.match(reference, /listThings/);
+    strict_1.default.match(reference, /Authentication: bearer token/);
+    strict_1.default.match(reference, /\| `alpha` \| `string` \| Yes \| Alpha \|/);
+    strict_1.default.doesNotMatch(reference, /`hidden`/);
+    strict_1.default.ok(reference.indexOf('`alpha`') < reference.indexOf('`zebra`'));
+    strict_1.default.ok(reference.indexOf('"alpha"') < reference.indexOf('"zebra"'));
+    strict_1.default.doesNotMatch((0, content_1.pages)(v, {}).find(p => p.path === 'guides/first-call').markdown, /\/hidden/);
+    strict_1.default.doesNotMatch((0, content_1.slides)(v, ''), /\/hidden|undefined/);
+});
+(0, node_test_1.test)('model-only rendering omits unavailable specification facts', () => {
+    const v = (0, content_1.view)(model(), EDITION);
+    strict_1.default.equal(typeof (0, content_1.summary)(v), 'string');
+    strict_1.default.doesNotMatch((0, content_1.pages)(v, {}).find(p => p.path === 'api/thing').markdown, /listThings|bearer token/);
 });
 //# sourceMappingURL=resolved-parity.test.js.map

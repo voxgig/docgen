@@ -6,11 +6,9 @@ function model() {
     info:{title:'Pet API',summary:'Store and retrieve pet records.',security:{type:'http',scheme:'bearer'},servers:[{url:'https://api.example.test'}]},
     target:{ts:{name:'ts',title:'TypeScript',active:true,ext:'ts',module:{name:'petstore'},publish:{registry:{active:false,state:'pending'}}},
       'go-mcp':{name:'go-mcp',title:'MCP server',active:true,module:{name:'petstore'}}},
-    entity: { pet: { name: 'pet', active: true, fields: [{ name: 'id', type: 'number', req: true }],
-      op: { load: { name: 'load', points: [{ method: 'GET', orig: '/pets/{id}', contract: {
-        json: JSON.stringify({ parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
-          responses: { '200': { description: 'Pet record', content: { 'application/json': { schema: { type: 'object' } } } } } })
-      } }] } }
+    entity: { pet: { name:'pet', active:true,
+      fields:{id:{n:'id',h:'Id',t:'number',r:true}},
+      op:{load:{name:'load',points:[{m:'GET',o:'/pets/{id}',s:[{lit:'pets'},{var:'id'}]}]}}
     } },
     feature:{retry:{name:'retry',title:'Retry',active:true,config:{options:{active:false}},hook:{PreFetch:{active:true}}}},
     doc:{edition:{summary:{kind:'summary',active:true,output:{path:'SUMMARY.md'}},'github-pages':{kind:'github-pages',active:true,output:{path:'docs'}}},
@@ -30,7 +28,10 @@ async function main() {
     write('.sdk/dist/cmp/edition/'+name+'/Main_'+name+'.js', 'exports.Main=require('+JSON.stringify(require.resolve('../dist/docgen'))+').renderEdition')
   }
   write('.sdk/model/sdk.json',JSON.stringify(m,null,2))
-  await generate({folder:root,model:m})
+  await generate({folder:root,model:m,meta:{apidef:{operation:()=>({
+    parameters:[{name:'id',in:'path',required:true,schema:{type:'integer'}}],
+    responses:{'200':{description:'Pet record',content:{'application/json':{schema:{type:'object'}}}}},
+  })}}})
   console.log(root)
 }
 main().catch(e=>{console.error(e);process.exitCode=1})
