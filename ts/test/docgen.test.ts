@@ -6,27 +6,37 @@ import Path from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { generate, scaffoldDefaults, checkText, proseText, prepareProject, styleFor } from '../dist/docgen'
 const PACKAGE = Path.resolve(__dirname, '..')
+const definitions = new WeakMap<any, any>()
 function model() {
-  return { name:'petstore', origin:'acme', main:{ kit:{
+  const m = { name:'petstore', def:'petstore.json', origin:'acme', main:{ kit:{
     info:{title:'Pet API',summary:'Store and retrieve pet records.',security:{type:'http',scheme:'bearer'},servers:[{url:'https://api.example.test'}]},
     target:{ts:{name:'ts',title:'TypeScript',active:true,ext:'ts',module:{name:'petstore'},publish:{registry:{active:false,state:'pending'}}},
       'go-mcp':{name:'go-mcp',title:'MCP server',active:true,module:{name:'petstore'}}},
-    entity: { pet: { name: 'pet', active: true, fields: [{ name: 'id', type: 'number', req: true }],
-      op: { load: { name: 'load', points: [{ method: 'GET', orig: '/pets/{id}', contract: {
-        json: JSON.stringify({ parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
-          responses: { '200': { description: 'Pet record', content: { 'application/json': { schema: { type: 'object' } } } } } })
-      } }] } }
+    entity: { pet: { name: 'pet', active: true,
+      fields: { id: { n: 'id', h: 'Id', t: 'number', r: true } },
+      op: { load: { name: 'load', points: [{ m: 'GET', o: '/pets/{id}', s: [{lit:'pets'},{var:'id'}] }] } }
     } },
     feature:{retry:{name:'retry',title:'Retry',active:true,config:{options:{active:false}},hook:{PreFetch:{active:true}}}},
     doc:{edition:{summary:{kind:'summary',active:true,output:{path:'SUMMARY.md'}},'github-pages':{kind:'github-pages',active:true,output:{path:'docs'}}},
       target:{'go-mcp':{kind:'mcp',tool:{petstore_load:{description:'Load a pet.',input:{type:'object',properties:{id:{type:'integer'}}}}}}}}
   }}}
+  definitions.set(m, { openapi:'3.0.3', info:{title:'Pet API',version:'1'}, paths:{
+    '/pets/{id}':{get:{
+      parameters:[{name:'id',in:'path',required:true,schema:{type:'integer'}}],
+      responses:{'200':{description:'Pet record',content:{'application/json':{schema:{type:'object'}}}}},
+    }},
+  }})
+  return m
 }
 function fixture(m: any = model()) {
   const root=Fs.mkdtempSync(Path.join(Os.tmpdir(),'docgen-editions-'))
   const write=(p:string,s:string)=>{const dest=Path.join(root,p);Fs.mkdirSync(Path.dirname(dest),{recursive:true});Fs.writeFileSync(dest,s)}
   for (const [p,s] of Object.entries(scaffoldDefaults())) write('.sdk/'+p,s)
   write('.sdk/package.json','{}')
+  write('.sdk/def/'+m.def,JSON.stringify(definitions.get(m)))
+  const apidef=Path.dirname(require.resolve('@voxgig/apidef/package.json'))
+  Fs.mkdirSync(Path.join(root,'.sdk/node_modules/@voxgig'),{recursive:true})
+  Fs.symlinkSync(apidef,Path.join(root,'.sdk/node_modules/@voxgig/apidef'),'dir')
   for(const [name,e] of Object.entries<any>(m.main.kit.doc.edition)) {
     const from=Path.join(PACKAGE,'project/.sdk/tm/edition',e.kind)
     Fs.cpSync(from,Path.join(root,'.sdk/tm/edition',name),{recursive:true})
@@ -71,8 +81,8 @@ test('a feature page never renders a heading with nothing under it',async()=>{
 })
 test('an entity named index does not collide with the API landing page',async()=>{
   const m=model()
-  ;(m.main.kit.entity as any).index={name:'index',active:true,fields:[{name:'id',type:'string',req:true}],
-    op:{list:{name:'list',points:[{method:'GET',orig:'/index'}]}}}
+  ;(m.main.kit.entity as any).index={name:'index',active:true,fields:{id:{n:'id',h:'Id',t:'string',r:true}},
+    op:{list:{name:'list',points:[{m:'GET',o:'/index',s:[{lit:'index'}]}]}}}
   const f=fixture(m)
   try {
     await generate({folder:f.root,model:m})
@@ -318,7 +328,8 @@ test('Pages staging excludes project-owned notes and stale output', async () => 
 test('summary orients readers and links from a nested output location', async () => {
   const m:any=model()
   m.main.kit.info.description='Store pet records and retrieve the current catalogue.'
-  m.main.kit.entity.pet.op.list={name:'list',points:[{method:'GET',orig:'/pets',contract:{json:JSON.stringify({security:[],responses:{200:{description:'Pet records'}}})}}]}
+  m.main.kit.entity.pet.op.list={name:'list',points:[{m:'GET',o:'/pets',s:[{lit:'pets'}]}]}
+  definitions.get(m).paths['/pets']={get:{security:[],responses:{200:{description:'Pet records'}}}}
   m.main.kit.doc.edition.summary.output.path='overview/SUMMARY.md'
   const f=fixture(m)
   try {
@@ -344,7 +355,7 @@ test('summary does not invent anonymous examples or reference an inactive site',
 
 test('the API reference is structured by entity, route and status',async()=>{
   const m:any=model()
-  m.main.kit.entity.pet.op.load.points[0].contract.json=JSON.stringify({
+  definitions.get(m).paths['/pets/{id}'].get={
     operationId:'loadPet',
     parameters:[{name:'id',in:'path',required:true,schema:{type:'integer'},description:'Pet identifier.'}],
     security:[{bearerAuth:[]}],
@@ -357,7 +368,8 @@ test('the API reference is structured by entity, route and status',async()=>{
           name:{type:'string',description:'Display name.'},
           tags:{type:'array',items:{type:'string'}}}},
         ok:{type:'boolean'}}}}}},
-      '404':{description:'No such pet'}}})
+      '404':{description:'No such pet'}}}
+  definitions.get(m).components={securitySchemes:{bearerAuth:{type:'http',scheme:'bearer'}}}
   const f=fixture(m)
   try {
     await generate({folder:f.root,model:m})
@@ -620,4 +632,42 @@ test('nested edition paths still reject file and directory collisions', async ()
     await Assert.rejects(generate({ folder: f.root, model: m }), /overlaps presentation|Duplicate edition output/)
     Assert.ok(!Fs.existsSync(Path.join(f.root, 'docs/index.html')))
   } finally { f.clean() }
+})
+
+test('build facts supply reference content and QA vocabulary without reading the spec again', async () => {
+  const f=fixture()
+  try {
+    Fs.unlinkSync(Path.join(f.root,'.sdk/def/'+f.m.def))
+    const calls: string[]=[]
+    await generate({folder:f.root,model:f.m,meta:{apidef:{operation:(method:string,path:string)=>{
+      calls.push(method+' '+path)
+      return {operationId:'astrochronometryLookup',responses:{200:{description:'Astrochronometry records'}}}
+    }}}})
+    Assert.ok(calls.every(key=>key==='GET /pets/{id}'))
+    Assert.match(f.read('docs/api/pet.html'),/Astrochronometry records/)
+    const vocabulary=f.read('.sdk/doc/qa/styles/config/vocabularies/Docgen/accept.txt')
+    Assert.ok(vocabulary.split('\n').some(line=>line && new RegExp('^'+line+'$').test('astrochronometryLookup')))
+    Assert.ok(vocabulary.split('\n').some(line=>line && new RegExp('^'+line+'$').test('Astrochronometry')))
+    await Assert.rejects(generate({folder:f.root,model:f.m}),/ENOENT/)
+  } finally {f.clean()}
+})
+
+test('standalone CLI reads the local specification with compact model points', () => {
+  const f=fixture()
+  try {
+    f.write('.sdk/model/sdk.json',JSON.stringify(f.m))
+    const result=spawnSync(process.execPath,[Path.join(PACKAGE,'bin/voxgig-docgen'),'generate',f.root],{encoding:'utf8'})
+    Assert.equal(result.status,0,result.stderr)
+    Assert.match(f.read('docs/api/pet.html'),/Pet record/)
+    Assert.match(f.read('docs/api/pet.html'),/Parameters/)
+  } finally {f.clean()}
+})
+
+test('inactive editions do not require a specification', async () => {
+  const f=fixture()
+  try {
+    Fs.unlinkSync(Path.join(f.root,'.sdk/def/'+f.m.def))
+    for (const edition of Object.values<any>(f.m.main.kit.doc.edition)) edition.active=false
+    Assert.deepEqual(await generate({folder:f.root,model:f.m}),{editions:[],files:[]})
+  } finally {f.clean()}
 })

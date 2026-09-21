@@ -79,7 +79,7 @@ export function summary(v: ReturnType<typeof view>): string {
   const sdks = v.targets.filter(t => surface(t, v.kit) === 'sdk')
   const tools = v.targets.filter(t => surface(t, v.kit) !== 'sdk')
   const routes = v.entities.flatMap(entity => rows(entity.op).flatMap(op =>
-    (op.points ?? []).filter((p: any) => p.active !== false).map((point: any) => ({ entity, op, point, facts: contract(point, v.resolved) }))))
+    (op.points ?? []).filter((p: any) => p.a !== false).map((point: any) => ({ entity, op, point, facts: operationFacts(point, v.resolved) }))))
   const anonymous = (facts: any) => Array.isArray(facts.security) && (!facts.security.length || facts.security.some((s: any) => s && !Object.keys(s).length))
   const website = rows(v.kit.doc?.edition).find(e => e.kind === 'github-pages')
   const base = Path.posix.dirname(v.edition.output?.path || 'SUMMARY.md')
@@ -116,13 +116,13 @@ export function summary(v: ReturnType<typeof view>): string {
       Object.values(schema).forEach(value => { if (value && typeof value === 'object') describe(value) })
     }
     entityRoutes.forEach(r => describe(r.facts.responses))
-    const fields = (entity.fields ?? []).filter((f: any) => f.active !== false && (f.short || f.description)).slice(0, 5)
-    if (fields.length) lines.push('Key fields to recognise:', '', ...fields.map((f: any) => '- ' + code(f.name) + ': ' + prose(f.description || descriptions[f.name] || f.short)), '')
+    const fields = Object.values<any>(entity.fields ?? {}).filter(f => f.a !== false && (f.sh || descriptions[f.n])).slice(0, 5)
+    if (fields.length) lines.push('Key fields to recognise:', '', ...fields.map((f: any) => '- ' + code(f.n) + ': ' + prose(descriptions[f.n] || f.sh)), '')
   }
   if (routes.length) lines.push('### Route map', '',
     'Use this map to locate a capability. Consult the entity reference before supplying request data; routes for the same operation can require different fields.', '',
     '| Entity | SDK operation | HTTP route | Authentication |', '| --- | --- | --- | --- |',
-    ...routes.map(r => '| ' + apiLink(r.entity) + ' | ' + code(r.op.name) + ' | ' + code(r.point.method.toUpperCase() + ' ' + r.point.orig) + ' | ' +
+    ...routes.map(r => '| ' + apiLink(r.entity) + ' | ' + code(r.op.name) + ' | ' + code(r.point.m.toUpperCase() + ' ' + r.point.o) + ' | ' +
       (Array.isArray(r.facts.security) ? (anonymous(r.facts) ? 'Not required' : 'Required') : 'See reference') + ' |'), '')
   lines.push('## Connect to the API', '')
   for (const server of v.info.servers || []) lines.push('- ' + prose(server.description || 'API server') + ': ' + code(server.url))
@@ -137,13 +137,13 @@ export function summary(v: ReturnType<typeof view>): string {
     '1. Choose the API server and an operation that matches your task.',
     '2. Check the operation’s required input and authentication. Use values valid for your account and environment.',
     '3. Send one request and inspect the returned data before adding retries, concurrency, or a larger batch.', '')
-  const first = routes.find(r => r.point.method.toUpperCase() === 'GET' && !/[{}]/.test(r.point.orig) &&
+  const first = routes.find(r => r.point.m.toUpperCase() === 'GET' && !/[{}]/.test(r.point.o) &&
     anonymous(r.facts) && !r.facts.requestBody &&
     !(r.facts.parameters || []).some((p: any) => p.required))
   const server = v.info.servers?.[0]?.url
   if (first && server && !/[{}]/.test(server)) {
-    const url = server.replace(/\/$/, '') + '/' + first.point.orig.replace(/^\//, '')
-    lines.push('A read request without required parameters or authentication is ' + code(first.point.method + ' ' + first.point.orig) + '. For example:',
+    const url = server.replace(/\/$/, '') + '/' + first.point.o.replace(/^\//, '')
+    lines.push('A read request without required parameters or authentication is ' + code(first.point.m + ' ' + first.point.o) + '. For example:',
       fence('curl --fail-with-body --silent --show-error ' + "'" + url.replace(/'/g, "'\\''") + "'", 'sh'),
       'Inspect the response using the ' + apiLink(first.entity) + ' reference. This checks the public route; authenticated operations need their own credentials and request data.', '')
   }
@@ -178,19 +178,13 @@ export function summary(v: ReturnType<typeof view>): string {
     '- Check the chosen SDK or companion tool reference for its configuration and supported operations.', '')
   return lines.join('\n') + '\n'
 }
-function fieldsTable(fields: any[]): string {
+function fieldsTable(fields: Record<string, any>): string {
   return ['| Field | Type | Required | Description |', '| --- | --- | --- | --- |',
-    ...fields.filter(f => f.active !== false).map(f => '| ' + code(f.name) + ' | ' + code(String(f.type || 'any').replace(/[`$]/g, '').toLowerCase()) + ' | ' +
-      (f.req || f.required ? 'Yes' : 'No') + ' | ' + cell(f.short || f.description || '') + ' |')].join('\n')
+    ...Object.values(fields).filter(f => f.a !== false).map(f => '| ' + code(f.n) + ' | ' + code(String(f.t || 'any').replace(/[`$]/g, '').toLowerCase()) + ' | ' +
+      (f.r ? 'Yes' : 'No') + ' | ' + cell(f.sh || f.h || '') + ' |')].join('\n')
 }
-// The resolved specification facts for one operation. apidef publishes them
-// as a capability; a model built before it, or a docgen run outside a model
-// build, still carries them in the point's contract.
-function contract(point: any, resolved?: any): any {
-  const facts = resolved?.operation?.(point?.method, point?.orig)
-  if (null != facts) return facts
-  if (!point.contract?.json) return {}
-  try { return JSON.parse(point.contract.json) } catch { throw new Error('Invalid model contract: ' + point.contract.id) }
+export function operationFacts(point: any, resolved?: any): any {
+  return resolved?.operation?.(point?.m, point?.o) || {}
 }
 
 
@@ -342,11 +336,11 @@ type Route = {
 
 function routesOf(entity: any, resolved?: any): Route[] {
   return rows(entity.op).flatMap((op: any) =>
-    (op.points ?? []).filter((p: any) => p.active !== false).map((point: any) => {
-      const method = String(point.method || '').toUpperCase()
-      const path = String(point.orig || '')
+    (op.points ?? []).filter((p: any) => p.a !== false).map((point: any) => {
+      const method = String(point.m || '').toUpperCase()
+      const path = String(point.o || '')
       const heading = code(method) + ' ' + path
-      return { op, point, method, path, heading, id: slugFor(heading), c: contract(point, resolved) }
+      return { op, point, method, path, heading, id: slugFor(heading), c: operationFacts(point, resolved) }
     }))
 }
 
@@ -365,7 +359,7 @@ function entityReference(entity: any, resolved?: any): { markdown: string, secti
         code(r.op.name) + ' | ' + cell(r.op.short || r.op.description || succeeds(r.c)) + ' |'), '')
   }
 
-  lines.push('## Fields', '', fieldsTable(entity.fields ?? []), '')
+  lines.push('## Fields', '', fieldsTable(entity.fields ?? {}), '')
 
   for (const op of rows(entity.op)) {
     lines.push('## ' + prose(op.name), '', prose(op.short || op.description || ''), '')
@@ -419,19 +413,19 @@ export function pages(v: ReturnType<typeof view>, examples: Record<string,string
     v.info.security && Object.keys(v.info.security).length ?
       'Configure credentials for the scheme described by the API model. Keep credentials outside source control.\n' +
       fence(stableJson(v.info.security)) : 'No authentication scheme is documented.')
-  const first = v.entities.flatMap(e => rows(e.op).flatMap(op => (op.points || []).map((p: any) => ({ e, op, p })) ))[0]
+  const first = v.entities.flatMap(e => rows(e.op).flatMap(op => (op.points || []).filter((p: any) => p.a !== false).map((p: any) => ({ e, op, p })) ))[0]
   add('guides/first-call', 'Make your first API call', 'Guides', first ?
     '1. Choose an SDK from the SDK section and follow its installation instructions.\n' +
     '2. Configure the API server and authentication settings.\n' +
     '3. Open the [' + prose(first.e.Name) + ' reference](../api/' + entityPage(first.e.name) + '.html) and supply the parameters and request body it requires.\n' +
     '4. Call ' + code(first.op.name) + ' and inspect the returned entity data.\n\n' +
-    'The first endpoint is ' + code(first.p.method + ' ' + first.p.orig) + '. Request and response examples come from the model.' :
+    'The first endpoint is ' + code(first.p.m + ' ' + first.p.o) + '. Request and response examples come from the API specification.' :
     'Add an active entity and operation to the API model to document a first call.')
   add('guides/errors', 'Handle errors', 'Guides',
     'Check the status and error response documented for each operation. Handle authentication and validation failures before retrying a request.\n\n' +
     'Configure retry, timeout, and logging through the features present in the selected SDK. Review the feature reference for defaults and options.')
   add('guides/concepts', 'Entities, SDKs, and tools', 'Guides',
-    'The API model defines entities, operations, fields, and endpoint contracts. SDK targets expose those operations in a programming language. Additional targets expose a command interface, an MCP server, or a data integration.\n\n' +
+    'The API model defines entities, operations, fields, and endpoints. The API specification supplies request and response details. SDK targets expose those operations in a programming language. Additional targets expose a command interface, an MCP server, or a data integration.\n\n' +
     'SDKs expose the API operations using each language’s conventions. Read the language reference for configuration and return values.')
   for (const entity of v.entities) {
     const reference = entityReference(entity, v.resolved)
@@ -505,7 +499,7 @@ export function slideBodies(v: ReturnType<typeof view>, example = ''): string[] 
   // The one operation the tutorial walks through. First entity, first
   // operation, first route: the same choice the first-call guide makes, so the
   // deck and the website teach the same call.
-  const first = v.entities.flatMap(e => rows(e.op).flatMap(op => (op.points || []).map((p: any) => ({ e, op, p }))))[0]
+  const first = v.entities.flatMap(e => rows(e.op).flatMap(op => (op.points || []).filter((p: any) => p.a !== false).map((p: any) => ({ e, op, p }))))[0]
   const primary = sdks.find(t => 'ts' === (t.origname || t.name)) || sdks[0]
 
   // --- ACT ONE: what the SDK gives you --------------------------------------
@@ -566,7 +560,7 @@ export function slideBodies(v: ReturnType<typeof view>, example = ''): string[] 
         ? fence('const result = await client.' + first.e.Name + '().' + first.op.name + '({\n  // the input this operation requires\n})', lang).trim()
         : 'Call ' + code(first.op.name) + ' on the ' + prose(first.e.Name) + ' entity.'
       chunks.push('Step 3: call an operation\n\n' + call + '\n\n' +
-        'That reaches ' + code(first.p.method + ' ' + first.p.orig) + '. The reference page for ' +
+        'That reaches ' + code(first.p.m + ' ' + first.p.o) + '. The reference page for ' +
         prose(first.e.Name) + ' lists every field it expects.')
 
       chunks.push('Step 4: handle the failure\n\n' + (['ts', 'js'].includes(lang)
