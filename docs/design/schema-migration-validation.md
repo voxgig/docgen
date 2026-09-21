@@ -19,6 +19,10 @@ to this checkout. The remaining local-path options select the matching sdkgen,
 apidef, Aontu, and create-sdkgen source checkouts. SDK targets are TS, JS, Go,
 Python, PHP, Ruby, and Lua.
 
+All 14 default specifications pass scaffold, build, test-model and generation:
+98/98 SDK outputs plus summary and GitHub Pages editions. Generated API reference
+pages contain all 3,224 active model routes, including GitLab and GitHub.
+
 Each project generates its summary and GitHub Pages editions. The fixture suite
 also generates presentations. Runtime SDK dependencies and documentation
 components use local symlinks; manifests contain no machine-specific paths.
@@ -26,7 +30,7 @@ components use local symlinks; manifests contain no machine-specific paths.
 ## Text QA findings
 
 Vendor specification prose causes text-policy findings in Cloudsmith, Codat
-Platform, Contentful CMA, DingConnect, Shortcut, Statuspage, and GitLab. Findings
+Platform, Contentful CMA, DingConnect, Shortcut, Statuspage, GitLab, and GitHub. Findings
 include first-person prose, exclamation marks, and repeated words. For example,
 Cloudsmith's source response descriptions include “upgrade your account!”. These
 findings are reported without changing the specification's meaning or relaxing
