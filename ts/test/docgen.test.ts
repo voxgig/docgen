@@ -176,18 +176,40 @@ test('the prose gate reads what docgen wrote, not what the definition said', () 
   Assert.equal(prose('<script>alert(1)</script>'), '&lt;script&gt;alert(1)&lt;/script&gt;')
 }, )
 
-test('the voice rule reads docgen prose, not quoted specification text', () => {
+test('the Vale pass reads the table cells, not only the authored prose', () => {
+  const { valeText, authored } = require('../dist/qa')
+  const page = '<p>Docgen wrote this.</p><table><tr><td>Vendor described this.</td></tr></table>'
+
+  Assert.match(valeText(page, 'html'), /Docgen wrote this/)
+  Assert.match(valeText(page, 'html'), /Vendor described this/)
+  // The narrower text still exists, and the house-style rules still use it.
+  Assert.doesNotMatch(authored(page, 'html'), /Vendor described this/)
+}, )
+
+test('house style reads docgen prose; a defect reads everything rendered', () => {
   const { checkText } = require('../dist/qa')
   const voice = 'Use neutral or second-person prose'
+  const banned = 'Avoid: leverag(?:e|es|ed|ing)'
+  const cell = (body: string) => '<table><tr><td>' + body + '</td></tr></table>'
+  const row = (body: string) => '| Field | Note |\n| --- | --- |\n| id | ' + body + ' |'
 
   Assert.ok(checkText('<p>We built this for you.</p>', 'html').includes(voice))
   Assert.ok(checkText('We built this for you.', 'md').includes(voice))
+  Assert.ok(!checkText(cell('returned for us'), 'html').includes(voice))
+  Assert.ok(!checkText(row('returned for us'), 'md').includes(voice))
 
-  Assert.ok(!checkText('<table><tr><td>returned for us</td></tr></table>', 'html').includes(voice))
-  Assert.ok(!checkText('| Field | Note |\n| --- | --- |\n| id | returned for us |', 'md').includes(voice))
+  // The banned vocabulary is house style too: it says how THIS project
+  // writes. In a table cell the words are a vendor's, and the SDK author
+  // cannot edit the specification they came from.
+  Assert.ok(checkText('<p>Leverage the API.</p>', 'html').includes(banned))
+  Assert.ok(checkText('Leverage the API.', 'md').includes(banned))
+  Assert.ok(!checkText(cell('Leverage the API.'), 'html').includes(banned))
+  Assert.ok(!checkText(row('Leverage the API.'), 'md').includes(banned))
 
-  // Only that rule is narrowed. A defect is a defect wherever it appears.
-  Assert.ok(checkText('<table><tr><td>Fast! Really fast!</td></tr></table>', 'html').length > 0)
+  // A defect is a defect wherever it appears, cells included.
+  Assert.ok(checkText(cell('Fast! Really fast!'), 'html').length > 0)
+  Assert.ok(checkText(cell('the the repeated word'), 'html').length > 0)
+  Assert.ok(checkText(cell('an em — dash'), 'html').length > 0)
 
   Assert.ok(!checkText('<p>See https://docs.microsoft.com/en-us/dotnet/standard</p>', 'html').includes(voice))
 }, )
@@ -206,6 +228,39 @@ test('upstream spec prose is normalised before it reaches the gate', () => {
   // and tidying a typo must not rewrite meaning.
   Assert.equal(prose('he had had enough'), 'he had had enough')
   Assert.equal(prose('that that is fine'), 'that that is fine')
+}, )
+
+test('an identifier in a vendor description is rendered as code, not prose', () => {
+  const { cell, prose } = require('../dist/content')
+  const { proseText } = require('../dist/qa')
+
+  // Both shapes come from real specifications, and both are what made the
+  // gate report a spelling mistake and a missing space against text nobody
+  // in this project wrote.
+  Assert.equal(cell('Supports none, legitimate_interest, or explicit_consent.'),
+    'Supports none, `legitimate_interest`, or `explicit_consent`.')
+  Assert.equal(cell('visible under {{ contact.NAME }}. Note this.'),
+    'visible under `{{ contact.NAME }}`. Note this.')
+
+  // The extraction the gate reads ignores code, which is the whole mechanism.
+  const table = (body: string) => '| Field | Note |\n| --- | --- |\n| id | ' + body + ' |\n'
+  Assert.doesNotMatch(proseText(table(cell('a legitimate_interest value')), 'md'), /legitimate_interest/)
+  Assert.match(proseText(table(cell('a legitimate_interest value')), 'md'), /value/)
+
+  // A code span that fuses to the words either side of it is unreadable, and
+  // prose() trims, so every fragment boundary has to put the space back.
+  Assert.equal(cell('a default_group name'), 'a `default_group` name')
+  Assert.equal(cell('default_group'), '`default_group`')
+  Assert.equal(cell(''), '')
+  Assert.equal(cell(null), '')
+
+  // Ordinary prose is untouched, and a pipe is still escaped.
+  Assert.equal(cell('A plain sentence.'), 'A plain sentence.')
+  Assert.equal(cell('one | two and a_b_c'), 'one \\| two and `a_b_c`')
+
+  // prose() itself must NOT do this: it feeds the deck, where Slidev
+  // interpolates `{{ }}` inside a code span as readily as outside one.
+  Assert.doesNotMatch(prose('under {{ contact.NAME }}'), /`/)
 }, )
 
 test('model prose cannot execute HTML or Vue expressions',async()=>{

@@ -30,13 +30,23 @@ export function authored(source: string, format: string): string {
   return proseText(stripped, format)
 }
 
+// What the Vale pass reads: everything rendered, not only what docgen wrote.
+// A generated API reference keeps the vendor's schema descriptions in table
+// cells, so a gate that skips them skips most of the page. Cells can be
+// linted because cell() renders identifiers as code, and code is not prose.
+export const valeText = proseText
+
+// A house-style rule says how THIS PROJECT writes, so it reads only what
+// docgen wrote: applying it to a quoted vendor description asks an SDK author
+// to edit someone else's specification. A defect is a defect wherever it
+// appears, so those rules read everything rendered.
 export function checkText(source: string, format = 'md', rejectFile = Path.join(PACKAGE, 'qa/styles/config/vocabularies/Docgen/reject.txt')): string[] {
-  const text = proseText(source, format), errors: string[] = []
+  const text = proseText(source, format), own = authored(source, format), errors: string[] = []
   const patterns = Fs.readFileSync(rejectFile, 'utf8').split('\n').map(s => s.trim()).filter(s => s && !s.startsWith('#'))
-  for (const pattern of patterns) if (new RegExp('\\b(?:' + pattern + ')\\b', 'i').test(text)) errors.push('Avoid: ' + pattern)
+  for (const pattern of patterns) if (new RegExp('\\b(?:' + pattern + ')\\b', 'i').test(own)) errors.push('Avoid: ' + pattern)
   if (/\b(\w+)[ \t]+\1\b/i.test(text)) errors.push('Remove the repeated word')
   if (/—/.test(text)) errors.push('Use a comma, colon, parentheses, or a new sentence instead of an em dash')
-  if (/\b(I|me|my|mine|we|us|our|ours)\b/i.test(authored(source, format))) errors.push('Use neutral or second-person prose')
+  if (/\b(I|me|my|mine|we|us|our|ours)\b/i.test(own)) errors.push('Use neutral or second-person prose')
   if (/\p{Extended_Pictographic}/u.test(text)) errors.push('Do not use emoji in documentation')
   if (/!/.test(text)) errors.push('Use statements without exclamation marks')
   return errors
@@ -73,7 +83,7 @@ export function runQA(manifestPath: string, root = process.cwd(), vale = true): 
         }
       }
       const dest = Path.join(temp, index + '.txt')
-      Fs.writeFileSync(dest, authored(text, format)); inputs.push(dest)
+      Fs.writeFileSync(dest, valeText(text, format)); inputs.push(dest)
     }
     if (vale) {
       const result = spawnSync('vale', ['--config=' + config, '--minAlertLevel=error', ...inputs],

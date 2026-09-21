@@ -221,15 +221,35 @@ function fixture(m = model()) {
     // Escaping still happens after the unwrapping, so no markup survives.
     strict_1.default.equal(prose('<script>alert(1)</script>'), '&lt;script&gt;alert(1)&lt;/script&gt;');
 });
-(0, node_test_1.test)('the voice rule reads docgen prose, not quoted specification text', () => {
+(0, node_test_1.test)('the Vale pass reads the table cells, not only the authored prose', () => {
+    const { valeText, authored } = require('../dist/qa');
+    const page = '<p>Docgen wrote this.</p><table><tr><td>Vendor described this.</td></tr></table>';
+    strict_1.default.match(valeText(page, 'html'), /Docgen wrote this/);
+    strict_1.default.match(valeText(page, 'html'), /Vendor described this/);
+    // The narrower text still exists, and the house-style rules still use it.
+    strict_1.default.doesNotMatch(authored(page, 'html'), /Vendor described this/);
+});
+(0, node_test_1.test)('house style reads docgen prose; a defect reads everything rendered', () => {
     const { checkText } = require('../dist/qa');
     const voice = 'Use neutral or second-person prose';
+    const banned = 'Avoid: leverag(?:e|es|ed|ing)';
+    const cell = (body) => '<table><tr><td>' + body + '</td></tr></table>';
+    const row = (body) => '| Field | Note |\n| --- | --- |\n| id | ' + body + ' |';
     strict_1.default.ok(checkText('<p>We built this for you.</p>', 'html').includes(voice));
     strict_1.default.ok(checkText('We built this for you.', 'md').includes(voice));
-    strict_1.default.ok(!checkText('<table><tr><td>returned for us</td></tr></table>', 'html').includes(voice));
-    strict_1.default.ok(!checkText('| Field | Note |\n| --- | --- |\n| id | returned for us |', 'md').includes(voice));
-    // Only that rule is narrowed. A defect is a defect wherever it appears.
-    strict_1.default.ok(checkText('<table><tr><td>Fast! Really fast!</td></tr></table>', 'html').length > 0);
+    strict_1.default.ok(!checkText(cell('returned for us'), 'html').includes(voice));
+    strict_1.default.ok(!checkText(row('returned for us'), 'md').includes(voice));
+    // The banned vocabulary is house style too: it says how THIS project
+    // writes. In a table cell the words are a vendor's, and the SDK author
+    // cannot edit the specification they came from.
+    strict_1.default.ok(checkText('<p>Leverage the API.</p>', 'html').includes(banned));
+    strict_1.default.ok(checkText('Leverage the API.', 'md').includes(banned));
+    strict_1.default.ok(!checkText(cell('Leverage the API.'), 'html').includes(banned));
+    strict_1.default.ok(!checkText(row('Leverage the API.'), 'md').includes(banned));
+    // A defect is a defect wherever it appears, cells included.
+    strict_1.default.ok(checkText(cell('Fast! Really fast!'), 'html').length > 0);
+    strict_1.default.ok(checkText(cell('the the repeated word'), 'html').length > 0);
+    strict_1.default.ok(checkText(cell('an em — dash'), 'html').length > 0);
     strict_1.default.ok(!checkText('<p>See https://docs.microsoft.com/en-us/dotnet/standard</p>', 'html').includes(voice));
 });
 (0, node_test_1.test)('upstream spec prose is normalised before it reaches the gate', () => {
@@ -243,6 +263,31 @@ function fixture(m = model()) {
     // and tidying a typo must not rewrite meaning.
     strict_1.default.equal(prose('he had had enough'), 'he had had enough');
     strict_1.default.equal(prose('that that is fine'), 'that that is fine');
+});
+(0, node_test_1.test)('an identifier in a vendor description is rendered as code, not prose', () => {
+    const { cell, prose } = require('../dist/content');
+    const { proseText } = require('../dist/qa');
+    // Both shapes come from real specifications, and both are what made the
+    // gate report a spelling mistake and a missing space against text nobody
+    // in this project wrote.
+    strict_1.default.equal(cell('Supports none, legitimate_interest, or explicit_consent.'), 'Supports none, `legitimate_interest`, or `explicit_consent`.');
+    strict_1.default.equal(cell('visible under {{ contact.NAME }}. Note this.'), 'visible under `{{ contact.NAME }}`. Note this.');
+    // The extraction the gate reads ignores code, which is the whole mechanism.
+    const table = (body) => '| Field | Note |\n| --- | --- |\n| id | ' + body + ' |\n';
+    strict_1.default.doesNotMatch(proseText(table(cell('a legitimate_interest value')), 'md'), /legitimate_interest/);
+    strict_1.default.match(proseText(table(cell('a legitimate_interest value')), 'md'), /value/);
+    // A code span that fuses to the words either side of it is unreadable, and
+    // prose() trims, so every fragment boundary has to put the space back.
+    strict_1.default.equal(cell('a default_group name'), 'a `default_group` name');
+    strict_1.default.equal(cell('default_group'), '`default_group`');
+    strict_1.default.equal(cell(''), '');
+    strict_1.default.equal(cell(null), '');
+    // Ordinary prose is untouched, and a pipe is still escaped.
+    strict_1.default.equal(cell('A plain sentence.'), 'A plain sentence.');
+    strict_1.default.equal(cell('one | two and a_b_c'), 'one \\| two and `a_b_c`');
+    // prose() itself must NOT do this: it feeds the deck, where Slidev
+    // interpolates `{{ }}` inside a code span as readily as outside one.
+    strict_1.default.doesNotMatch(prose('under {{ contact.NAME }}'), /`/);
 });
 (0, node_test_1.test)('model prose cannot execute HTML or Vue expressions', async () => {
     const m = model();
