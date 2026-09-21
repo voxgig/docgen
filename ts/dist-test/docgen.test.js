@@ -521,6 +521,42 @@ function fixture(m = model()) {
         f.clean();
     }
 });
+(0, node_test_1.test)('an entity page shows a call example per SDK target, phrased for its language', async () => {
+    const m = model();
+    m.main.kit.target.go = { name: 'go', title: 'Go', active: true, ext: 'go', module: { name: 'petstore' } };
+    m.main.kit.target.java = { name: 'java', title: 'Java', active: true, ext: 'java', module: { name: 'petstore' } };
+    m.main.kit.entity.pet.op.list = { name: 'list', points: [{ m: 'GET', o: '/pets', s: [{ lit: 'pets' }] }] };
+    definitions.get(m).paths['/pets'] = { get: { responses: { 200: { description: 'Pet records' } } } };
+    const f = fixture(m);
+    try {
+        await (0, docgen_1.generate)({ folder: f.root, model: m });
+        const page = f.read('docs/api/pet.html');
+        strict_1.default.match(page, /<h2 id="examples">Examples<\/h2>/);
+        // Before the fields and the per-route reference: a reader who wants to
+        // call the entity sees how before what it carries.
+        strict_1.default.ok(page.indexOf('id="examples"') < page.indexOf('id="fields"'));
+        // TypeScript, with the id key the model declares, and Go with its own
+        // spelling of the same call.
+        strict_1.default.match(page, /<h3 id="typescript">TypeScript<\/h3>/);
+        strict_1.default.match(page, /<code class="language-ts">const pets = await client\.Pet\(\)\.list\(\)\nconst pet = await client\.Pet\(\)\.load\(\{ id: 1 \}\)\n<\/code>/);
+        strict_1.default.match(page, /<h3 id="go">Go<\/h3>/);
+        strict_1.default.match(page, /<code class="language-go">pets, err := client\.Pet\(nil\)\.List\(nil, nil\)/);
+        strict_1.default.match(page, /pet, err := client\.Pet\(nil\)\.Load\(map\[string\]any\{&quot;id&quot;: 1\}, nil\)/);
+        // Each block points at the page that constructs the client it assumes.
+        strict_1.default.match(page, /href="\.\.\/sdks\/ts\.html#set-up-the-client"/);
+        strict_1.default.match(f.read('docs/sdks/ts.html'), /id="set-up-the-client"/);
+        // A tool is not an SDK, and a language sdkgen cannot phrase gets no
+        // guessed example.
+        strict_1.default.doesNotMatch(page, /<h3 id="mcp-server">/);
+        strict_1.default.doesNotMatch(page, /<h3 id="java">/);
+        // The code is not prose: the text gate reads none of it.
+        strict_1.default.deepEqual((0, docgen_1.checkText)(page, 'html'), []);
+        strict_1.default.doesNotMatch((0, docgen_1.proseText)(page, 'html'), /client\.Pet/);
+    }
+    finally {
+        f.clean();
+    }
+});
 (0, node_test_1.test)('the website links back to the SDK repository, declared or derived', async () => {
     // Derived: no `repo` declared, so `<origin>/<name>-sdk` under github.com —
     // the same rule sdkgen uses for go.mod and the package manifests.

@@ -1,4 +1,5 @@
 import { clientDefaults, toolContracts } from './sdk-reference'
+import { entityExample, exampleLanguage } from './examples'
 import { names } from 'jostraca'
 import Path from 'node:path'
 import { installCommand, packageName, isPublished, targetFeatures, repoInfo } from '@voxgig/sdkgen'
@@ -369,9 +370,28 @@ function routesOf(entity: any, resolved?: any): Route[] {
 }
 
 
-// One entity page: the routes it exposes, its fields, then a reference
-// section per route, each with its own anchor so the sidebar can link to it.
-function entityReference(entity: any, resolved?: any): { markdown: string, sections: Section[] } {
+// One code block per SDK target whose language sdkgen can phrase a call in.
+// The block assumes the client the target's own page constructs.
+function entityExamples(v: ReturnType<typeof view>, entity: any, setup: Record<string, string>): string {
+  const blocks = v.targets.filter(t => 'sdk' === surface(t, v.kit)).flatMap(target => {
+    const lang = exampleLanguage(target), example = lang ? entityExample(entity, lang) : ''
+    if (!example) return []
+    const title = prose(target.title || target.name), detail = v.kit.doc?.target?.[target.name] ?? {}
+    const page = '../sdks/' + encodeURIComponent(target.name) + '.html' + (setup[target.name] ? '#set-up-the-client' : '')
+    return ['### ' + title, '',
+      'Construct ' + code('client') + ' as shown in the [' + title + ' setup](' + page + '), then call the operations:',
+      fence(example, detail.language || target.ext || target.name)]
+  })
+  if (!blocks.length) return ''
+  return ['## Examples', '',
+    'One example per SDK, generated from the API model. The argument names are the parameters and fields of this entity, and the values are placeholders. The examples are not compiled or executed.', '',
+    ...blocks, ''].join('\n')
+}
+
+// One entity page: the routes it exposes, an example per SDK, its fields,
+// then a reference section per route, each with its own anchor so the
+// sidebar can link to it.
+function entityReference(entity: any, resolved: any, examples: string): { markdown: string, sections: Section[] } {
   const routes = routesOf(entity, resolved)
   const lines: string[] = []
 
@@ -382,6 +402,8 @@ function entityReference(entity: any, resolved?: any): { markdown: string, secti
       ...routes.map(r => '| ' + code(r.method) + ' | [' + code(r.path) + '](#' + r.id + ') | ' +
         code(r.op.name) + ' | ' + cell(r.op.short || r.op.description || succeeds(r.c)) + ' |'), '')
   }
+
+  if (examples) lines.push(examples)
 
   lines.push('## Fields', '', fieldsTable(entity.fields ?? {}), '')
 
@@ -452,7 +474,7 @@ export function pages(v: ReturnType<typeof view>, examples: Record<string,string
     'The API model defines entities, operations, fields, and endpoints. The API specification supplies request and response details. SDK targets expose those operations in a programming language. Additional targets expose a command interface, an MCP server, or a data integration.\n\n' +
     'SDKs expose the API operations using each language’s conventions. Read the language reference for configuration and return values.')
   for (const entity of v.entities) {
-    const reference = entityReference(entity, v.resolved)
+    const reference = entityReference(entity, v.resolved, entityExamples(v, entity, examples))
     add('api/' + entityPage(entity.name), entity.Name, 'API',
       [prose(v.info.entity_desc?.[entity.name] || entity.desc || entity.short || ''), '',
         reference.markdown].join('\n'))
