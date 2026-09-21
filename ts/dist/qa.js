@@ -3,6 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.valeText = void 0;
 exports.proseText = proseText;
 exports.authored = authored;
 exports.checkText = checkText;
@@ -39,17 +40,26 @@ function authored(source, format) {
         : source.split('\n').filter(line => !/^\s*\|/.test(line)).join('\n');
     return proseText(stripped, format);
 }
+// What the Vale pass reads: everything rendered, not only what docgen wrote.
+// A generated API reference keeps the vendor's schema descriptions in table
+// cells, so a gate that skips them skips most of the page. Cells can be
+// linted because cell() renders identifiers as code, and code is not prose.
+exports.valeText = proseText;
+// A house-style rule says how THIS PROJECT writes, so it reads only what
+// docgen wrote: applying it to a quoted vendor description asks an SDK author
+// to edit someone else's specification. A defect is a defect wherever it
+// appears, so those rules read everything rendered.
 function checkText(source, format = 'md', rejectFile = node_path_1.default.join(PACKAGE, 'qa/styles/config/vocabularies/Docgen/reject.txt')) {
-    const text = proseText(source, format), errors = [];
+    const text = proseText(source, format), own = authored(source, format), errors = [];
     const patterns = node_fs_1.default.readFileSync(rejectFile, 'utf8').split('\n').map(s => s.trim()).filter(s => s && !s.startsWith('#'));
     for (const pattern of patterns)
-        if (new RegExp('\\b(?:' + pattern + ')\\b', 'i').test(text))
+        if (new RegExp('\\b(?:' + pattern + ')\\b', 'i').test(own))
             errors.push('Avoid: ' + pattern);
     if (/\b(\w+)[ \t]+\1\b/i.test(text))
         errors.push('Remove the repeated word');
     if (/—/.test(text))
         errors.push('Use a comma, colon, parentheses, or a new sentence instead of an em dash');
-    if (/\b(I|me|my|mine|we|us|our|ours)\b/i.test(authored(source, format)))
+    if (/\b(I|me|my|mine|we|us|our|ours)\b/i.test(own))
         errors.push('Use neutral or second-person prose');
     if (/\p{Extended_Pictographic}/u.test(text))
         errors.push('Do not use emoji in documentation');
@@ -95,7 +105,7 @@ function runQA(manifestPath, root = process.cwd(), vale = true) {
                 }
             }
             const dest = node_path_1.default.join(temp, index + '.txt');
-            node_fs_1.default.writeFileSync(dest, authored(text, format));
+            node_fs_1.default.writeFileSync(dest, (0, exports.valeText)(text, format));
             inputs.push(dest);
         }
         if (vale) {

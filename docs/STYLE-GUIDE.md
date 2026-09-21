@@ -81,9 +81,20 @@ a test executes it. Put project-specific examples in
 
 Generation records the actual Markdown and HTML output in
 `.sdk/doc/qa-manifest.json`. All active editions are included automatically,
-including custom component output and authored website pages. The local
-gate and Vale use this same manifest and extract the same prose. Code,
+including custom component output and authored website pages. Code,
 scripts, and styles are excluded from prose checks.
+
+Which text a rule reads depends on the kind of rule it is. A house-style
+rule states how this project writes, so it reads only the prose docgen
+wrote: the banned phrase list and the neutral-voice rule skip table cells,
+because the words in a cell are the specification's and an SDK author
+cannot edit them. Every other rule reads all the rendered prose, cells
+included, because a defect is a defect wherever it appears.
+
+Vale is in the second group. It reads the whole page, which is most of an
+API reference: the schema tables carry more words than the surrounding
+prose. Identifiers inside a description, such as an enumerated value or a
+template slot, are rendered as code and so are not linted as English.
 
 The local gate checks banned phrases across line wraps, first person,
 punctuation, emoji, and repeated words within a line. Vale checks spelling,

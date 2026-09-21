@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.METHODS = exports.code = exports.cell = exports.prose = exports.html = void 0;
+exports.METHODS = exports.cell = exports.code = exports.prose = exports.html = void 0;
 exports.entityPage = entityPage;
 exports.fence = fence;
 exports.rows = rows;
@@ -30,10 +30,34 @@ const undouble = (s) => s.replace(new RegExp('\\b(' + NEVER_DOUBLED.join('|') + 
 const unwrap = (s) => s.replace(/<\s*br\s*\/?\s*>/gi, ' ').replace(/<\/?\s*p\s*>/gi, ' ').replace(/\s+/g, ' ').trim();
 const prose = (v) => (0, exports.html)(unwrap(undouble(String(v ?? ''))).replace(/\be\.g\.?(?![a-z])/gi, 'for example').replace(/\bi\.e\.?(?![a-z])/gi, 'that is').replace(/\s*—\s*/g, ', ')).replace(/\{/g, '&#123;').replace(/\}/g, '&#125;');
 exports.prose = prose;
-const cell = (v) => (0, exports.prose)(v).replace(/\|/g, '\\|').replace(/[\r\n]+/g, ' ');
-exports.cell = cell;
 const code = (v) => '`' + String(v ?? '').replace(/`/g, '') + '`';
 exports.code = code;
+// Vendor schema descriptions name enum values and template slots inline. As
+// prose they are linted as English; they are not prose, and both extractions
+// ignore code. Cells only, never prose(): prose escapes braces to defuse
+// Slidev, which interpolates inside a code span too. No table reaches a deck.
+const IDENTIFIER = /\{\{[^{}]*\}\}|[A-Za-z][A-Za-z0-9]*(?:_[A-Za-z0-9]+)+/g;
+const cell = (v) => {
+    const source = String(v ?? '');
+    // prose() trims, which is right for a whole cell and wrong for a fragment
+    // of one: without this a code span fuses to the words either side of it.
+    const span = (text) => {
+        const lead = /^\s/.test(text) ? ' ' : '', tail = /\s$/.test(text) ? ' ' : '';
+        const body = (0, exports.prose)(text);
+        return '' === body ? (lead || tail) : lead + body + tail;
+    };
+    const parts = [];
+    let at = 0;
+    for (const match of source.matchAll(IDENTIFIER)) {
+        parts.push(span(source.slice(at, match.index)), (0, exports.code)(match[0]));
+        at = match.index + match[0].length;
+    }
+    parts.push(span(source.slice(at)));
+    // GFM escapes a pipe inside an inline span the same way, so this stays
+    // correct for the code spans above.
+    return parts.join('').trim().replace(/\|/g, '\\|').replace(/[\r\n]+/g, ' ');
+};
+exports.cell = cell;
 const RESERVED_API_PAGES = new Set(['index']);
 function entityPage(name) {
     const slug = encodeURIComponent(name);

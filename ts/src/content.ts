@@ -14,8 +14,32 @@ const unwrap = (s: string): string =>
   s.replace(/<\s*br\s*\/?\s*>/gi, ' ').replace(/<\/?\s*p\s*>/gi, ' ').replace(/\s+/g, ' ').trim()
 
 export const prose = (v: any): string => html(unwrap(undouble(String(v ?? ''))).replace(/\be\.g\.?(?![a-z])/gi, 'for example').replace(/\bi\.e\.?(?![a-z])/gi, 'that is').replace(/\s*—\s*/g, ', ')).replace(/\{/g, '&#123;').replace(/\}/g, '&#125;')
-export const cell = (v: any): string => prose(v).replace(/\|/g, '\\|').replace(/[\r\n]+/g, ' ')
 export const code = (v: any): string => '`' + String(v ?? '').replace(/`/g, '') + '`'
+// Vendor schema descriptions name enum values and template slots inline. As
+// prose they are linted as English; they are not prose, and both extractions
+// ignore code. Cells only, never prose(): prose escapes braces to defuse
+// Slidev, which interpolates inside a code span too. No table reaches a deck.
+const IDENTIFIER = /\{\{[^{}]*\}\}|[A-Za-z][A-Za-z0-9]*(?:_[A-Za-z0-9]+)+/g
+export const cell = (v: any): string => {
+  const source = String(v ?? '')
+  // prose() trims, which is right for a whole cell and wrong for a fragment
+  // of one: without this a code span fuses to the words either side of it.
+  const span = (text: string): string => {
+    const lead = /^\s/.test(text) ? ' ' : '', tail = /\s$/.test(text) ? ' ' : ''
+    const body = prose(text)
+    return '' === body ? (lead || tail) : lead + body + tail
+  }
+  const parts: string[] = []
+  let at = 0
+  for (const match of source.matchAll(IDENTIFIER)) {
+    parts.push(span(source.slice(at, match.index)), code(match[0]))
+    at = match.index + match[0].length
+  }
+  parts.push(span(source.slice(at)))
+  // GFM escapes a pipe inside an inline span the same way, so this stays
+  // correct for the code spans above.
+  return parts.join('').trim().replace(/\|/g, '\\|').replace(/[\r\n]+/g, ' ')
+}
 const RESERVED_API_PAGES = new Set(['index'])
 
 export function entityPage(name: string): string {
