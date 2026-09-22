@@ -5,7 +5,7 @@
   "name": "@voxgig/docgen",
   "version": "0.24.0",
   "engines": {
-    "sdkgen": ">=4.17.0"
+    "sdkgen": ">=4.23.0"
   },
   "provides": {
     "edition": [
