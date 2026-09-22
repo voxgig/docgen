@@ -1,6 +1,6 @@
 {
   "name": "@voxgig/docgen",
-  "version": "0.26.0",
+  "version": "0.26.1",
   "main": "dist/docgen.js",
   "type": "commonjs",
   "types": "dist/docgen.d.ts",
@@ -19,7 +19,7 @@
     "url": "git://github.com/voxgig/docgen.git"
   },
   "scripts": {
-    "test": "node ../tools/comment-gate.cjs && node --enable-source-maps --test dist-test/**/*.test.js",
+    "test": "node ../tools/comment-gate.cjs && node ../tools/dep-gate.cjs && node --test ../tools/dep-gate.test.cjs && node --enable-source-maps --test dist-test/**/*.test.js",
     "test-some": "node --enable-source-maps --test-name-pattern=\"$npm_config_pattern\" --test dist-test/**/*.test.js",
     "watch": "tsc --build src test -w",
     "build": "tsc --build src test",
@@ -63,7 +63,7 @@
   },
   "peerDependencies": {
     "@voxgig/sdkgen": ">=4.23.0",
-    "aontu": ">=0.71",
+    "aontu": ">=0.71.0 <0.73.0",
     "jostraca": ">=0.33.1"
   },
   "dependencies": {
