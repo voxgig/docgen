@@ -11,7 +11,8 @@ function pet() {
       create: { name: 'create', points: [{ m: 'POST', o: '/pets' }] },
       update: { name: 'update', points: [{ m: 'PUT', o: '/pets/{id}' }] },
       remove: { name: 'remove', points: [{ m: 'DELETE', o: '/pets/{id}' }] },
-      archive: { name: 'archive', points: [{ m: 'POST', o: '/pets/{id}/archive' }] },
+      // apidef emits `patch` for an item route declaring both PUT and PATCH.
+      patch: { name: 'patch', points: [{ m: 'PATCH', o: '/pets/{id}' }] },
       hidden: { name: 'hidden', active: false, points: [{ m: 'GET', o: '/pets/hidden' }] },
     } }
 }
@@ -35,14 +36,13 @@ test('the languages sdkgen phrases a call in each have a binding', () => {
   Assert.equal(exampleLanguage({ name: 'java' }), undefined)
 })
 
-test('every active operation renders once, in canonical order, with the entity\'s own keys', () => {
+test('only the operations sdkgen generates a method for render, in canonical order', () => {
   Assert.equal(entityExample(pet(), 'ts'), [
     'const pets = await client.Pet().list()',
     'const pet = await client.Pet().load({ id: 1 })',
     'const created = await client.Pet().create({ id: 1, name: "example" })',
     'const updated = await client.Pet().update({ name: "example", tags: [] })',
     'await client.Pet().remove({ id: 1 })',
-    'const petArchive = await client.Pet().archive()',
   ].join('\n'))
   Assert.equal(entityExample(pet(), 'js'), entityExample(pet(), 'ts'))
   Assert.equal(entityExample(pet(), 'py'), [
@@ -51,7 +51,6 @@ test('every active operation renders once, in canonical order, with the entity\'
     'created = client.Pet().create({ "id": 1, "name": "example" })',
     'updated = client.Pet().update({ "name": "example", "tags": [] })',
     'client.Pet().remove({"id": 1})',
-    'pet_archive = client.Pet().archive()',
   ].join('\n'))
   Assert.equal(entityExample(pet(), 'rb'), [
     'pets = client.Pet.list()',
@@ -59,7 +58,6 @@ test('every active operation renders once, in canonical order, with the entity\'
     'created = client.Pet.create({ "id" => 1, "name" => "example" })',
     'updated = client.Pet.update({ "name" => "example", "tags" => [] })',
     'client.Pet.remove({ "id" => 1 })',
-    'pet_archive = client.Pet.archive()',
   ].join('\n'))
   Assert.equal(entityExample(pet(), 'php'), [
     '$pets = $client->Pet()->list();',
@@ -67,7 +65,6 @@ test('every active operation renders once, in canonical order, with the entity\'
     '$created = $client->Pet()->create(["id" => 1, "name" => "example"]);',
     '$updated = $client->Pet()->update(["name" => "example", "tags" => []]);',
     '$client->Pet()->remove(["id" => 1]);',
-    '$petArchive = $client->Pet()->archive();',
   ].join('\n'))
   Assert.equal(entityExample(pet(), 'lua'), [
     'local pets, err = client:Pet():list()',
@@ -75,7 +72,6 @@ test('every active operation renders once, in canonical order, with the entity\'
     'local created, err = client:Pet():create({ id = 1, name = "example" })',
     'local updated, err = client:Pet():update({ name = "example", tags = {} })',
     'local removed, err = client:Pet():remove({ id = 1 })',
-    'local petArchive, err = client:Pet():archive()',
   ].join('\n'))
   const check = 'if err != nil {\n    panic(err)\n}\n'
   Assert.equal(entityExample(pet(), 'go'), [
@@ -84,9 +80,12 @@ test('every active operation renders once, in canonical order, with the entity\'
     'created, err := client.Pet(nil).Create(map[string]any{"id": 1, "name": "example"}, nil)\n' + check + 'fmt.Println(created)',
     'updated, err := client.Pet(nil).Update(map[string]any{"name": "example", "tags": []any{}}, nil)\n' + check + 'fmt.Println(updated)',
     'removed, err := client.Pet(nil).Remove(map[string]any{"id": 1}, nil)\n' + check + 'fmt.Println(removed)',
-    'petArchive, err := client.Pet(nil).Archive(nil, nil)\n' + check + 'fmt.Println(petArchive)',
   ].join('\n'))
-  for (const lang of EXAMPLE_LANGUAGES) Assert.doesNotMatch(entityExample(pet(), lang), /hidden/)
+  // Neither an inactive op nor `patch` has a generated method to call.
+  for (const lang of EXAMPLE_LANGUAGES) {
+    Assert.doesNotMatch(entityExample(pet(), lang), /hidden/)
+    Assert.doesNotMatch(entityExample(pet(), lang), /[Pp]atch/)
+  }
 })
 
 test('a nested entity lists and loads with its parent key', () => {

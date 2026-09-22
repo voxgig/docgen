@@ -15,7 +15,8 @@ function pet() {
             create: { name: 'create', points: [{ m: 'POST', o: '/pets' }] },
             update: { name: 'update', points: [{ m: 'PUT', o: '/pets/{id}' }] },
             remove: { name: 'remove', points: [{ m: 'DELETE', o: '/pets/{id}' }] },
-            archive: { name: 'archive', points: [{ m: 'POST', o: '/pets/{id}/archive' }] },
+            // apidef emits `patch` for an item route declaring both PUT and PATCH.
+            patch: { name: 'patch', points: [{ m: 'PATCH', o: '/pets/{id}' }] },
             hidden: { name: 'hidden', active: false, points: [{ m: 'GET', o: '/pets/hidden' }] },
         } };
 }
@@ -36,14 +37,13 @@ function boardList() {
     strict_1.default.equal((0, examples_1.exampleLanguage)({ name: 'go-mcp' }), undefined);
     strict_1.default.equal((0, examples_1.exampleLanguage)({ name: 'java' }), undefined);
 });
-(0, node_test_1.test)('every active operation renders once, in canonical order, with the entity\'s own keys', () => {
+(0, node_test_1.test)('only the operations sdkgen generates a method for render, in canonical order', () => {
     strict_1.default.equal((0, examples_1.entityExample)(pet(), 'ts'), [
         'const pets = await client.Pet().list()',
         'const pet = await client.Pet().load({ id: 1 })',
         'const created = await client.Pet().create({ id: 1, name: "example" })',
         'const updated = await client.Pet().update({ name: "example", tags: [] })',
         'await client.Pet().remove({ id: 1 })',
-        'const petArchive = await client.Pet().archive()',
     ].join('\n'));
     strict_1.default.equal((0, examples_1.entityExample)(pet(), 'js'), (0, examples_1.entityExample)(pet(), 'ts'));
     strict_1.default.equal((0, examples_1.entityExample)(pet(), 'py'), [
@@ -52,7 +52,6 @@ function boardList() {
         'created = client.Pet().create({ "id": 1, "name": "example" })',
         'updated = client.Pet().update({ "name": "example", "tags": [] })',
         'client.Pet().remove({"id": 1})',
-        'pet_archive = client.Pet().archive()',
     ].join('\n'));
     strict_1.default.equal((0, examples_1.entityExample)(pet(), 'rb'), [
         'pets = client.Pet.list()',
@@ -60,7 +59,6 @@ function boardList() {
         'created = client.Pet.create({ "id" => 1, "name" => "example" })',
         'updated = client.Pet.update({ "name" => "example", "tags" => [] })',
         'client.Pet.remove({ "id" => 1 })',
-        'pet_archive = client.Pet.archive()',
     ].join('\n'));
     strict_1.default.equal((0, examples_1.entityExample)(pet(), 'php'), [
         '$pets = $client->Pet()->list();',
@@ -68,7 +66,6 @@ function boardList() {
         '$created = $client->Pet()->create(["id" => 1, "name" => "example"]);',
         '$updated = $client->Pet()->update(["name" => "example", "tags" => []]);',
         '$client->Pet()->remove(["id" => 1]);',
-        '$petArchive = $client->Pet()->archive();',
     ].join('\n'));
     strict_1.default.equal((0, examples_1.entityExample)(pet(), 'lua'), [
         'local pets, err = client:Pet():list()',
@@ -76,7 +73,6 @@ function boardList() {
         'local created, err = client:Pet():create({ id = 1, name = "example" })',
         'local updated, err = client:Pet():update({ name = "example", tags = {} })',
         'local removed, err = client:Pet():remove({ id = 1 })',
-        'local petArchive, err = client:Pet():archive()',
     ].join('\n'));
     const check = 'if err != nil {\n    panic(err)\n}\n';
     strict_1.default.equal((0, examples_1.entityExample)(pet(), 'go'), [
@@ -85,10 +81,12 @@ function boardList() {
         'created, err := client.Pet(nil).Create(map[string]any{"id": 1, "name": "example"}, nil)\n' + check + 'fmt.Println(created)',
         'updated, err := client.Pet(nil).Update(map[string]any{"name": "example", "tags": []any{}}, nil)\n' + check + 'fmt.Println(updated)',
         'removed, err := client.Pet(nil).Remove(map[string]any{"id": 1}, nil)\n' + check + 'fmt.Println(removed)',
-        'petArchive, err := client.Pet(nil).Archive(nil, nil)\n' + check + 'fmt.Println(petArchive)',
     ].join('\n'));
-    for (const lang of examples_1.EXAMPLE_LANGUAGES)
+    // Neither an inactive op nor `patch` has a generated method to call.
+    for (const lang of examples_1.EXAMPLE_LANGUAGES) {
         strict_1.default.doesNotMatch((0, examples_1.entityExample)(pet(), lang), /hidden/);
+        strict_1.default.doesNotMatch((0, examples_1.entityExample)(pet(), lang), /[Pp]atch/);
+    }
 });
 (0, node_test_1.test)('a nested entity lists and loads with its parent key', () => {
     strict_1.default.equal((0, examples_1.entityExample)(boardList(), 'ts'), [
