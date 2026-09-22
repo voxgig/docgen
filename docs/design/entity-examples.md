@@ -21,9 +21,30 @@ in `ts/src/examples.ts` is the other half of the contract: a target gets an
 example only when both cover its language. A target whose language neither
 covers renders no example rather than a guessed one.
 
+## Which operations render
+
+Only the operations sdkgen generates an entity method for, which are the keys
+of sdkgen's `OP_SUFFIX`. sdkgen's `entityOps` appends every active operation,
+and apidef emits `patch` as its own operation for an item route declaring both
+PUT and PATCH, so an unrestricted loop renders a call to a method no target
+declares. Keying off `OP_SUFFIX` means the set follows sdkgen rather than a
+copy of it here.
+
+## The argument a call carries
+
 `primaryOpCall` phrases `list` without a match. A nested entity's list still
 needs its parent keys, so docgen takes `matchArg` for `list` and substitutes
 it into the argument position when it is non-empty.
+
+`update` needs the same substitution. `dataArg` keeps only the required items
+of the update shape, and an apidef point declares the path identifier as
+required, so on a real model the call collapses to the identifier alone with
+nothing to update. Docgen chooses the items the way the `ReadmeQuick_<lang>`
+components do — the identifier, then the required items that are not the
+identifier, then enough optional ones to reach two — and renders them through
+`matchArg`, handing them back as the op's params. Every literal is still
+spelled by sdkgen, and the identifier reads as it does in the `load` call
+beside it rather than as a bare field value.
 
 ## Adding a language
 

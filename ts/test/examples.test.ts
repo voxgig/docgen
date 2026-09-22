@@ -28,6 +28,28 @@ function boardList() {
     } }
 }
 
+// Shaped as apidef emits: each item point carries the id in `g.params`, where
+// it is required, and PATCH becomes its own op beside PUT.
+function planet() {
+  const idParam = { k: 'param', n: 'id', or: 'planet_id', r: true, t: '`$STRING`' }
+  const item = (m: string) => ({ m, o: '/api/planet/{planet_id}', g: { params: [idParam] } })
+  return { name: 'planet', Name: 'Planet', id: { field: 'id', name: 'id' },
+    fields: {
+      diameter: { n: 'diameter', h: 'Diameter', t: '`$NUMBER`', r: true },
+      id: { n: 'id', h: 'Id', t: '`$STRING`', r: true },
+      kind: { n: 'kind', h: 'Kind', t: '`$STRING`', r: true },
+      name: { n: 'name', h: 'Name', t: '`$STRING`', r: true },
+    },
+    op: {
+      list: { name: 'list', points: [{ m: 'GET', o: '/api/planet' }] },
+      load: { name: 'load', points: [item('GET')] },
+      create: { name: 'create', points: [{ m: 'POST', o: '/api/planet' }] },
+      update: { name: 'update', points: [item('PUT')] },
+      patch: { name: 'patch', points: [item('PATCH')] },
+      remove: { name: 'remove', points: [item('DELETE')] },
+    } }
+}
+
 test('the languages sdkgen phrases a call in each have a binding', () => {
   Assert.deepEqual([...EXAMPLE_LANGUAGES].sort(), ['go', 'js', 'lua', 'php', 'py', 'rb', 'ts'])
   Assert.equal(exampleLanguage({ name: 'ts' }), 'ts')
@@ -41,7 +63,7 @@ test('only the operations sdkgen generates a method for render, in canonical ord
     'const pets = await client.Pet().list()',
     'const pet = await client.Pet().load({ id: 1 })',
     'const created = await client.Pet().create({ id: 1, name: "example" })',
-    'const updated = await client.Pet().update({ name: "example", tags: [] })',
+    'const updated = await client.Pet().update({ id: 1, name: "example", tags: [] })',
     'await client.Pet().remove({ id: 1 })',
   ].join('\n'))
   Assert.equal(entityExample(pet(), 'js'), entityExample(pet(), 'ts'))
@@ -49,28 +71,28 @@ test('only the operations sdkgen generates a method for render, in canonical ord
     'pets = client.Pet().list()',
     'pet = client.Pet().load({"id": 1})',
     'created = client.Pet().create({ "id": 1, "name": "example" })',
-    'updated = client.Pet().update({ "name": "example", "tags": [] })',
+    'updated = client.Pet().update({"id": 1, "name": "example", "tags": []})',
     'client.Pet().remove({"id": 1})',
   ].join('\n'))
   Assert.equal(entityExample(pet(), 'rb'), [
     'pets = client.Pet.list()',
     'pet = client.Pet.load({ "id" => 1 })',
     'created = client.Pet.create({ "id" => 1, "name" => "example" })',
-    'updated = client.Pet.update({ "name" => "example", "tags" => [] })',
+    'updated = client.Pet.update({ "id" => 1, "name" => "example", "tags" => [] })',
     'client.Pet.remove({ "id" => 1 })',
   ].join('\n'))
   Assert.equal(entityExample(pet(), 'php'), [
     '$pets = $client->Pet()->list();',
     '$pet = $client->Pet()->load(["id" => 1]);',
     '$created = $client->Pet()->create(["id" => 1, "name" => "example"]);',
-    '$updated = $client->Pet()->update(["name" => "example", "tags" => []]);',
+    '$updated = $client->Pet()->update(["id" => 1, "name" => "example", "tags" => []]);',
     '$client->Pet()->remove(["id" => 1]);',
   ].join('\n'))
   Assert.equal(entityExample(pet(), 'lua'), [
     'local pets, err = client:Pet():list()',
     'local pet, err = client:Pet():load({ id = 1 })',
     'local created, err = client:Pet():create({ id = 1, name = "example" })',
-    'local updated, err = client:Pet():update({ name = "example", tags = {} })',
+    'local updated, err = client:Pet():update({ id = 1, name = "example", tags = {} })',
     'local removed, err = client:Pet():remove({ id = 1 })',
   ].join('\n'))
   const check = 'if err != nil {\n    panic(err)\n}\n'
@@ -78,7 +100,7 @@ test('only the operations sdkgen generates a method for render, in canonical ord
     'pets, err := client.Pet(nil).List(nil, nil)\n' + check + 'fmt.Println(pets)',
     'pet, err := client.Pet(nil).Load(map[string]any{"id": 1}, nil)\n' + check + 'fmt.Println(pet)',
     'created, err := client.Pet(nil).Create(map[string]any{"id": 1, "name": "example"}, nil)\n' + check + 'fmt.Println(created)',
-    'updated, err := client.Pet(nil).Update(map[string]any{"name": "example", "tags": []any{}}, nil)\n' + check + 'fmt.Println(updated)',
+    'updated, err := client.Pet(nil).Update(map[string]any{"id": 1, "name": "example", "tags": []any{}}, nil)\n' + check + 'fmt.Println(updated)',
     'removed, err := client.Pet(nil).Remove(map[string]any{"id": 1}, nil)\n' + check + 'fmt.Println(removed)',
   ].join('\n'))
   // Neither an inactive op nor `patch` has a generated method to call.
@@ -86,6 +108,33 @@ test('only the operations sdkgen generates a method for render, in canonical ord
     Assert.doesNotMatch(entityExample(pet(), lang), /hidden/)
     Assert.doesNotMatch(entityExample(pet(), lang), /[Pp]atch/)
   }
+})
+
+test('an update carries the identifier and writable fields on an apidef model', () => {
+  Assert.equal(entityExample(planet(), 'ts'), [
+    'const planets = await client.Planet().list()',
+    'const planet = await client.Planet().load({ id: "example_id" })',
+    'const created = await client.Planet().create({ diameter: 1, id: "example", kind: "example", name: "example" })',
+    'const updated = await client.Planet().update({ id: "example_id", diameter: 1, kind: "example" })',
+    'await client.Planet().remove({ id: "example_id" })',
+  ].join('\n'))
+  Assert.equal(entityExample(planet(), 'py'), [
+    'planets = client.Planet().list()',
+    'planet = client.Planet().load({"id": "example_id"})',
+    'created = client.Planet().create({ "diameter": 1, "id": "example", "kind": "example", "name": "example" })',
+    'updated = client.Planet().update({"id": "example_id", "diameter": 1, "kind": "example"})',
+    'client.Planet().remove({"id": "example_id"})',
+  ].join('\n'))
+  const check = 'if err != nil {\n    panic(err)\n}\n'
+  Assert.equal(entityExample(planet(), 'go'), [
+    'planets, err := client.Planet(nil).List(nil, nil)\n' + check + 'fmt.Println(planets)',
+    'planet, err := client.Planet(nil).Load(map[string]any{"id": "example_id"}, nil)\n' + check + 'fmt.Println(planet)',
+    'created, err := client.Planet(nil).Create(map[string]any{"diameter": 1, "id": "example", "kind": "example", "name": "example"}, nil)\n' + check + 'fmt.Println(created)',
+    'updated, err := client.Planet(nil).Update(map[string]any{"id": "example_id", "diameter": 1, "kind": "example"}, nil)\n' + check + 'fmt.Println(updated)',
+    'removed, err := client.Planet(nil).Remove(map[string]any{"id": "example_id"}, nil)\n' + check + 'fmt.Println(removed)',
+  ].join('\n'))
+  // The id renders as the load match does, not as a bare field value.
+  for (const lang of EXAMPLE_LANGUAGES) Assert.doesNotMatch(entityExample(planet(), lang), /[Pp]atch/)
 })
 
 test('a nested entity lists and loads with its parent key', () => {

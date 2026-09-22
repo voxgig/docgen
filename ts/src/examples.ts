@@ -1,4 +1,4 @@
-import { OP_SUFFIX, entityIdField, entityOps, exampleVarName, idLiteral, matchArg, primaryOpCall } from '@voxgig/sdkgen'
+import { OP_SUFFIX, entityIdField, entityOps, exampleVarName, idLiteral, matchArg, opRequestShape, primaryOpCall } from '@voxgig/sdkgen'
 import type { ExampleLang } from '@voxgig/sdkgen'
 
 type Call = { expr: string, resultVar: string, isVoid: boolean }
@@ -38,16 +38,33 @@ function methodOps(entity: any): string[] {
   return entityOps(entity).filter(op => Object.hasOwn(OP_SUFFIX, op))
 }
 
+function paramsView(op: string, items: any[]): any {
+  return { op: { [op]: { points: [{ g: { params: items.map(it => ({ n: it.name, t: it.type, r: true })) } }] } } }
+}
+
+// dataArg keeps only the required items, which on an apidef model is the id
+// alone; the items chosen here go back to sdkgen as params, for its literals.
+function updateArg(lang: ExampleLang, entity: any, idF: string | null, idLit: string): string {
+  const items = opRequestShape(entity, 'update').items
+  const own = items.filter(it => it.name !== idF && it.name !== 'id')
+  const required = own.filter(it => !it.optional)
+  const fields = required.concat(own.filter(it => it.optional)).slice(0, Math.max(2, required.length))
+  const id = null == idF ? [] : [items.find(it => it.name === idF) ?? { name: idF, type: null }]
+  return matchArg(lang, paramsView('update', id.concat(fields)), 'update', idF, idLit)
+}
+
+function withArg(lang: ExampleLang, expr: string, arg: string): string {
+  return expr.replace(/\([^()]*\)$/, '(' + arg + ('go' === lang ? ', nil' : '') + ')')
+}
+
 export function entityExample(entity: any, lang: ExampleLang): string {
   const idF = entityIdField(entity), entityVar = exampleVarName(entity.name, lang)
   return methodOps(entity).map(op => {
     const call: Call = primaryOpCall(lang, entity.Name, entityVar, op, idF, entity)
-    if ('list' === op) {
-      // primaryOpCall lists without a match; a nested entity's list still
-      // needs its parent keys, which matchArg carries for every language.
-      const match = matchArg(lang, entity, op, idF, idLiteral(entity, op, idF))
-      if (match && 'nil' !== match) call.expr = call.expr.replace(/\((?:nil, nil)?\)$/, '(' + match + ('go' === lang ? ', nil' : '') + ')')
-    }
+    const idLit = idLiteral(entity, op, idF)
+    const arg = 'list' === op ? matchArg(lang, entity, op, idF, idLit) :
+      'update' === op ? updateArg(lang, entity, idF, idLit) : ''
+    if (arg && 'nil' !== arg) call.expr = withArg(lang, call.expr, arg)
     return BINDING[lang]({ ...call, resultVar: resultName(op, entityVar) })
   }).join('\n')
 }
