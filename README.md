@@ -135,6 +135,24 @@ the Markdown are copied with it. Generated pages and assets are recorded
 in `.sdk/doc/generated.json`, so retired generated pages are removed on
 the next run. Files not owned by docgen are preserved.
 
+Entity reference pages include a code example per SDK target, calling
+each operation with the entity's own parameter and field names. Docgen
+phrases the call with sdkgen's example helpers, so the examples share the
+phrasing sdkgen uses for a primary operation call. They are not a copy of a
+generated quick-start README, which each target phrases for itself (the Ruby
+README calls a factory without parentheses). TypeScript, JavaScript, Python,
+PHP, Ruby, Lua, and Go are covered; a target in another language renders no
+example. The examples come from the model and are not compiled or executed.
+See [docs/design/entity-examples.md](docs/design/entity-examples.md).
+
+Add target-specific descriptions, installation instructions, setup
+examples, or MCP tool schemas under `main.kit.doc.target.<target>`.
+The fields are `kind`, `description`, `install`, `example`, `language`,
+and `tool.<name>.{description,input}`. The bundled Go MCP adapter describes
+its list and load tools using the current entity selection. Explicit tool
+contracts override that adapter. Other tool surfaces can provide their
+contracts in the model without changing docgen.
+
 ### Retiring generated output
 
 Generation overwrites in place, which keeps existing files correct but
@@ -180,24 +198,6 @@ Turning documentation off — `doc.active: false`, or leaving no active
 edition — stops generation altogether, so it also stops the prune and leaves
 the existing tree in place. To retire one edition's output, remove or
 deactivate that edition while another stays active and regenerate.
-
-Entity reference pages include a code example per SDK target, calling
-each operation with the entity's own parameter and field names. Docgen
-phrases the call with sdkgen's example helpers, so the examples share the
-phrasing sdkgen uses for a primary operation call. They are not a copy of a
-generated quick-start README, which each target phrases for itself (the Ruby
-README calls a factory without parentheses). TypeScript, JavaScript, Python,
-PHP, Ruby, Lua, and Go are covered; a target in another language renders no
-example. The examples come from the model and are not compiled or executed.
-See [docs/design/entity-examples.md](docs/design/entity-examples.md).
-
-Add target-specific descriptions, installation instructions, setup
-examples, or MCP tool schemas under `main.kit.doc.target.<target>`.
-The fields are `kind`, `description`, `install`, `example`, `language`,
-and `tool.<name>.{description,input}`. The bundled Go MCP adapter describes
-its list and load tools using the current entity selection. Explicit tool
-contracts override that adapter. Other tool surfaces can provide their
-contracts in the model without changing docgen.
 
 ## Text QA and GitHub Pages
 
