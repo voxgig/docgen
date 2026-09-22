@@ -12,8 +12,14 @@ async function main() {
     if(!args[0])throw Error('Usage: voxgig-docgen stage <website-edition>')
     console.log(stageSite(process.cwd(),args[0]))
   } else if(cmd==='generate') {
-    const root=Path.resolve(args[0]||'.'), model=require(Path.join(root,'.sdk/model/sdk.json'))
-    await generate({folder:root,model})
-  } else throw Error('Usage: voxgig-docgen generate [sdk-root] | qa [--manifest file] [--local-only] | stage <website-edition>')
+    const dryrun=args.includes('--dry-run')
+    const where=args.filter(a=>a!=='--dry-run')[0]
+    const root=Path.resolve(where||'.'), model=require(Path.join(root,'.sdk/model/sdk.json'))
+    const result=await generate({folder:root,model,control:{dryrun}})
+    const prune=result.prune||{files:[],folders:[],refused:[]}
+    for(const path of prune.files) console.log((dryrun?'would remove':'removed')+' '+path)
+    for(const dir of prune.folders) console.log((dryrun?'would remove empty':'removed empty')+' '+dir)
+    for(const entry of prune.refused) console.error('refused stale entry: '+entry)
+  } else throw Error('Usage: voxgig-docgen generate [sdk-root] [--dry-run] | qa [--manifest file] [--local-only] | stage <website-edition>')
 }
 main().catch(e=>{console.error(e.message);process.exitCode=1})

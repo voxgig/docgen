@@ -5,6 +5,7 @@ import Os from 'node:os'
 import { createRequire } from 'node:module'
 import { Jostraca, Project, Folder, File, Content, names } from 'jostraca'
 import { operationFacts, rows, view, summary, pages, slides, slideBodies, html, repoLinkFor, slugFor, METHODS, type Page } from './content'
+import { relativePath, inside, within, ledgerText, readLedger, prunePlan, applyPrune, type PrunePlan } from './ledger'
 const MarkdownIt = require('markdown-it')
 const markdown = new MarkdownIt({ html: false, linkify: false, typographer: false })
 const OPERATION_RE = new RegExp('^`?(' + METHODS + ')`?\\s', 'i')
@@ -34,25 +35,12 @@ export type GenerateOptions = {
   existing?: any, [key: string]: any,
 }
 export type EditionResult = { files: Record<string, string | Buffer>, qa: string[] }
+export type GenerateResult = { editions: string[], files: string[], prune: PrunePlan }
 export type EditionProps = { model: any, edition: any, root: string, fs: any, resolved?: any }
 
-export function relativePath(value: string): string {
-  if (!value || value.includes('\\') || Path.isAbsolute(value) ||
-    value.split('/').some(x => !x || x === '.' || x === '..') || /[\x00-\x1f]/.test(value)) {
-    throw new Error('Expected a relative path inside the SDK repository: ' + value)
-  }
-  return value
-}
-function inside(root: string, rel: string, fs: any): string {
-  const dest = Path.join(root, relativePath(rel))
-  // Reject symlink ancestors before any read or write can leave the project.
-  let part = root
-  for (const p of rel.split('/')) {
-    part = Path.join(part, p)
-    if (fs.existsSync(part) && fs.lstatSync(part).isSymbolicLink()) throw new Error('Documentation path is a symlink: ' + part)
-  }
-  return dest
-}
+const LEDGER = '.sdk/doc/generated.json'
+const NOTHING: PrunePlan = { files: [], folders: [], refused: [] }
+
 function walk(fs: any, root: string, at = ''): string[] {
   if (!fs.existsSync(root)) return []
   return fs.readdirSync(root).sort().flatMap((n: string) => {
@@ -297,18 +285,21 @@ async function resolveDefinition(root: string, model: any, fs: any): Promise<any
   return { version: 1, kind, def, operation: (m: string, o: string) => facts(def, { m, o }) }
 }
 
-export async function generate(opts: GenerateOptions) {
+export async function generate(opts: GenerateOptions): Promise<GenerateResult> {
   const root = Path.resolve(opts.folder), fs = typeof opts.fs === 'function' ? opts.fs() : opts.fs || Fs
   if (!fs.existsSync(Path.join(root, '.sdk'))) throw new Error('Docgen requires an existing .sdk setup')
   const model = opts.model
   if (!model?.main?.kit) throw new Error('Docgen requires the compiled apidef/sdkgen model')
 
   const doc = model.main.kit.doc
-  if (!doc || doc.active === false) return { editions: [], files: [] }
+  if (!doc || doc.active === false) return { editions: [], files: [], prune: NOTHING }
   const editions = Object.keys(doc.edition ?? {}).sort().map(name => ({ ...doc.edition[name], name })).filter(e => e.active !== false)
-  if (!editions.length) return { editions: [], files: [] }
+  if (!editions.length) return { editions: [], files: [], prune: NOTHING }
   const resolved = opts.meta?.apidef || await resolveDefinition(root, model, fs)
   const files: EditionResult['files'] = {}, qa: string[] = [], claims: { path: string, kind: string }[] = []
+  // The prune is confined to these, so each one is declared beside the writes
+  // it covers and nothing else in the repository is ever a candidate.
+  const roots: string[] = [LEDGER, '.sdk/doc/qa', '.sdk/doc/qa-manifest.json']
   for (const edition of editions) {
     if (!/^[a-z][a-z0-9-]*$/.test(edition.name)) throw new Error('Invalid edition name: ' + edition.name)
     const path = relativePath(edition.output?.path)
@@ -325,6 +316,7 @@ export async function generate(opts: GenerateOptions) {
       if (overlaps && !nestedPresentation) throw new Error('Edition outputs overlap: ' + path)
     }
     claims.push({ path, kind: edition.kind })
+    roots.push(path)
     const modulePath = inside(root, '.sdk/dist/cmp/edition/' + edition.name + '/Main_' + edition.name + '.js', fs)
     const load = createRequire(Path.join(root, '.sdk/package.json'))
     // The compiler emits these customisable components; never fall back to a
@@ -350,14 +342,19 @@ export async function generate(opts: GenerateOptions) {
     const sites = editions.filter(e => e.kind === 'github-pages')
     if (sites.length > 1) throw new Error('Only one GitHub Pages deployment can be configured per repository')
     files['.github/workflows/docgen.yml'] = workflow(model, sites[0], editions)
-    if (sites.length) files['.sdk/admin/setup-github-pages.sh'] = Fs.readFileSync(Path.join(PACKAGE, 'admin/setup-github-pages.sh'), 'utf8')
+    roots.push('.github/workflows/docgen.yml')
+    if (sites.length) {
+      files['.sdk/admin/setup-github-pages.sh'] = Fs.readFileSync(Path.join(PACKAGE, 'admin/setup-github-pages.sh'), 'utf8')
+      roots.push('.sdk/admin/setup-github-pages.sh')
+    }
   }
   for (const path of Object.keys(files)) inside(root, path, fs)
+  const unrooted = Object.keys(files).filter(p => !roots.some(r => within(r, p)))
+  if (unrooted.length) throw new Error('Generated file outside every output root: ' + unrooted[0])
   const dryrun = !!opts.control?.dryrun
-  const previousPath = Path.join(root, '.sdk/doc/generated.json')
-  const previous: string[] = fs.existsSync(previousPath) ? JSON.parse(fs.readFileSync(previousPath, 'utf8')).files : []
-  for (const path of previous) inside(root, path, fs)
-  files['.sdk/doc/generated.json'] = JSON.stringify({ files: Object.keys(files).sort() }, null, 2) + '\n'
+  const previous = readLedger(fs, Path.join(root, LEDGER))
+  files[LEDGER] = ledgerText(roots, [...Object.keys(files), LEDGER])
+  const prune = prunePlan(fs, root, previous, new Set(Object.keys(files)))
   const textFiles = Object.fromEntries(Object.entries(files).filter(([,v]) => !Buffer.isBuffer(v)))
   await Jostraca().generate({ ...opts, fs: () => fs, folder: root, model,
     existing: { txt: { write: true, merge: false }, bin: { write: true } }, control: { dryrun } }, () => Project({}, () => emit(textFiles)))
@@ -366,12 +363,26 @@ export async function generate(opts: GenerateOptions) {
     for (const [path, data] of Object.entries(files)) if (Buffer.isBuffer(data)) {
       fs.mkdirSync(Path.dirname(Path.join(root,path)), { recursive:true }); fs.writeFileSync(Path.join(root,path),data)
     }
-    for (const old of previous) if (!(old in files) && fs.existsSync(Path.join(root, old))) fs.unlinkSync(Path.join(root, old))
+    applyPrune(fs, root, prune)
   }
-  return { editions: editions.map(e => e.name), files: Object.keys(files) }
+  report(opts.log, dryrun, prune)
+  return { editions: editions.map(e => e.name), files: Object.keys(files), prune }
+}
+
+function report(log: any, dryrun: boolean, prune: PrunePlan): void {
+  const retired = prune.files.length + prune.folders.length
+  if (!retired && !prune.refused.length) return
+  log?.info?.({
+    point: 'docgen-prune', dryrun, files: prune.files.length,
+    folders: prune.folders.length, refused: prune.refused,
+    note: (dryrun ? 'would retire ' : 'retired ') + retired +
+      (prune.refused.length ? ', refusing ' + prune.refused.join(', ') : ''),
+  })
 }
 export { view, summary, pages, slides } from './content'
 export { checkText, proseText, runQA } from './qa'
+export { relativePath, readLedger, prunePlan, applyPrune, ledgerText } from './ledger'
+export type { Ledger, Owned, PrunePlan } from './ledger'
 
 // A documentation output directory can also contain project-owned notes.
 // Deployment must copy only files recorded by the generator, into a fresh
@@ -382,7 +393,7 @@ export function stageSite(root: string, name: string): string {
   const edition = model.main?.kit?.doc?.edition?.[name]
   if (!edition || edition.kind !== 'github-pages' || edition.active === false) throw new Error('Not an active website edition: ' + name)
   const prefix = relativePath(edition.output.path) + '/'
-  const manifest = JSON.parse(Fs.readFileSync(inside(root, '.sdk/doc/generated.json', Fs), 'utf8'))
+  const manifest = readLedger(Fs, inside(root, LEDGER, Fs))
   const presentations = nestedPresentations(model, edition)
   const files: string[] = manifest.files.filter((p: string) => p.startsWith(prefix) &&
     !presentations.some(e => p.startsWith(relativePath(e.output.path) + '/')))

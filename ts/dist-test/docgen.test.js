@@ -836,7 +836,181 @@ function fixture(m = model()) {
         node_fs_1.default.unlinkSync(node_path_1.default.join(f.root, '.sdk/def/' + f.m.def));
         for (const edition of Object.values(f.m.main.kit.doc.edition))
             edition.active = false;
-        strict_1.default.deepEqual(await (0, docgen_1.generate)({ folder: f.root, model: f.m }), { editions: [], files: [] });
+        strict_1.default.deepEqual(await (0, docgen_1.generate)({ folder: f.root, model: f.m }), { editions: [], files: [], prune: { files: [], folders: [], refused: [] } });
+    }
+    finally {
+        f.clean();
+    }
+});
+// The set of generated files is a function of the model, so a shrinking model
+// has to shrink the output tree. Removal authority is the ledger and nothing
+// else: see ts/src/ledger.ts.
+function twoEntities() {
+    const m = model();
+    m.main.kit.entity.order = { name: 'order', active: true,
+        fields: { id: { n: 'id', h: 'Id', t: 'string', r: true } },
+        op: { list: { name: 'list', points: [{ m: 'GET', o: '/orders', s: [{ lit: 'orders' }] }] } } };
+    return m;
+}
+function ledgerOf(f) { return JSON.parse(f.read('.sdk/doc/generated.json')); }
+(0, node_test_1.test)('a removed entity takes its own page and nothing else', async () => {
+    const m = twoEntities();
+    const f = fixture(m);
+    try {
+        await (0, docgen_1.generate)({ folder: f.root, model: m });
+        strict_1.default.ok(node_fs_1.default.existsSync(node_path_1.default.join(f.root, 'docs/api/order.html')));
+        strict_1.default.ok(ledgerOf(f).files.includes('docs/api/order.html'));
+        f.write('docs/api/hand-written.md', 'A writer added this beside the generated pages.');
+        delete m.main.kit.entity.order;
+        const result = await (0, docgen_1.generate)({ folder: f.root, model: m });
+        strict_1.default.ok(!node_fs_1.default.existsSync(node_path_1.default.join(f.root, 'docs/api/order.html')));
+        strict_1.default.deepEqual(result.prune.files, ['docs/api/order.html']);
+        strict_1.default.deepEqual(result.prune.refused, []);
+        // Everything else in the same directory is untouched, generated or not.
+        strict_1.default.match(f.read('docs/api/pet.html'), /<h1[^>]*>Pet<\/h1>/);
+        strict_1.default.equal(f.read('docs/api/hand-written.md'), 'A writer added this beside the generated pages.');
+        strict_1.default.ok(!ledgerOf(f).files.includes('docs/api/order.html'));
+    }
+    finally {
+        f.clean();
+    }
+});
+(0, node_test_1.test)('a retired edition leaves no empty directory serving a 404', async () => {
+    const m = model();
+    m.main.kit.doc.edition.presentation = { kind: 'presentation', active: true, output: { path: 'deck' } };
+    const f = fixture(m);
+    try {
+        await (0, docgen_1.generate)({ folder: f.root, model: m });
+        strict_1.default.ok(node_fs_1.default.existsSync(node_path_1.default.join(f.root, 'deck/assets/style.css')));
+        strict_1.default.ok(node_fs_1.default.existsSync(node_path_1.default.join(f.root, 'deck/public/assets')));
+        m.main.kit.doc.edition.presentation.active = false;
+        const result = await (0, docgen_1.generate)({ folder: f.root, model: m });
+        strict_1.default.ok(!node_fs_1.default.existsSync(node_path_1.default.join(f.root, 'deck')));
+        // Deepest first, and the edition's own root is the shallowest it reaches.
+        strict_1.default.deepEqual(result.prune.folders, ['deck/public/assets', 'deck/assets', 'deck/public', 'deck']);
+        strict_1.default.ok(node_fs_1.default.existsSync(node_path_1.default.join(f.root, 'docs/index.html')));
+    }
+    finally {
+        f.clean();
+    }
+});
+(0, node_test_1.test)('a hand-added file keeps the directory its generated neighbours leave', async () => {
+    const f = fixture();
+    try {
+        f.write('.sdk/doc/content/nested/only.md', '# Only\n\nA nested authored page.\n');
+        await (0, docgen_1.generate)({ folder: f.root, model: f.m });
+        strict_1.default.ok(node_fs_1.default.existsSync(node_path_1.default.join(f.root, 'docs/additional/nested/only.html')));
+        f.write('docs/additional/nested/diagram.svg', '<svg xmlns="http://www.w3.org/2000/svg"/>');
+        node_fs_1.default.rmSync(node_path_1.default.join(f.root, '.sdk/doc/content/nested'), { recursive: true });
+        const result = await (0, docgen_1.generate)({ folder: f.root, model: f.m });
+        strict_1.default.ok(!node_fs_1.default.existsSync(node_path_1.default.join(f.root, 'docs/additional/nested/only.html')));
+        strict_1.default.ok(node_fs_1.default.existsSync(node_path_1.default.join(f.root, 'docs/additional/nested/diagram.svg')));
+        strict_1.default.deepEqual(result.prune.folders, []);
+    }
+    finally {
+        f.clean();
+    }
+});
+(0, node_test_1.test)('a ledger entry outside the recorded roots is refused, never deleted', async () => {
+    const f = fixture();
+    try {
+        f.write('.sdk/doc/content/start.md', '# Start\n\nAuthored, not generated.\n');
+        f.write('.github/workflows/release.yml', 'name: Release\n');
+        await (0, docgen_1.generate)({ folder: f.root, model: f.m });
+        const outside = node_fs_1.default.mkdtempSync(node_path_1.default.join(node_os_1.default.tmpdir(), 'docgen-outside-'));
+        node_fs_1.default.writeFileSync(node_path_1.default.join(outside, 'secret.html'), 'Not docgen output');
+        node_fs_1.default.symlinkSync(outside, node_path_1.default.join(f.root, 'docs/away'), 'dir');
+        const hostile = ['../escaped.html', '/etc/pwned', '.sdk/doc/content/start.md',
+            '.github/workflows/release.yml', 'docs/away/secret.html'];
+        const ledger = ledgerOf(f);
+        ledger.files.push(...hostile);
+        f.write('.sdk/doc/generated.json', JSON.stringify(ledger));
+        const result = await (0, docgen_1.generate)({ folder: f.root, model: f.m });
+        strict_1.default.deepEqual(result.prune.files, []);
+        for (const entry of hostile)
+            strict_1.default.ok(result.prune.refused.includes(entry), entry);
+        strict_1.default.equal(f.read('.sdk/doc/content/start.md'), '# Start\n\nAuthored, not generated.\n');
+        strict_1.default.equal(f.read('.github/workflows/release.yml'), 'name: Release\n');
+        strict_1.default.ok(node_fs_1.default.existsSync(node_path_1.default.join(outside, 'secret.html')));
+        node_fs_1.default.rmSync(outside, { recursive: true, force: true });
+    }
+    finally {
+        f.clean();
+    }
+});
+(0, node_test_1.test)('an unreadable ledger prunes nothing and says so', async () => {
+    const m = twoEntities();
+    const f = fixture(m);
+    try {
+        await (0, docgen_1.generate)({ folder: f.root, model: m });
+        delete m.main.kit.entity.order;
+        for (const [text, note] of [['{ not json', '<unreadable'], ['{"files":"nope"}', '<files is not a list>'],
+            ['{"files":[42],"roots":["docs"]}', '42']]) {
+            f.write('.sdk/doc/generated.json', text);
+            const result = await (0, docgen_1.generate)({ folder: f.root, model: m });
+            strict_1.default.deepEqual(result.prune.files, []);
+            strict_1.default.ok(result.prune.refused.some((r) => r.includes(note)), text);
+            strict_1.default.ok(node_fs_1.default.existsSync(node_path_1.default.join(f.root, 'docs/api/order.html')));
+        }
+    }
+    finally {
+        f.clean();
+    }
+});
+(0, node_test_1.test)('a missing ledger is no licence to delete', async () => {
+    const m = twoEntities();
+    const f = fixture(m);
+    try {
+        await (0, docgen_1.generate)({ folder: f.root, model: m });
+        node_fs_1.default.unlinkSync(node_path_1.default.join(f.root, '.sdk/doc/generated.json'));
+        delete m.main.kit.entity.order;
+        const result = await (0, docgen_1.generate)({ folder: f.root, model: m });
+        strict_1.default.deepEqual(result.prune, { files: [], folders: [], refused: [] });
+        strict_1.default.ok(node_fs_1.default.existsSync(node_path_1.default.join(f.root, 'docs/api/order.html')));
+        // And the run that found none writes one, so the next run can prune.
+        strict_1.default.ok(ledgerOf(f).roots.includes('docs'));
+    }
+    finally {
+        f.clean();
+    }
+});
+(0, node_test_1.test)('a dry run deletes nothing and reports what it would delete', async () => {
+    const m = twoEntities();
+    const f = fixture(m);
+    try {
+        await (0, docgen_1.generate)({ folder: f.root, model: m });
+        const before = f.read('.sdk/doc/generated.json');
+        delete m.main.kit.entity.order;
+        const result = await (0, docgen_1.generate)({ folder: f.root, model: m, control: { dryrun: true } });
+        strict_1.default.deepEqual(result.prune.files, ['docs/api/order.html']);
+        strict_1.default.ok(node_fs_1.default.existsSync(node_path_1.default.join(f.root, 'docs/api/order.html')));
+        strict_1.default.equal(f.read('.sdk/doc/generated.json'), before);
+        f.write('.sdk/model/sdk.json', JSON.stringify(m));
+        const reported = (0, node_child_process_1.spawnSync)(process.execPath, [node_path_1.default.join(PACKAGE, 'bin/voxgig-docgen'), 'generate', f.root, '--dry-run'], { encoding: 'utf8' });
+        strict_1.default.equal(reported.status, 0, reported.stderr);
+        strict_1.default.match(reported.stdout, /would remove docs\/api\/order\.html/);
+        strict_1.default.ok(node_fs_1.default.existsSync(node_path_1.default.join(f.root, 'docs/api/order.html')));
+    }
+    finally {
+        f.clean();
+    }
+});
+(0, node_test_1.test)('a stored record without roots still retires its own files', async () => {
+    const m = model();
+    m.main.kit.doc.edition.presentation = { kind: 'presentation', active: true, output: { path: 'deck' } };
+    const f = fixture(m);
+    try {
+        await (0, docgen_1.generate)({ folder: f.root, model: m });
+        f.write('.sdk/doc/generated.json', JSON.stringify({ files: ledgerOf(f).files }));
+        m.main.kit.doc.edition.presentation.active = false;
+        const result = await (0, docgen_1.generate)({ folder: f.root, model: m });
+        strict_1.default.ok(result.prune.files.includes('deck/slides.md'));
+        strict_1.default.ok(!node_fs_1.default.existsSync(node_path_1.default.join(f.root, 'deck/slides.md')));
+        // Directory removal needs a root to stop at, so it waits for the rewrite.
+        strict_1.default.deepEqual(result.prune.folders, []);
+        strict_1.default.ok(node_fs_1.default.existsSync(node_path_1.default.join(f.root, 'deck')));
+        const after = await (0, docgen_1.generate)({ folder: f.root, model: m });
+        strict_1.default.deepEqual(after.prune, { files: [], folders: [], refused: [] });
     }
     finally {
         f.clean();
