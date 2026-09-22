@@ -3,7 +3,7 @@
     "package": 1
   },
   "name": "@voxgig/docgen",
-  "version": "0.26.0",
+  "version": "0.26.1",
   "engines": {
     "sdkgen": ">=4.23.0"
   },
