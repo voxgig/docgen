@@ -116,8 +116,8 @@ function fixture(m = model()) {
 });
 (0, node_test_1.test)('default scaffold contains summary and Pages, without Slidev', () => {
     const files = (0, docgen_1.scaffoldDefaults)();
-    strict_1.default.ok(files['model/edition/summary.aon']);
-    strict_1.default.ok(files['model/edition/github-pages.aon']);
+    strict_1.default.ok(files['model/edition/summary.aontu']);
+    strict_1.default.ok(files['model/edition/github-pages.aontu']);
     strict_1.default.ok(!Object.keys(files).some(p => p.includes('presentation')));
 });
 (0, node_test_1.test)('all editions render model content; site links resolve and output is deterministic', async () => {
@@ -315,13 +315,13 @@ function fixture(m = model()) {
 });
 (0, node_test_1.test)('model schema compiles with all three editions and shared style overrides', () => {
     const { Aontu } = require('aontu');
-    const source = node_fs_1.default.readFileSync(node_path_1.default.join(PACKAGE, 'model/docgen.aon'), 'utf8') + '\nmain: kit: doc: style: color: primary: "#123456"\nmain: kit: doc: edition: summary: {kind: "summary", active:true, output:path:"SUMMARY.md"}';
+    const source = node_fs_1.default.readFileSync(node_path_1.default.join(PACKAGE, 'model/docgen.aontu'), 'utf8') + '\nmain: kit: doc: style: color: primary: "#123456"\nmain: kit: doc: edition: summary: {kind: "summary", active:true, output:path:"SUMMARY.md"}';
     const all = source + '\nmain: kit: doc: edition: {presentation: {kind: \"presentation\", output:path:\"presentation\"}, \"github-pages\": {kind:\"github-pages\", output:path:\"docs\"}}';
-    const out = new Aontu().generate(all, { path: node_path_1.default.join(PACKAGE, 'model/docgen.aon') });
+    const out = new Aontu().generate(all, { path: node_path_1.default.join(PACKAGE, 'model/docgen.aontu') });
     strict_1.default.equal(out.main.kit.doc.edition.summary.output.path, 'SUMMARY.md');
     strict_1.default.equal(out.main.kit.doc.style.color.primary, '#123456');
     strict_1.default.equal(Object.keys(out.main.kit.doc.edition).length, 3);
-    strict_1.default.throws(() => new Aontu().generate(all + '\nmain: kit: doc: edition: invalid: {kind: \"summary\", active: \"wrong type\", output:path:\"invalid.md\"}', { path: node_path_1.default.join(PACKAGE, 'model/docgen.aon') }));
+    strict_1.default.throws(() => new Aontu().generate(all + '\nmain: kit: doc: edition: invalid: {kind: \"summary\", active: \"wrong type\", output:path:\"invalid.md\"}', { path: node_path_1.default.join(PACKAGE, 'model/docgen.aontu') }));
 });
 (0, node_test_1.test)('package manifest and shipped edition trees agree', () => {
     const manifest = require('../project/sdkgen-package.json');
@@ -334,22 +334,22 @@ function fixture(m = model()) {
     const paths = entry.files.map((f) => f.path);
     strict_1.default.ok(!paths.some((path) => path.startsWith('.sdk/') || path === 'sdkgen-package.json'));
     strict_1.default.equal(manifest.version, require('../package.json').version);
-    for (const path of ['qa/vale.ini', 'qa/styles/config/vocabularies/Docgen/reject.txt', 'model/docgen.aon', 'bin/voxgig-docgen', 'README.md', 'LICENSE', 'project/sdkgen-package.json', 'project/.sdk/tm/edition/github-pages/page.html', 'assets/nunito.woff2', 'assets/nunito.woff2.license.txt', 'admin/setup-github-pages.sh', 'dist/admin/github-pages.js'])
+    for (const path of ['qa/vale.ini', 'qa/styles/config/vocabularies/Docgen/reject.txt', 'model/docgen.aontu', 'bin/voxgig-docgen', 'README.md', 'LICENSE', 'project/sdkgen-package.json', 'project/.sdk/tm/edition/github-pages/page.html', 'assets/nunito.woff2', 'assets/nunito.woff2.license.txt', 'admin/setup-github-pages.sh', 'dist/admin/github-pages.js'])
         strict_1.default.ok(paths.includes(path), path);
 });
 (0, node_test_1.test)('project bootstrap installs defaults once and preserves customised templates', () => {
     const root = node_fs_1.default.mkdtempSync(node_path_1.default.join(node_os_1.default.tmpdir(), 'docgen-bootstrap-'));
     try {
         node_fs_1.default.mkdirSync(node_path_1.default.join(root, '.sdk/model'), { recursive: true });
-        node_fs_1.default.writeFileSync(node_path_1.default.join(root, '.sdk/model/sdk.aon'), 'main: kit: {}\n');
+        node_fs_1.default.writeFileSync(node_path_1.default.join(root, '.sdk/model/sdk.aontu'), 'main: kit: {}\n');
         (0, docgen_1.prepareProject)(root);
         const file = node_path_1.default.join(root, '.sdk/tm/edition/github-pages/page.html');
         strict_1.default.ok(node_fs_1.default.existsSync(file));
-        strict_1.default.ok(!node_fs_1.default.existsSync(node_path_1.default.join(root, '.sdk/model/edition/presentation.aon')));
+        strict_1.default.ok(!node_fs_1.default.existsSync(node_path_1.default.join(root, '.sdk/model/edition/presentation.aontu')));
         node_fs_1.default.writeFileSync(file, 'custom page');
         (0, docgen_1.prepareProject)(root);
         strict_1.default.equal(node_fs_1.default.readFileSync(file, 'utf8'), 'custom page');
-        strict_1.default.equal(node_fs_1.default.readFileSync(node_path_1.default.join(root, '.sdk/model/sdk.aon'), 'utf8').split('edition-index.aon').length, 2);
+        strict_1.default.equal(node_fs_1.default.readFileSync(node_path_1.default.join(root, '.sdk/model/sdk.aontu'), 'utf8').split('edition-index.aontu').length, 2);
         // A LATER DOCGEN THAT ADDS A TEMPLATE FILE STILL REACHES THIS PROJECT.
         // Deleting one stands in for a file the package has and the project has
         // not: the next prepareProject restores it, WITHOUT reverting the
@@ -644,7 +644,7 @@ function fixture(m = model()) {
         strict_1.default.equal(defaults.mode, 'light');
         strict_1.default.equal(defaults.color.primary, '#e70042');
         const { Aontu } = require('aontu');
-        const schema = new Aontu().generate(node_fs_1.default.readFileSync(node_path_1.default.join(PACKAGE, 'model/docgen.aon'), 'utf8'));
+        const schema = new Aontu().generate(node_fs_1.default.readFileSync(node_path_1.default.join(PACKAGE, 'model/docgen.aontu'), 'utf8'));
         strict_1.default.deepEqual(schema.main.kit.doc.style.color, defaults.color);
         strict_1.default.equal(schema.main.kit.doc.style.font, defaults.font);
         strict_1.default.equal(schema.main.kit.doc.style.mode, defaults.mode);
@@ -738,7 +738,7 @@ function fixture(m = model()) {
         // whether a customisation survives.
         strict_1.default.match(deck, /voxgig-sdkgen target add/);
         strict_1.default.match(deck, /voxgig-sdkgen feature add/);
-        strict_1.default.match(deck, /project\.aon/);
+        strict_1.default.match(deck, /project\.aontu/);
     }
     finally {
         f.clean();

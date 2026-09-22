@@ -100,7 +100,7 @@ test('an entity named index does not collide with the API landing page',async()=
   } finally { f.clean() }
 })
 test('default scaffold contains summary and Pages, without Slidev',()=>{
-  const files=scaffoldDefaults();Assert.ok(files['model/edition/summary.aon']);Assert.ok(files['model/edition/github-pages.aon']);Assert.ok(!Object.keys(files).some(p=>p.includes('presentation')))
+  const files=scaffoldDefaults();Assert.ok(files['model/edition/summary.aontu']);Assert.ok(files['model/edition/github-pages.aontu']);Assert.ok(!Object.keys(files).some(p=>p.includes('presentation')))
 })
 test('all editions render model content; site links resolve and output is deterministic',async()=>{
   const m=model();(m.main.kit.doc.edition as any).presentation={kind:'presentation',active:true,output:{path:'presentation'}}
@@ -281,12 +281,12 @@ test('text QA gates Markdown, rendered HTML, and Slidev prose but excludes code'
 })
 test('model schema compiles with all three editions and shared style overrides',()=>{
   const {Aontu}=require('aontu')
-  const source=Fs.readFileSync(Path.join(PACKAGE,'model/docgen.aon'),'utf8')+'\nmain: kit: doc: style: color: primary: "#123456"\nmain: kit: doc: edition: summary: {kind: "summary", active:true, output:path:"SUMMARY.md"}'
+  const source=Fs.readFileSync(Path.join(PACKAGE,'model/docgen.aontu'),'utf8')+'\nmain: kit: doc: style: color: primary: "#123456"\nmain: kit: doc: edition: summary: {kind: "summary", active:true, output:path:"SUMMARY.md"}'
   const all=source+'\nmain: kit: doc: edition: {presentation: {kind: \"presentation\", output:path:\"presentation\"}, \"github-pages\": {kind:\"github-pages\", output:path:\"docs\"}}'
-  const out=new Aontu().generate(all,{path:Path.join(PACKAGE,'model/docgen.aon')})
+  const out=new Aontu().generate(all,{path:Path.join(PACKAGE,'model/docgen.aontu')})
   Assert.equal(out.main.kit.doc.edition.summary.output.path,'SUMMARY.md');Assert.equal(out.main.kit.doc.style.color.primary,'#123456')
   Assert.equal(Object.keys(out.main.kit.doc.edition).length,3)
-  Assert.throws(()=>new Aontu().generate(all+'\nmain: kit: doc: edition: invalid: {kind: \"summary\", active: \"wrong type\", output:path:\"invalid.md\"}',{path:Path.join(PACKAGE,'model/docgen.aon')}))
+  Assert.throws(()=>new Aontu().generate(all+'\nmain: kit: doc: edition: invalid: {kind: \"summary\", active: \"wrong type\", output:path:\"invalid.md\"}',{path:Path.join(PACKAGE,'model/docgen.aontu')}))
 })
 test('package manifest and shipped edition trees agree',()=>{
   const manifest=require('../project/sdkgen-package.json')
@@ -298,22 +298,22 @@ test('package manifest and shipped edition trees agree',()=>{
   const paths=entry.files.map((f:any)=>f.path)
   Assert.ok(!paths.some((path:string)=>path.startsWith('.sdk/') || path === 'sdkgen-package.json'))
   Assert.equal(manifest.version,require('../package.json').version)
-  for(const path of ['qa/vale.ini','qa/styles/config/vocabularies/Docgen/reject.txt','model/docgen.aon','bin/voxgig-docgen','README.md','LICENSE','project/sdkgen-package.json','project/.sdk/tm/edition/github-pages/page.html','assets/nunito.woff2','assets/nunito.woff2.license.txt','admin/setup-github-pages.sh','dist/admin/github-pages.js'])Assert.ok(paths.includes(path),path)
+  for(const path of ['qa/vale.ini','qa/styles/config/vocabularies/Docgen/reject.txt','model/docgen.aontu','bin/voxgig-docgen','README.md','LICENSE','project/sdkgen-package.json','project/.sdk/tm/edition/github-pages/page.html','assets/nunito.woff2','assets/nunito.woff2.license.txt','admin/setup-github-pages.sh','dist/admin/github-pages.js'])Assert.ok(paths.includes(path),path)
 })
 
 test('project bootstrap installs defaults once and preserves customised templates', () => {
   const root = Fs.mkdtempSync(Path.join(Os.tmpdir(), 'docgen-bootstrap-'))
   try {
     Fs.mkdirSync(Path.join(root,'.sdk/model'),{recursive:true})
-    Fs.writeFileSync(Path.join(root,'.sdk/model/sdk.aon'),'main: kit: {}\n')
+    Fs.writeFileSync(Path.join(root,'.sdk/model/sdk.aontu'),'main: kit: {}\n')
     prepareProject(root)
     const file = Path.join(root,'.sdk/tm/edition/github-pages/page.html')
     Assert.ok(Fs.existsSync(file))
-    Assert.ok(!Fs.existsSync(Path.join(root,'.sdk/model/edition/presentation.aon')))
+    Assert.ok(!Fs.existsSync(Path.join(root,'.sdk/model/edition/presentation.aontu')))
     Fs.writeFileSync(file,'custom page')
     prepareProject(root)
     Assert.equal(Fs.readFileSync(file,'utf8'),'custom page')
-    Assert.equal(Fs.readFileSync(Path.join(root,'.sdk/model/sdk.aon'),'utf8').split('edition-index.aon').length,2)
+    Assert.equal(Fs.readFileSync(Path.join(root,'.sdk/model/sdk.aontu'),'utf8').split('edition-index.aontu').length,2)
 
     // A LATER DOCGEN THAT ADDS A TEMPLATE FILE STILL REACHES THIS PROJECT.
     // Deleting one stands in for a file the package has and the project has
@@ -578,7 +578,7 @@ test('Voxgig defaults and project themes are independent in all visual editions'
     Assert.equal(defaults.mode,'light')
     Assert.equal(defaults.color.primary,'#e70042')
     const {Aontu}=require('aontu')
-    const schema=new Aontu().generate(Fs.readFileSync(Path.join(PACKAGE,'model/docgen.aon'),'utf8'))
+    const schema=new Aontu().generate(Fs.readFileSync(Path.join(PACKAGE,'model/docgen.aontu'),'utf8'))
     Assert.deepEqual(schema.main.kit.doc.style.color,defaults.color)
     Assert.equal(schema.main.kit.doc.style.font,defaults.font)
     Assert.equal(schema.main.kit.doc.style.mode,defaults.mode)
@@ -672,7 +672,7 @@ test('the deck teaches capabilities, then a tutorial, then extending with sdkgen
     // whether a customisation survives.
     Assert.match(deck, /voxgig-sdkgen target add/)
     Assert.match(deck, /voxgig-sdkgen feature add/)
-    Assert.match(deck, /project\.aon/)
+    Assert.match(deck, /project\.aontu/)
 
   } finally { f.clean() }
 })

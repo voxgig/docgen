@@ -425,20 +425,35 @@ export function scaffoldDefaults(): Record<string, string> {
   const out: Record<string, string> = {}
   const defaults = ['summary', 'github-pages']
   for (const name of defaults) {
-    const source = Fs.readFileSync(Path.join(PACKAGE, 'project/.sdk/model/edition/' + name + '.aon'), 'utf8')
-    out['model/edition/' + name + '.aon'] = source.replace("base: 'BASE'", "base: 'node_modules/@voxgig/docgen/project/.sdk'\n  package: '@voxgig/docgen'")
+    const source = Fs.readFileSync(Path.join(PACKAGE, 'project/.sdk/model/edition/' + name + '.aontu'), 'utf8')
+    out['model/edition/' + name + '.aontu'] = source.replace("base: 'BASE'", "base: 'node_modules/@voxgig/docgen/project/.sdk'\n  package: '@voxgig/docgen'")
     for (const tree of ['src/cmp/edition/', 'tm/edition/']) {
       const dir = Path.join(PACKAGE, 'project/.sdk', tree, name)
       for (const file of walk(Fs, dir)) out[tree + name + '/' + file] = Fs.readFileSync(Path.join(dir,file),'utf8')
     }
   }
-  out['model/edition/edition-index.aon'] = defaults.map(n => '@"./' + n + '.aon"').join('\n') + '\n'
+  out['model/edition/edition-index.aontu'] = defaults.map(n => '@"./' + n + '.aontu"').join('\n') + '\n'
   return out
 }
 
 function sameInclude(a: string, b: string): boolean {
-  const norm = (s: string) => s.trim().replace(/^@"\.\//, '@"')
+  // Either extension: a legacy index line names the same include.
+  const norm = (s: string) => s.trim()
+    .replace(/^@"\.\//, '@"')
+    .replace(/\.aon"$/, '.aontu"')
   return norm(a) === norm(b)
+}
+
+
+// The entry model a project HAS: `.aontu`, else the pre-rename `.aon`.
+function modelEntryPath(root: string): string {
+  const current = inside(root, '.sdk/model/sdk.aontu', Fs)
+  if (Fs.existsSync(current)) {
+    return current
+  }
+  const legacy = inside(root, '.sdk/model/sdk.aon', Fs)
+
+  return Fs.existsSync(legacy) ? legacy : current
 }
 
 
@@ -452,15 +467,15 @@ export function prepareProject(root: string): void {
   const writes: Record<string,string> = {}
   for (const [rel, text] of Object.entries(defaults)) {
     const file = inside(root, '.sdk/' + rel, Fs)
-    if (rel.endsWith('edition-index.aon')) {
+    if (rel.endsWith('edition-index.aontu')) {
       let index = Fs.existsSync(file) ? Fs.readFileSync(file,'utf8') : ''
       for (const line of text.trim().split('\n')) if (!index.split('\n').some(s=>sameInclude(s, line))) index += '\n' + line + '\n'
       writes[file] = index
     } else if (!Fs.existsSync(file)) writes[file] = text
   }
-  const modelPath = inside(root, '.sdk/model/sdk.aon', Fs)
-  if (!Fs.existsSync(modelPath)) throw new Error('Docgen requires .sdk/model/sdk.aon')
-  const model = Fs.readFileSync(modelPath,'utf8'), include='@"./edition/edition-index.aon"'
+  const modelPath = modelEntryPath(root)
+  if (!Fs.existsSync(modelPath)) throw new Error('Docgen requires .sdk/model/sdk.aontu')
+  const model = Fs.readFileSync(modelPath,'utf8'), include='@"./edition/edition-index.aontu"'
   if (!model.split('\n').some(s=>sameInclude(s, include))) writes[modelPath]=model+'\n'+include+'\n'
   for (const [path,text] of Object.entries(writes)) {Fs.mkdirSync(Path.dirname(path),{recursive:true});Fs.writeFileSync(path,text)}
   Fs.mkdirSync(Path.dirname(marker),{recursive:true});Fs.writeFileSync(marker,JSON.stringify({version:1})+'\n')
