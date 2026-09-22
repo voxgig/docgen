@@ -601,7 +601,7 @@ function slideBodies(v, example = '') {
         'A feature is behaviour around the call, not a change to it: retries, caching, audit trails, secret resolution. ' +
         'It lands in every target that supports it.');
     chunks.push('What survives a regeneration\n\n' +
-        '- ' + (0, exports.code)('.sdk/model/project.aon') + ' is yours. Settings belong there.\n' +
+        '- ' + (0, exports.code)('.sdk/model/project.aontu') + ' is yours. Settings belong there.\n' +
         '- Everything generated is overwritten, every time.\n\n' +
         'An edit to a generated file works until the next regeneration and then disappears without warning, which is the one failure mode worth knowing in advance.');
     const next = ['- Read the API reference for the operation you need.',

@@ -1,4 +1,4 @@
-@"@voxgig/docgen/model/docgen.aon"
+@"@voxgig/docgen/model/docgen.aontu"
 main: kit: doc: edition: 'presentation': {
   kind: 'presentation'
   active: *true | boolean

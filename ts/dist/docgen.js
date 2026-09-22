@@ -490,20 +490,32 @@ function scaffoldDefaults() {
     const out = {};
     const defaults = ['summary', 'github-pages'];
     for (const name of defaults) {
-        const source = node_fs_1.default.readFileSync(node_path_1.default.join(PACKAGE, 'project/.sdk/model/edition/' + name + '.aon'), 'utf8');
-        out['model/edition/' + name + '.aon'] = source.replace("base: 'BASE'", "base: 'node_modules/@voxgig/docgen/project/.sdk'\n  package: '@voxgig/docgen'");
+        const source = node_fs_1.default.readFileSync(node_path_1.default.join(PACKAGE, 'project/.sdk/model/edition/' + name + '.aontu'), 'utf8');
+        out['model/edition/' + name + '.aontu'] = source.replace("base: 'BASE'", "base: 'node_modules/@voxgig/docgen/project/.sdk'\n  package: '@voxgig/docgen'");
         for (const tree of ['src/cmp/edition/', 'tm/edition/']) {
             const dir = node_path_1.default.join(PACKAGE, 'project/.sdk', tree, name);
             for (const file of walk(node_fs_1.default, dir))
                 out[tree + name + '/' + file] = node_fs_1.default.readFileSync(node_path_1.default.join(dir, file), 'utf8');
         }
     }
-    out['model/edition/edition-index.aon'] = defaults.map(n => '@"./' + n + '.aon"').join('\n') + '\n';
+    out['model/edition/edition-index.aontu'] = defaults.map(n => '@"./' + n + '.aontu"').join('\n') + '\n';
     return out;
 }
 function sameInclude(a, b) {
-    const norm = (s) => s.trim().replace(/^@"\.\//, '@"');
+    // Either extension: a legacy index line names the same include.
+    const norm = (s) => s.trim()
+        .replace(/^@"\.\//, '@"')
+        .replace(/\.aon"$/, '.aontu"');
     return norm(a) === norm(b);
+}
+// The entry model a project HAS: `.aontu`, else the pre-rename `.aon`.
+function modelEntryPath(root) {
+    const current = (0, ledger_1.inside)(root, '.sdk/model/sdk.aontu', node_fs_1.default);
+    if (node_fs_1.default.existsSync(current)) {
+        return current;
+    }
+    const legacy = (0, ledger_1.inside)(root, '.sdk/model/sdk.aon', node_fs_1.default);
+    return node_fs_1.default.existsSync(legacy) ? legacy : current;
 }
 function prepareProject(root) {
     root = node_path_1.default.resolve(root);
@@ -517,7 +529,7 @@ function prepareProject(root) {
     const writes = {};
     for (const [rel, text] of Object.entries(defaults)) {
         const file = (0, ledger_1.inside)(root, '.sdk/' + rel, node_fs_1.default);
-        if (rel.endsWith('edition-index.aon')) {
+        if (rel.endsWith('edition-index.aontu')) {
             let index = node_fs_1.default.existsSync(file) ? node_fs_1.default.readFileSync(file, 'utf8') : '';
             for (const line of text.trim().split('\n'))
                 if (!index.split('\n').some(s => sameInclude(s, line)))
@@ -527,10 +539,10 @@ function prepareProject(root) {
         else if (!node_fs_1.default.existsSync(file))
             writes[file] = text;
     }
-    const modelPath = (0, ledger_1.inside)(root, '.sdk/model/sdk.aon', node_fs_1.default);
+    const modelPath = modelEntryPath(root);
     if (!node_fs_1.default.existsSync(modelPath))
-        throw new Error('Docgen requires .sdk/model/sdk.aon');
-    const model = node_fs_1.default.readFileSync(modelPath, 'utf8'), include = '@"./edition/edition-index.aon"';
+        throw new Error('Docgen requires .sdk/model/sdk.aontu');
+    const model = node_fs_1.default.readFileSync(modelPath, 'utf8'), include = '@"./edition/edition-index.aontu"';
     if (!model.split('\n').some(s => sameInclude(s, include)))
         writes[modelPath] = model + '\n' + include + '\n';
     for (const [path, text] of Object.entries(writes)) {

@@ -641,7 +641,7 @@ export function slideBodies(v: ReturnType<typeof view>, example = ''): string[] 
     'It lands in every target that supports it.')
 
   chunks.push('What survives a regeneration\n\n' +
-    '- ' + code('.sdk/model/project.aon') + ' is yours. Settings belong there.\n' +
+    '- ' + code('.sdk/model/project.aontu') + ' is yours. Settings belong there.\n' +
     '- Everything generated is overwritten, every time.\n\n' +
     'An edit to a generated file works until the next regeneration and then disappears without warning, which is the one failure mode worth knowing in advance.')
 

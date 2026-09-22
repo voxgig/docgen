@@ -64,8 +64,8 @@ to inspect changes before a resync.
 
 ## Configure the model
 
-Put project settings in `.sdk/model/project.aon`. The installed edition
-models include `@voxgig/docgen/model/docgen.aon` and extend `main.kit.doc`:
+Put project settings in `.sdk/model/project.aontu`. The installed edition
+models include `@voxgig/docgen/model/docgen.aontu` and extend `main.kit.doc`:
 
 ```aontu
 main: kit: doc: {

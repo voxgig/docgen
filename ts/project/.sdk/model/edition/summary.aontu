@@ -1,4 +1,4 @@
-@"@voxgig/docgen/model/docgen.aon"
+@"@voxgig/docgen/model/docgen.aontu"
 main: kit: doc: edition: 'summary': {
   kind: 'summary'
   active: *true | boolean
