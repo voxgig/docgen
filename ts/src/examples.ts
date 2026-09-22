@@ -21,7 +21,7 @@ export const EXAMPLE_LANGUAGES = Object.keys(BINDING) as ExampleLang[]
 
 export function exampleLanguage(target: any): ExampleLang | undefined {
   const lang = target?.origname || target?.name
-  return lang in BINDING ? lang : undefined
+  return Object.hasOwn(BINDING, lang) ? lang : undefined
 }
 
 const RESULT_NAME: Record<string, string> = { create: 'created', update: 'updated', remove: 'removed' }

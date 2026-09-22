@@ -20,7 +20,7 @@ const BINDING = {
 exports.EXAMPLE_LANGUAGES = Object.keys(BINDING);
 function exampleLanguage(target) {
     const lang = target?.origname || target?.name;
-    return lang in BINDING ? lang : undefined;
+    return Object.hasOwn(BINDING, lang) ? lang : undefined;
 }
 const RESULT_NAME = { create: 'created', update: 'updated', remove: 'removed' };
 function resultName(op, entityVar) {

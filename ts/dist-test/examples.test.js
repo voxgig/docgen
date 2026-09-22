@@ -57,6 +57,9 @@ function planet() {
     strict_1.default.equal((0, examples_1.exampleLanguage)({ name: 'partner-ts', origname: 'ts' }), 'ts');
     strict_1.default.equal((0, examples_1.exampleLanguage)({ name: 'go-mcp' }), undefined);
     strict_1.default.equal((0, examples_1.exampleLanguage)({ name: 'java' }), undefined);
+    // A name every object inherits is not a language.
+    strict_1.default.equal((0, examples_1.exampleLanguage)({ name: 'constructor' }), undefined);
+    strict_1.default.equal((0, examples_1.exampleLanguage)({ name: 'toString' }), undefined);
 });
 (0, node_test_1.test)('only the operations sdkgen generates a method for render, in canonical order', () => {
     strict_1.default.equal((0, examples_1.entityExample)(pet(), 'ts'), [

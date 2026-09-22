@@ -56,6 +56,9 @@ test('the languages sdkgen phrases a call in each have a binding', () => {
   Assert.equal(exampleLanguage({ name: 'partner-ts', origname: 'ts' }), 'ts')
   Assert.equal(exampleLanguage({ name: 'go-mcp' }), undefined)
   Assert.equal(exampleLanguage({ name: 'java' }), undefined)
+  // A name every object inherits is not a language.
+  Assert.equal(exampleLanguage({ name: 'constructor' }), undefined)
+  Assert.equal(exampleLanguage({ name: 'toString' }), undefined)
 })
 
 test('only the operations sdkgen generates a method for render, in canonical order', () => {
