@@ -51,7 +51,24 @@ function updateArg(lang, entity, idF, idLit) {
 function withArg(lang, expr, arg) {
     return expr.replace(/\([^()]*\)$/, '(' + arg + ('go' === lang ? ', nil' : '') + ')');
 }
+const SDKGEN_FLOOR = '>=4.23.0';
+const HELPER = {
+    OP_SUFFIX: sdkgen_1.OP_SUFFIX,
+    entityIdField: sdkgen_1.entityIdField,
+    entityOps: sdkgen_1.entityOps,
+    exampleVarName: sdkgen_1.exampleVarName,
+    idLiteral: sdkgen_1.idLiteral,
+    matchArg: sdkgen_1.matchArg,
+    opRequestShape: sdkgen_1.opRequestShape,
+    primaryOpCall: sdkgen_1.primaryOpCall,
+};
+function requireHelpers() {
+    const missing = Object.keys(HELPER).filter(name => null == HELPER[name]);
+    if (0 < missing.length)
+        throw new Error('entity examples need @voxgig/sdkgen ' + SDKGEN_FLOOR + ', which exports ' + missing.join(', '));
+}
 function entityExample(entity, lang) {
+    requireHelpers();
     const idF = (0, sdkgen_1.entityIdField)(entity), entityVar = (0, sdkgen_1.exampleVarName)(entity.name, lang);
     return methodOps(entity).map(op => {
         const call = (0, sdkgen_1.primaryOpCall)(lang, entity.Name, entityVar, op, idF, entity);

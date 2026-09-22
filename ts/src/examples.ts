@@ -57,7 +57,20 @@ function withArg(lang: ExampleLang, expr: string, arg: string): string {
   return expr.replace(/\([^()]*\)$/, '(' + arg + ('go' === lang ? ', nil' : '') + ')')
 }
 
+const SDKGEN_FLOOR = '>=4.23.0'
+
+const HELPER: Record<string, unknown> = {
+  OP_SUFFIX, entityIdField, entityOps, exampleVarName, idLiteral, matchArg, opRequestShape, primaryOpCall,
+}
+
+function requireHelpers(): void {
+  const missing = Object.keys(HELPER).filter(name => null == HELPER[name])
+  if (0 < missing.length) throw new Error(
+    'entity examples need @voxgig/sdkgen ' + SDKGEN_FLOOR + ', which exports ' + missing.join(', '))
+}
+
 export function entityExample(entity: any, lang: ExampleLang): string {
+  requireHelpers()
   const idF = entityIdField(entity), entityVar = exampleVarName(entity.name, lang)
   return methodOps(entity).map(op => {
     const call: Call = primaryOpCall(lang, entity.Name, entityVar, op, idF, entity)

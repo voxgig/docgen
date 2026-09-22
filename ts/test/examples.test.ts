@@ -140,6 +140,22 @@ test('an update carries the identifier and writable fields on an apidef model', 
   for (const lang of EXAMPLE_LANGUAGES) Assert.doesNotMatch(entityExample(planet(), lang), /[Pp]atch/)
 })
 
+test('an sdkgen without the example helpers names the version docgen needs', () => {
+  const sdkgenPath = require.resolve('@voxgig/sdkgen'), examplesPath = require.resolve('../dist/examples')
+  const mod = require.cache[sdkgenPath] as NodeModule, real = mod.exports
+  const older: any = {}
+  for (const key of Object.keys(real)) if ('primaryOpCall' !== key) older[key] = real[key]
+  mod.exports = older
+  delete require.cache[examplesPath]
+  try {
+    Assert.throws(() => require(examplesPath).entityExample(pet(), 'ts'),
+      /entity examples need @voxgig\/sdkgen >=4\.23\.0, which exports primaryOpCall/)
+  } finally {
+    mod.exports = real
+    delete require.cache[examplesPath]
+  }
+})
+
 test('a nested entity lists and loads with its parent key', () => {
   Assert.equal(entityExample(boardList(), 'ts'), [
     'const lists = await client.List().list({ board_id: "example" })',

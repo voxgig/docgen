@@ -139,6 +139,23 @@ function planet() {
     for (const lang of examples_1.EXAMPLE_LANGUAGES)
         strict_1.default.doesNotMatch((0, examples_1.entityExample)(planet(), lang), /[Pp]atch/);
 });
+(0, node_test_1.test)('an sdkgen without the example helpers names the version docgen needs', () => {
+    const sdkgenPath = require.resolve('@voxgig/sdkgen'), examplesPath = require.resolve('../dist/examples');
+    const mod = require.cache[sdkgenPath], real = mod.exports;
+    const older = {};
+    for (const key of Object.keys(real))
+        if ('primaryOpCall' !== key)
+            older[key] = real[key];
+    mod.exports = older;
+    delete require.cache[examplesPath];
+    try {
+        strict_1.default.throws(() => require(examplesPath).entityExample(pet(), 'ts'), /entity examples need @voxgig\/sdkgen >=4\.23\.0, which exports primaryOpCall/);
+    }
+    finally {
+        mod.exports = real;
+        delete require.cache[examplesPath];
+    }
+});
 (0, node_test_1.test)('a nested entity lists and loads with its parent key', () => {
     strict_1.default.equal((0, examples_1.entityExample)(boardList(), 'ts'), [
         'const lists = await client.List().list({ board_id: "example" })',
