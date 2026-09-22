@@ -24,9 +24,10 @@ State what a run requires rather than what some past run found, and cite the
 file that enforces it. The Node floor is `engines.node` in `ts/package.json`.
 `make publish` probes for `gh` and refuses the dispatch without it, and
 `.githooks/pre-push` probes for `node` before running the comment gate — that
-is the pattern to copy. The Vale version the prose QA measures against is
-pinned by the workflow that installs it, because a prose result is comparable
-between two machines only when both ran the same binary. The operating systems
+is the pattern to copy. The Vale release the prose QA measures against is
+`VALE_VERSION` in `.github/workflows/text-qa.yml`, because a prose result is
+comparable between two machines only when both ran the same binary -- and a
+`vale` already on your PATH is whatever you installed, not that release. The operating systems
 and Node versions the suite runs on live in `.github/workflows/build.yml`; read
 the matrix there rather than copying it here, where the copy would go stale
 unnoticed.
