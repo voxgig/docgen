@@ -1,6 +1,6 @@
 {
   "name": "@voxgig/docgen",
-  "version": "0.25.0",
+  "version": "0.26.0",
   "main": "dist/docgen.js",
   "type": "commonjs",
   "types": "dist/docgen.d.ts",
