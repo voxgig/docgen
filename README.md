@@ -135,6 +135,14 @@ the Markdown are copied with it. Generated pages and assets are recorded
 in `.sdk/doc/generated.json`, so retired generated pages are removed on
 the next run. Files not owned by docgen are preserved.
 
+Entity reference pages include a code example per SDK target, calling
+each operation with the entity's own parameter and field names. Docgen
+phrases the call with sdkgen's example helpers, so the reference and the
+generated README agree. TypeScript, JavaScript, Python, PHP, Ruby, Lua, and
+Go are covered; a target in another language renders no example. The
+examples come from the model and are not compiled or executed. See
+[docs/design/entity-examples.md](docs/design/entity-examples.md).
+
 Add target-specific descriptions, installation instructions, setup
 examples, or MCP tool schemas under `main.kit.doc.target.<target>`.
 The fields are `kind`, `description`, `install`, `example`, `language`,

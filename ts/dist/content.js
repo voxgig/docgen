@@ -20,6 +20,7 @@ exports.pages = pages;
 exports.slideBodies = slideBodies;
 exports.slides = slides;
 const sdk_reference_1 = require("./sdk-reference");
+const examples_1 = require("./examples");
 const jostraca_1 = require("jostraca");
 const node_path_1 = __importDefault(require("node:path"));
 const sdkgen_1 = require("@voxgig/sdkgen");
@@ -358,15 +359,37 @@ function routesOf(entity, resolved) {
         return { op, point, method, path, heading, id: slugFor(heading), c: operationFacts(point, resolved) };
     }));
 }
-// One entity page: the routes it exposes, its fields, then a reference
-// section per route, each with its own anchor so the sidebar can link to it.
-function entityReference(entity, resolved) {
+// One code block per SDK target whose language sdkgen can phrase a call in.
+// The block assumes the client the target's own page constructs.
+function entityExamples(v, entity, setup) {
+    const blocks = v.targets.filter(t => 'sdk' === surface(t, v.kit)).flatMap(target => {
+        const lang = (0, examples_1.exampleLanguage)(target), example = lang ? (0, examples_1.entityExample)(entity, lang) : '';
+        if (!example)
+            return [];
+        const title = (0, exports.prose)(target.title || target.name), detail = v.kit.doc?.target?.[target.name] ?? {};
+        const page = '../sdks/' + encodeURIComponent(target.name) + '.html' + (setup[target.name] ? '#set-up-the-client' : '');
+        return ['### ' + title, '',
+            'Construct ' + (0, exports.code)('client') + ' as shown in the [' + title + ' setup](' + page + '), then call the operations:',
+            fence(example, detail.language || target.ext || target.name)];
+    });
+    if (!blocks.length)
+        return '';
+    return ['## Examples', '',
+        'One example per SDK, generated from the API model. The argument names are the parameters and fields of this entity, and the values are placeholders. The examples are not compiled or executed.', '',
+        ...blocks, ''].join('\n');
+}
+// One entity page: the routes it exposes, an example per SDK, its fields,
+// then a reference section per route, each with its own anchor so the
+// sidebar can link to it.
+function entityReference(entity, resolved, examples) {
     const routes = routesOf(entity, resolved);
     const lines = [];
     if (routes.length) {
         lines.push('## Operations', '', 'Every route this entity exposes. Each route links to its own reference on this page.', '', '| Method | Route | SDK operation | Returns |', '| --- | --- | --- | --- |', ...routes.map(r => '| ' + (0, exports.code)(r.method) + ' | [' + (0, exports.code)(r.path) + '](#' + r.id + ') | ' +
             (0, exports.code)(r.op.name) + ' | ' + (0, exports.cell)(r.op.short || r.op.description || succeeds(r.c)) + ' |'), '');
     }
+    if (examples)
+        lines.push(examples);
     lines.push('## Fields', '', fieldsTable(entity.fields ?? {}), '');
     for (const op of rows(entity.op)) {
         lines.push('## ' + (0, exports.prose)(op.name), '', (0, exports.prose)(op.short || op.description || ''), '');
@@ -427,7 +450,7 @@ function pages(v, examples = {}) {
     add('guides/concepts', 'Entities, SDKs, and tools', 'Guides', 'The API model defines entities, operations, fields, and endpoints. The API specification supplies request and response details. SDK targets expose those operations in a programming language. Additional targets expose a command interface, an MCP server, or a data integration.\n\n' +
         'SDKs expose the API operations using each language’s conventions. Read the language reference for configuration and return values.');
     for (const entity of v.entities) {
-        const reference = entityReference(entity, v.resolved);
+        const reference = entityReference(entity, v.resolved, entityExamples(v, entity, examples));
         add('api/' + entityPage(entity.name), entity.Name, 'API', [(0, exports.prose)(v.info.entity_desc?.[entity.name] || entity.desc || entity.short || ''), '',
             reference.markdown].join('\n'));
         out[out.length - 1].sections = reference.sections;
