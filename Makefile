@@ -80,14 +80,23 @@ publish:
 	@echo
 	@echo "dispatched. watch with:  gh run list --workflow=publish.yml --limit 1"
 
-.PHONY: comments comments-test hooks
+.PHONY: comments comments-test deps deps-test hooks
 comments:
 	node tools/comment-gate.cjs
 
 comments-test:
 	node --test tools/comment-gate.test.cjs
 
+# A COMMITTED dependency names a published npm package or a GitHub reference.
+# The gate judges only what git tracks, so local wiring -- a file: sibling, a
+# link:, a packed tarball -- stays legal while you work and fails once staged.
+deps:
+	node tools/dep-gate.cjs
+
+deps-test:
+	node --test tools/dep-gate.test.cjs
+
 hooks:
 	git config core.hooksPath .githooks
 
-test: comments
+test: comments deps

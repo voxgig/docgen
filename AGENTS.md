@@ -54,6 +54,21 @@ Archives are appropriate when testing package contents or installation from a
 packed release. Put those artifacts in a temporary test directory and clean
 up artifacts created by the test afterward; do not scatter them across repos.
 
+`make deps` enforces the committed half of that rule. `tools/dep-gate.cjs`
+requires every committed dependency to name a published npm package or a GitHub
+reference: it reads each tracked npm manifest and lockfile, `go.mod`,
+`Cargo.toml`, `.npmrc`, symlink and archive, and reports a `file:`, `link:`,
+`portal:`, `workspace:`, `catalog:`, a bare filesystem path, a packed `.tgz`, a
+git reference to a host other than github.com, an off-registry `overrides`, a
+lockfile resolving from a path or a foreign registry, a `replace` or Cargo
+`path` leaving the repository, a committed `go.work`, and an escaping symlink.
+It judges only what git TRACKS, deliberately, so local wiring stays legal right
+up to the moment it is staged. It runs in `make test`, inside `cd ts && npm
+test`, and in `.githooks/pre-push`; `make deps-test` runs the gate's own suite.
+An exception goes in `tools/dep-gate.json` with a reason, and the gate reports
+an entry that has stopped matching anything, so the list cannot outlive what it
+excused.
+
 
 ## Source code comments
 
