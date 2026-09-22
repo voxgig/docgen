@@ -153,6 +153,52 @@ its list and load tools using the current entity selection. Explicit tool
 contracts override that adapter. Other tool surfaces can provide their
 contracts in the model without changing docgen.
 
+### Retiring generated output
+
+Generation overwrites in place, which keeps existing files correct but
+cannot make one disappear. An edition emits a page per entity, per
+operation, per target and per feature, so the set of files it writes is a
+function of the model: an entity that leaves the specification has to take
+its page with it, or the published site keeps serving a page for something
+the SDK no longer has.
+
+Each run therefore records what it wrote in `.sdk/doc/generated.json` — the
+files, and the output roots those files sit under. The next run removes a
+file only when the stored record named it, that name resolves inside one of
+the stored roots, and this run did not write it again. A directory goes only
+when everything left in it is going too, so removing the last page of a
+per-entity directory does not leave an empty one behind serving a
+404-shaped index.
+
+Nothing else is ever removed. A handwritten page, an image a writer added, a
+workflow docgen does not generate and anything under `.sdk/doc/content/` is
+outside every recorded root, so it survives even if the record names it. The
+record is read as untrusted data: an absolute path, a path containing `..`,
+a path through a symlink, an entry of the wrong type or an unreadable file
+prunes nothing and is reported instead.
+
+**Commit `.sdk/doc/generated.json` with the output it describes.** The
+generated site is committed to the SDK repository, and the Pages workflow
+regenerates it from a fresh checkout before staging. A checkout without the
+record cannot know what the previous run wrote, so it prunes nothing and
+writes a new record — safe, but a stale page committed earlier would be
+published again. Committing it costs nothing when the generated tree itself
+is ignored: an entry naming a file that is not there is skipped. Nothing in
+the shipped scaffold ignores the record, so the default is correct; an
+ignore rule covering `.sdk/doc/` turns the prune off for everyone but the
+workstation that last generated twice.
+
+To see what a run would retire without writing anything:
+
+```sh
+node .sdk/node_modules/@voxgig/docgen/bin/voxgig-docgen generate . --dry-run
+```
+
+Turning documentation off — `doc.active: false`, or leaving no active
+edition — stops generation altogether, so it also stops the prune and leaves
+the existing tree in place. To retire one edition's output, remove or
+deactivate that edition while another stays active and regenerate.
+
 ## Text QA and GitHub Pages
 
 Docgen generates `.github/workflows/docgen.yml`. It regenerates the

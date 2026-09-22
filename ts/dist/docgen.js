@@ -3,8 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.runQA = exports.proseText = exports.checkText = exports.slides = exports.pages = exports.summary = exports.view = void 0;
-exports.relativePath = relativePath;
+exports.ledgerText = exports.applyPrune = exports.prunePlan = exports.readLedger = exports.relativePath = exports.runQA = exports.proseText = exports.checkText = exports.slides = exports.pages = exports.summary = exports.view = void 0;
 exports.styleFor = styleFor;
 exports.renderEdition = renderEdition;
 exports.generate = generate;
@@ -18,6 +17,7 @@ const node_os_1 = __importDefault(require("node:os"));
 const node_module_1 = require("node:module");
 const jostraca_1 = require("jostraca");
 const content_1 = require("./content");
+const ledger_1 = require("./ledger");
 const MarkdownIt = require('markdown-it');
 const markdown = new MarkdownIt({ html: false, linkify: false, typographer: false });
 const OPERATION_RE = new RegExp('^`?(' + content_1.METHODS + ')`?\\s', 'i');
@@ -41,24 +41,8 @@ markdown.renderer.rules.heading_open = (tokens, index, options, env, self) => {
     return self.renderToken(tokens, index, options);
 };
 const PACKAGE = node_path_1.default.resolve(__dirname, '..');
-function relativePath(value) {
-    if (!value || value.includes('\\') || node_path_1.default.isAbsolute(value) ||
-        value.split('/').some(x => !x || x === '.' || x === '..') || /[\x00-\x1f]/.test(value)) {
-        throw new Error('Expected a relative path inside the SDK repository: ' + value);
-    }
-    return value;
-}
-function inside(root, rel, fs) {
-    const dest = node_path_1.default.join(root, relativePath(rel));
-    // Reject symlink ancestors before any read or write can leave the project.
-    let part = root;
-    for (const p of rel.split('/')) {
-        part = node_path_1.default.join(part, p);
-        if (fs.existsSync(part) && fs.lstatSync(part).isSymbolicLink())
-            throw new Error('Documentation path is a symlink: ' + part);
-    }
-    return dest;
-}
+const LEDGER = '.sdk/doc/generated.json';
+const NOTHING = { files: [], folders: [], refused: [] };
 function walk(fs, root, at = '') {
     if (!fs.existsSync(root))
         return [];
@@ -73,7 +57,7 @@ function walk(fs, root, at = '') {
     });
 }
 function template(props, file, data) {
-    const path = inside(props.root, '.sdk/tm/edition/' + props.edition.name + '/' + file, props.fs);
+    const path = (0, ledger_1.inside)(props.root, '.sdk/tm/edition/' + props.edition.name + '/' + file, props.fs);
     const text = String(props.fs.readFileSync(path, 'utf8'));
     return text.replace(/\{\{([\w]+)\}\}/g, (all, name) => {
         if (!(name in data))
@@ -101,14 +85,14 @@ function styleFiles(props, prefix, templateName, files) {
     for (const [key, value] of [['logo', style.logo], ['font', style.fontFile], ['heading-font', style.headingFontFile], ['mono-font', style.monoFile]]) {
         if (!value)
             continue;
-        const source = inside(props.root, assets + '/' + value, props.fs);
+        const source = (0, ledger_1.inside)(props.root, assets + '/' + value, props.fs);
         const ext = node_path_1.default.extname(value).toLowerCase();
         if (!(key !== 'logo' ? ['.woff', '.woff2'] : ['.svg', '.png', '.jpg', '.jpeg', '.webp']).includes(ext))
             throw new Error('Unsupported documentation asset: ' + value);
         const dest = key + ext;
         files[prefix + 'assets/' + dest] = props.fs.readFileSync(source);
         if (key !== 'logo' && props.fs.existsSync(source + '.license.txt'))
-            files[prefix + (props.edition.kind === 'presentation' ? 'public/' : '') + 'assets/' + dest + '.license.txt'] = props.fs.readFileSync(inside(props.root, assets + '/' + value + '.license.txt', props.fs));
+            files[prefix + (props.edition.kind === 'presentation' ? 'public/' : '') + 'assets/' + dest + '.license.txt'] = props.fs.readFileSync((0, ledger_1.inside)(props.root, assets + '/' + value + '.license.txt', props.fs));
         if (key === 'logo')
             logo = dest;
         else {
@@ -134,7 +118,7 @@ function styleFiles(props, prefix, templateName, files) {
 }
 function authored(props) {
     const folder = props.model.main.kit.doc?.content?.path || '.sdk/doc/content';
-    const source = inside(props.root, folder, props.fs);
+    const source = (0, ledger_1.inside)(props.root, folder, props.fs);
     const result = { pages: [], assets: {} };
     for (const name of walk(props.fs, source)) {
         const content = props.fs.readFileSync(node_path_1.default.join(source, name));
@@ -163,14 +147,14 @@ function safeMarkdown(text, inline = false) {
     return inline ? markdown.renderInline(source) : markdown.render(source);
 }
 function nestedPresentations(model, site) {
-    const prefix = relativePath(site.output.path) + '/';
+    const prefix = (0, ledger_1.relativePath)(site.output.path) + '/';
     return (0, content_1.rows)(model.main.kit.doc?.edition).filter(e => e.kind === 'presentation' && e.output?.path?.startsWith(prefix));
 }
 // Edition components can wrap or replace this function. All output is emitted
 // through the same Jostraca pass and included in ownership and QA manifests.
 function renderEdition(props) {
     const { edition } = props, v = (0, content_1.view)(props.model, edition, props.resolved);
-    const path = relativePath(edition.output.path);
+    const path = (0, ledger_1.relativePath)(edition.output.path);
     const brand = { ...v.kit.doc?.brand, ...edition.brand };
     if (brand.url && !/^https?:\/\//i.test(brand.url))
         throw new Error('Documentation brand URL must use HTTP or HTTPS');
@@ -183,7 +167,7 @@ function renderEdition(props) {
         notice: (0, content_1.html)(brand.notice || ''), shortNotice: (0, content_1.html)(brand.shortNotice || brand.notice || ''),
     };
     const result = { files: {}, qa: [] }, files = result.files;
-    const examplePath = inside(props.root, '.sdk/tm/edition/' + edition.name + '/sdk-setup.json', props.fs);
+    const examplePath = (0, ledger_1.inside)(props.root, '.sdk/tm/edition/' + edition.name + '/sdk-setup.json', props.fs);
     const setupTemplates = props.fs.existsSync(examplePath) ? JSON.parse(props.fs.readFileSync(examplePath, 'utf8')) : {};
     const examples = Object.fromEntries(v.targets.map(t => [t.name, (0, sdk_reference_1.setupExample)(props.model, t, setupTemplates)]));
     const put = (name, text, qa = false) => { files[name] = text; if (qa)
@@ -197,7 +181,7 @@ function renderEdition(props) {
         const prefix = path + '/', own = authored(props), all = [...(0, content_1.pages)(v, examples), ...own.pages];
         const seen = new Set();
         for (const page of all) {
-            relativePath(page.path);
+            (0, ledger_1.relativePath)(page.path);
             if (seen.has(page.path))
                 throw new Error('Duplicate documentation page: ' + page.path);
             seen.add(page.path);
@@ -225,7 +209,7 @@ function renderEdition(props) {
                 all.filter(p => p.group === group).map(navLink).join('\n') + '</details>').join('\n');
             const presentationLinks = nestedPresentations(props.model, edition)
                 .filter(e => e.active !== false && e.site?.active !== false)
-                .map(e => '<a class="presentation-link" href="' + (0, content_1.html)(base + relativePath(e.output.path).slice(prefix.length) + '/index.html') + '">' + (0, content_1.html)(e.title || 'Presentation') + '</a>').join('\n');
+                .map(e => '<a class="presentation-link" href="' + (0, content_1.html)(base + (0, ledger_1.relativePath)(e.output.path).slice(prefix.length) + '/index.html') + '">' + (0, content_1.html)(e.title || 'Presentation') + '</a>').join('\n');
             put(prefix + page.path + '.html', template(props, 'page.html', {
                 ...branding, notice: safeMarkdown(brand.notice || '', true), title: (0, content_1.html)(page.title), site: (0, content_1.html)(v.title), content: safeMarkdown(page.markdown), nav, base, presentationLinks, section: (0, content_1.html)(page.group),
                 logo: logo ? '<img class="logo" src="' + base + 'assets/' + logo + '" alt="' + (0, content_1.html)(v.title) + '">' : '',
@@ -303,13 +287,13 @@ function workflow(model, site, editions) {
     source = source.replaceAll('{{branch}}', branch);
     const presentations = editions.filter(e => e.kind === 'presentation');
     source = source.replace('{{presentations}}', presentations.map(e => '      - name: Build presentation ' + e.name + '\n' +
-        '        env:\n          EDITION_PATH: ' + JSON.stringify(relativePath(e.output.path)) + '\n' +
+        '        env:\n          EDITION_PATH: ' + JSON.stringify((0, ledger_1.relativePath)(e.output.path)) + '\n' +
         '        run: |\n          npm install --prefix "$EDITION_PATH" --no-audit --no-fund\n          npm run build --prefix "$EDITION_PATH"').join('\n'));
     source = source.replace('{{stageSite}}', site ?
         '      - name: Stage generated website\n        id: site\n        run: echo "path=$(node .sdk/node_modules/@voxgig/docgen/bin/voxgig-docgen stage ' + site.name + ')" >> "$GITHUB_OUTPUT"' : '');
     source = source.replace('{{artifactPath}}', site ? '${{ steps.site.outputs.path }}' : JSON.stringify('.sdk/doc/qa-manifest.json'));
     if (site)
-        source = source.replace('{{deploy}}', node_fs_1.default.readFileSync(node_path_1.default.join(PACKAGE, 'qa/pages-job.yml'), 'utf8').replaceAll('{{path}}', relativePath(site.output.path)).replaceAll('{{branch}}', branch));
+        source = source.replace('{{deploy}}', node_fs_1.default.readFileSync(node_path_1.default.join(PACKAGE, 'qa/pages-job.yml'), 'utf8').replaceAll('{{path}}', (0, ledger_1.relativePath)(site.output.path)).replaceAll('{{branch}}', branch));
     else
         source = source.replace('{{deploy}}', '');
     return source;
@@ -328,7 +312,7 @@ function emit(files) {
 async function resolveDefinition(root, model, fs) {
     if (!model.def)
         return undefined;
-    const file = inside(root, '.sdk/def/' + relativePath(model.def), fs);
+    const file = (0, ledger_1.inside)(root, '.sdk/def/' + (0, ledger_1.relativePath)(model.def), fs);
     const load = (0, node_module_1.createRequire)(node_path_1.default.join(root, '.sdk/package.json'));
     const { parse, operationFacts: facts } = load('@voxgig/apidef');
     const graphql = /\.(graphqls?|gql|graphql\.json)$/i.test(model.def);
@@ -347,16 +331,19 @@ async function generate(opts) {
         throw new Error('Docgen requires the compiled apidef/sdkgen model');
     const doc = model.main.kit.doc;
     if (!doc || doc.active === false)
-        return { editions: [], files: [] };
+        return { editions: [], files: [], prune: NOTHING };
     const editions = Object.keys(doc.edition ?? {}).sort().map(name => ({ ...doc.edition[name], name })).filter(e => e.active !== false);
     if (!editions.length)
-        return { editions: [], files: [] };
+        return { editions: [], files: [], prune: NOTHING };
     const resolved = opts.meta?.apidef || await resolveDefinition(root, model, fs);
     const files = {}, qa = [], claims = [];
+    // The prune is confined to these, so each one is declared beside the writes
+    // it covers and nothing else in the repository is ever a candidate.
+    const roots = [LEDGER, '.sdk/doc/qa', '.sdk/doc/qa-manifest.json'];
     for (const edition of editions) {
         if (!/^[a-z][a-z0-9-]*$/.test(edition.name))
             throw new Error('Invalid edition name: ' + edition.name);
-        const path = relativePath(edition.output?.path);
+        const path = (0, ledger_1.relativePath)(edition.output?.path);
         if (['.sdk', '.git', '.github'].some(p => path === p || path.startsWith(p + '/')))
             throw new Error('Edition output overlaps project configuration: ' + path);
         for (const target of (0, content_1.rows)(model.main.kit.target)) {
@@ -372,7 +359,8 @@ async function generate(opts) {
                 throw new Error('Edition outputs overlap: ' + path);
         }
         claims.push({ path, kind: edition.kind });
-        const modulePath = inside(root, '.sdk/dist/cmp/edition/' + edition.name + '/Main_' + edition.name + '.js', fs);
+        roots.push(path);
+        const modulePath = (0, ledger_1.inside)(root, '.sdk/dist/cmp/edition/' + edition.name + '/Main_' + edition.name + '.js', fs);
         const load = (0, node_module_1.createRequire)(node_path_1.default.join(root, '.sdk/package.json'));
         // The compiler emits these customisable components; never fall back to a
         // different emitter when a project component is missing or broken.
@@ -400,17 +388,21 @@ async function generate(opts) {
         if (sites.length > 1)
             throw new Error('Only one GitHub Pages deployment can be configured per repository');
         files['.github/workflows/docgen.yml'] = workflow(model, sites[0], editions);
-        if (sites.length)
+        roots.push('.github/workflows/docgen.yml');
+        if (sites.length) {
             files['.sdk/admin/setup-github-pages.sh'] = node_fs_1.default.readFileSync(node_path_1.default.join(PACKAGE, 'admin/setup-github-pages.sh'), 'utf8');
+            roots.push('.sdk/admin/setup-github-pages.sh');
+        }
     }
     for (const path of Object.keys(files))
-        inside(root, path, fs);
+        (0, ledger_1.inside)(root, path, fs);
+    const unrooted = Object.keys(files).filter(p => !roots.some(r => (0, ledger_1.within)(r, p)));
+    if (unrooted.length)
+        throw new Error('Generated file outside every output root: ' + unrooted[0]);
     const dryrun = !!opts.control?.dryrun;
-    const previousPath = node_path_1.default.join(root, '.sdk/doc/generated.json');
-    const previous = fs.existsSync(previousPath) ? JSON.parse(fs.readFileSync(previousPath, 'utf8')).files : [];
-    for (const path of previous)
-        inside(root, path, fs);
-    files['.sdk/doc/generated.json'] = JSON.stringify({ files: Object.keys(files).sort() }, null, 2) + '\n';
+    const previous = (0, ledger_1.readLedger)(fs, node_path_1.default.join(root, LEDGER));
+    files[LEDGER] = (0, ledger_1.ledgerText)(roots, [...Object.keys(files), LEDGER]);
+    const prune = (0, ledger_1.prunePlan)(fs, root, previous, new Set(Object.keys(files)));
     const textFiles = Object.fromEntries(Object.entries(files).filter(([, v]) => !Buffer.isBuffer(v)));
     await (0, jostraca_1.Jostraca)().generate({ ...opts, fs: () => fs, folder: root, model,
         existing: { txt: { write: true, merge: false }, bin: { write: true } }, control: { dryrun } }, () => (0, jostraca_1.Project)({}, () => emit(textFiles)));
@@ -421,11 +413,21 @@ async function generate(opts) {
                 fs.mkdirSync(node_path_1.default.dirname(node_path_1.default.join(root, path)), { recursive: true });
                 fs.writeFileSync(node_path_1.default.join(root, path), data);
             }
-        for (const old of previous)
-            if (!(old in files) && fs.existsSync(node_path_1.default.join(root, old)))
-                fs.unlinkSync(node_path_1.default.join(root, old));
+        (0, ledger_1.applyPrune)(fs, root, prune);
     }
-    return { editions: editions.map(e => e.name), files: Object.keys(files) };
+    report(opts.log, dryrun, prune);
+    return { editions: editions.map(e => e.name), files: Object.keys(files), prune };
+}
+function report(log, dryrun, prune) {
+    const retired = prune.files.length + prune.folders.length;
+    if (!retired && !prune.refused.length)
+        return;
+    log?.info?.({
+        point: 'docgen-prune', dryrun, files: prune.files.length,
+        folders: prune.folders.length, refused: prune.refused,
+        note: (dryrun ? 'would retire ' : 'retired ') + retired +
+            (prune.refused.length ? ', refusing ' + prune.refused.join(', ') : ''),
+    });
 }
 var content_2 = require("./content");
 Object.defineProperty(exports, "view", { enumerable: true, get: function () { return content_2.view; } });
@@ -436,36 +438,42 @@ var qa_1 = require("./qa");
 Object.defineProperty(exports, "checkText", { enumerable: true, get: function () { return qa_1.checkText; } });
 Object.defineProperty(exports, "proseText", { enumerable: true, get: function () { return qa_1.proseText; } });
 Object.defineProperty(exports, "runQA", { enumerable: true, get: function () { return qa_1.runQA; } });
+var ledger_2 = require("./ledger");
+Object.defineProperty(exports, "relativePath", { enumerable: true, get: function () { return ledger_2.relativePath; } });
+Object.defineProperty(exports, "readLedger", { enumerable: true, get: function () { return ledger_2.readLedger; } });
+Object.defineProperty(exports, "prunePlan", { enumerable: true, get: function () { return ledger_2.prunePlan; } });
+Object.defineProperty(exports, "applyPrune", { enumerable: true, get: function () { return ledger_2.applyPrune; } });
+Object.defineProperty(exports, "ledgerText", { enumerable: true, get: function () { return ledger_2.ledgerText; } });
 // A documentation output directory can also contain project-owned notes.
 // Deployment must copy only files recorded by the generator, into a fresh
 // temporary directory, so unrelated files never enter the Pages artifact.
 function stageSite(root, name) {
     root = node_path_1.default.resolve(root);
-    const model = JSON.parse(node_fs_1.default.readFileSync(inside(root, '.sdk/model/sdk.json', node_fs_1.default), 'utf8'));
+    const model = JSON.parse(node_fs_1.default.readFileSync((0, ledger_1.inside)(root, '.sdk/model/sdk.json', node_fs_1.default), 'utf8'));
     const edition = model.main?.kit?.doc?.edition?.[name];
     if (!edition || edition.kind !== 'github-pages' || edition.active === false)
         throw new Error('Not an active website edition: ' + name);
-    const prefix = relativePath(edition.output.path) + '/';
-    const manifest = JSON.parse(node_fs_1.default.readFileSync(inside(root, '.sdk/doc/generated.json', node_fs_1.default), 'utf8'));
+    const prefix = (0, ledger_1.relativePath)(edition.output.path) + '/';
+    const manifest = (0, ledger_1.readLedger)(node_fs_1.default, (0, ledger_1.inside)(root, LEDGER, node_fs_1.default));
     const presentations = nestedPresentations(model, edition);
     const files = manifest.files.filter((p) => p.startsWith(prefix) &&
-        !presentations.some(e => p.startsWith(relativePath(e.output.path) + '/')));
+        !presentations.some(e => p.startsWith((0, ledger_1.relativePath)(e.output.path) + '/')));
     if (!files.includes(prefix + 'index.html'))
         throw new Error('Generate the website before staging it');
-    const sources = files.map(file => ({ from: inside(root, file, node_fs_1.default), relative: relativePath(file.slice(prefix.length)) }));
+    const sources = files.map(file => ({ from: (0, ledger_1.inside)(root, file, node_fs_1.default), relative: (0, ledger_1.relativePath)(file.slice(prefix.length)) }));
     for (const file of sources)
         if (!node_fs_1.default.statSync(file.from).isFile())
             throw new Error('Missing generated website file: ' + file.from);
     for (const presentation of presentations.filter(e => e.active !== false && e.site?.active !== false)) {
-        const output = relativePath(presentation.output.path);
-        const dist = inside(root, output + '/dist', node_fs_1.default);
+        const output = (0, ledger_1.relativePath)(presentation.output.path);
+        const dist = (0, ledger_1.inside)(root, output + '/dist', node_fs_1.default);
         if (!node_fs_1.default.existsSync(node_path_1.default.join(dist, 'index.html')))
             throw new Error('Build presentation ' + presentation.name + ' before staging the website');
         for (const file of walk(node_fs_1.default, dist)) {
-            const relative = relativePath(output.slice(prefix.length) + '/' + file);
+            const relative = (0, ledger_1.relativePath)(output.slice(prefix.length) + '/' + file);
             if (sources.some(existing => existing.relative === relative || existing.relative.startsWith(relative + '/') || relative.startsWith(existing.relative + '/')))
                 throw new Error('Presentation build overlaps website output: ' + relative);
-            sources.push({ from: inside(root, output + '/dist/' + file, node_fs_1.default), relative });
+            sources.push({ from: (0, ledger_1.inside)(root, output + '/dist/' + file, node_fs_1.default), relative });
         }
     }
     const destination = node_fs_1.default.mkdtempSync(node_path_1.default.join(node_os_1.default.tmpdir(), 'docgen-pages-'));
@@ -502,13 +510,13 @@ function prepareProject(root) {
     const sdk = node_path_1.default.join(root, '.sdk');
     if (!node_fs_1.default.existsSync(sdk))
         throw new Error('Docgen requires an existing .sdk setup');
-    const marker = inside(root, '.sdk/doc/setup.json', node_fs_1.default);
+    const marker = (0, ledger_1.inside)(root, '.sdk/doc/setup.json', node_fs_1.default);
     if (node_fs_1.default.existsSync(marker))
         return topUpEditionTemplates(root);
     const defaults = scaffoldDefaults();
     const writes = {};
     for (const [rel, text] of Object.entries(defaults)) {
-        const file = inside(root, '.sdk/' + rel, node_fs_1.default);
+        const file = (0, ledger_1.inside)(root, '.sdk/' + rel, node_fs_1.default);
         if (rel.endsWith('edition-index.aon')) {
             let index = node_fs_1.default.existsSync(file) ? node_fs_1.default.readFileSync(file, 'utf8') : '';
             for (const line of text.trim().split('\n'))
@@ -519,7 +527,7 @@ function prepareProject(root) {
         else if (!node_fs_1.default.existsSync(file))
             writes[file] = text;
     }
-    const modelPath = inside(root, '.sdk/model/sdk.aon', node_fs_1.default);
+    const modelPath = (0, ledger_1.inside)(root, '.sdk/model/sdk.aon', node_fs_1.default);
     if (!node_fs_1.default.existsSync(modelPath))
         throw new Error('Docgen requires .sdk/model/sdk.aon');
     const model = node_fs_1.default.readFileSync(modelPath, 'utf8'), include = '@"./edition/edition-index.aon"';
@@ -545,7 +553,7 @@ function topUpEditionTemplates(root) {
             if (!node_fs_1.default.existsSync(into))
                 continue;
             for (const file of walk(node_fs_1.default, from)) {
-                const at = inside(root, '.sdk/' + tree + name + '/' + file, node_fs_1.default);
+                const at = (0, ledger_1.inside)(root, '.sdk/' + tree + name + '/' + file, node_fs_1.default);
                 if (node_fs_1.default.existsSync(at))
                     continue;
                 node_fs_1.default.mkdirSync(node_path_1.default.dirname(at), { recursive: true });
