@@ -1,19 +1,24 @@
 # Entity examples
 
 Each entity reference page carries one code block per SDK target, showing
-every active operation of the entity called with its real parameter and
-field names. The block assumes the `client` that the target's own SDK page
+each operation the SDK generates a method for, called with the entity's real
+parameter and field names. The block assumes the `client` that the target's own SDK page
 constructs, and links to that page.
 
-## One phrasing, shared with sdkgen
+## Phrasing shared with sdkgen
 
 The call expression (entity accessor, method spelling, argument literals)
-is sdkgen's `primaryOpCall`, the helper its README components use. Docgen
-adds only what a README block already has around the call: how the language
-binds the result (`const x = await`, `x, err :=`, `$x = ...;`), and the
-result name per operation. A change to how sdkgen phrases a call reaches the
-reference without a docgen change, and the reference cannot disagree with
-the README.
+is sdkgen's `primaryOpCall`, so the examples share sdkgen's phrasing of a
+primary operation call. Docgen adds how the language binds the result
+(`const x = await`, `x, err :=`, `$x = ...;`), and the result name per
+operation. A change to how sdkgen phrases a call reaches the reference
+without a docgen change.
+
+That is a shared helper, not parity with a generated README. Of sdkgen's
+own components only `ReadmeErrors` renders through `primaryOpCall`; each
+`ReadmeQuick_<lang>` phrases its calls itself, and some of them differ.
+Ruby's README calls `client.Pet.list`, where the examples show
+`client.Pet.list()`.
 
 The language of a target is `origname`, or `name` when the target is not an
 alias, matched against sdkgen's `ExampleLang` union. Docgen's binding table

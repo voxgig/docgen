@@ -137,11 +137,13 @@ the next run. Files not owned by docgen are preserved.
 
 Entity reference pages include a code example per SDK target, calling
 each operation with the entity's own parameter and field names. Docgen
-phrases the call with sdkgen's example helpers, so the reference and the
-generated README agree. TypeScript, JavaScript, Python, PHP, Ruby, Lua, and
-Go are covered; a target in another language renders no example. The
-examples come from the model and are not compiled or executed. See
-[docs/design/entity-examples.md](docs/design/entity-examples.md).
+phrases the call with sdkgen's example helpers, so the examples share the
+phrasing sdkgen uses for a primary operation call. They are not a copy of a
+generated quick-start README, which each target phrases for itself (the Ruby
+README calls a factory without parentheses). TypeScript, JavaScript, Python,
+PHP, Ruby, Lua, and Go are covered; a target in another language renders no
+example. The examples come from the model and are not compiled or executed.
+See [docs/design/entity-examples.md](docs/design/entity-examples.md).
 
 Add target-specific descriptions, installation instructions, setup
 examples, or MCP tool schemas under `main.kit.doc.target.<target>`.

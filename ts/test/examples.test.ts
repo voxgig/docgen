@@ -136,7 +136,7 @@ test('an update carries the identifier and writable fields on an apidef model', 
     'updated, err := client.Planet(nil).Update(map[string]any{"id": "example_id", "diameter": 1, "kind": "example"}, nil)\n' + check + 'fmt.Println(updated)',
     'removed, err := client.Planet(nil).Remove(map[string]any{"id": "example_id"}, nil)\n' + check + 'fmt.Println(removed)',
   ].join('\n'))
-  // The id renders as the load match does, not as a bare field value.
+  // A real shape has the patch op too, and it renders no call.
   for (const lang of EXAMPLE_LANGUAGES) Assert.doesNotMatch(entityExample(planet(), lang), /[Pp]atch/)
 })
 

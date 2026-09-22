@@ -5,8 +5,8 @@ exports.exampleLanguage = exampleLanguage;
 exports.entityExample = entityExample;
 const sdkgen_1 = require("@voxgig/sdkgen");
 // How each language binds a call's result. The call itself is sdkgen's
-// primaryOpCall, the phrasing the generated README uses, so the reference
-// and the README cannot drift. See docs/design/entity-examples.md
+// primaryOpCall, so the examples share its phrasing of a primary op call.
+// See docs/design/entity-examples.md
 const BINDING = {
     ts: c => (c.isVoid ? 'await ' : 'const ' + c.resultVar + ' = await ') + c.expr,
     js: c => (c.isVoid ? 'await ' : 'const ' + c.resultVar + ' = await ') + c.expr,
