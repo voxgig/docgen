@@ -71,6 +71,12 @@ function main(args = process.argv.slice(2)) {
     if (result.url)
         console.log('Website: ' + result.url);
     console.log('Deployment branch: ' + result.branch + '. Commit and push the generated workflow and project changes to this branch to publish.');
+    // Enabling Pages is repository state; the model cannot observe it. Generated
+    // documentation links the site only when the project records it, so say how.
+    if (result.configured && !result.dryrun && !result.check) {
+        console.log('Record the live site in .sdk/model/project.aontu, so generated documentation may link it:');
+        console.log("  main: kit: doc: edition: '" + result.edition + "': published: true");
+    }
     return result.check && !result.configured ? 1 : 0;
 }
 if (require.main === module) {

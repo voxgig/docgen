@@ -56,6 +56,9 @@ main: kit: doc: {
     origname: *'' | string
     package: *'' | string
     output: path: string
+    # active generates the edition; published says it is served, which is
+    # per-repository state. Anything asserting a URL reads published.
+    published: *false | boolean
     # A presentation nested under a website is linked and deployed with it.
     site: active: *true | boolean
     title: *'' | string
