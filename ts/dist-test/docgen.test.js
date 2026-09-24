@@ -380,8 +380,37 @@ function fixture(m = model()) {
             (0, docgen_1.prepareProject)(root);
             const after = node_fs_1.default.readFileSync(node_path_1.default.join(root, '.sdk/model', entry), 'utf8');
             strict_1.default.equal(after.split('edition-index.aontu').length, 2, entry);
-            strict_1.default.ok(after.includes('@"edition/edition-index.aon"\n') === entry.endsWith('.aon'), entry);
+            strict_1.default.ok(!after.includes('edition-index.aon"'), entry);
+            strict_1.default.match(after, /^@"edition\/edition-index\.aontu"$/m, entry);
             strict_1.default.match(node_fs_1.default.readFileSync(node_path_1.default.join(root, '.sdk/model/edition/edition-index.aontu'), 'utf8'), /^@"\.\/summary\.aontu"$/m, entry);
+        }
+        finally {
+            node_fs_1.default.rmSync(root, { recursive: true, force: true });
+        }
+    }
+});
+(0, node_test_1.test)('a bootstrapped project has its legacy index include repaired, and nothing added', () => {
+    const setup = (entry, index) => {
+        const root = node_fs_1.default.mkdtempSync(node_path_1.default.join(node_os_1.default.tmpdir(), 'docgen-repair-'));
+        node_fs_1.default.mkdirSync(node_path_1.default.join(root, '.sdk/model/edition'), { recursive: true });
+        node_fs_1.default.mkdirSync(node_path_1.default.join(root, '.sdk/doc'), { recursive: true });
+        node_fs_1.default.writeFileSync(node_path_1.default.join(root, '.sdk/doc/setup.json'), '{"version":1}\n');
+        node_fs_1.default.writeFileSync(node_path_1.default.join(root, '.sdk/model/sdk.aontu'), entry);
+        if (index)
+            node_fs_1.default.writeFileSync(node_path_1.default.join(root, '.sdk/model/edition/edition-index.aontu'), '@"./summary.aontu"\n');
+        return root;
+    };
+    const cases = [
+        ['x: 1\n@"edition/edition-index.aon"\n', true, 'x: 1\n@"edition/edition-index.aontu"\n'],
+        ['@"./edition/edition-index.aontu"\n@"edition/edition-index.aon"\n', true, '@"./edition/edition-index.aontu"\n'],
+        ['x: 1\n@"edition/edition-index.aon"\n', false, 'x: 1\n@"edition/edition-index.aon"\n'],
+        ['x: 1\n', true, 'x: 1\n'],
+    ];
+    for (const [before, index, expected] of cases) {
+        const root = setup(before, index);
+        try {
+            (0, docgen_1.prepareProject)(root);
+            strict_1.default.equal(node_fs_1.default.readFileSync(node_path_1.default.join(root, '.sdk/model/sdk.aontu'), 'utf8'), expected, JSON.stringify(before));
         }
         finally {
             node_fs_1.default.rmSync(root, { recursive: true, force: true });

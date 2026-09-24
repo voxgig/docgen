@@ -455,12 +455,45 @@ function modelEntryPath(root: string): string {
 }
 
 
+const INDEX_INCLUDE = '@"./edition/edition-index.aontu"'
+const LEGACY_INDEX_INCLUDE = '@"./edition/edition-index.aon"'
+
+// aontu refuses a `.aon` include, so a legacy index line is rewritten in place,
+// or dropped where the `.aontu` include is already present.
+function entryWithIndex(model: string, append: boolean): string {
+  const lines = model.split('\n')
+  const legacy = lines.findIndex(s => sameInclude(s, LEGACY_INDEX_INCLUDE))
+  const current = lines.some(s => sameInclude(s, INDEX_INCLUDE))
+  if (0 <= legacy) {
+    if (current) lines.splice(legacy, 1)
+    else lines[legacy] = lines[legacy].replace(/\.aon"/, '.aontu"')
+    return lines.join('\n')
+  }
+  return current || !append ? model : model + '\n' + INDEX_INCLUDE + '\n'
+}
+
+
+// Once bootstrapped, only a legacy line is repaired, and only toward an index
+// that exists: an include the project removed stays removed.
+function repairEntryIndex(root: string): void {
+  const modelPath = modelEntryPath(root)
+  if (!Fs.existsSync(modelPath) ||
+    !Fs.existsSync(inside(root, '.sdk/model/edition/edition-index.aontu', Fs))) return
+  const model = Fs.readFileSync(modelPath, 'utf8')
+  const next = entryWithIndex(model, false)
+  if (next !== model) Fs.writeFileSync(modelPath, next)
+}
+
+
 export function prepareProject(root: string): void {
   root = Path.resolve(root)
   const sdk = Path.join(root, '.sdk')
   if (!Fs.existsSync(sdk)) throw new Error('Docgen requires an existing .sdk setup')
   const marker = inside(root, '.sdk/doc/setup.json', Fs)
-  if (Fs.existsSync(marker)) return topUpEditionTemplates(root)
+  if (Fs.existsSync(marker)) {
+    repairEntryIndex(root)
+    return topUpEditionTemplates(root)
+  }
   const defaults = scaffoldDefaults()
   const writes: Record<string,string> = {}
   for (const [rel, text] of Object.entries(defaults)) {
@@ -473,8 +506,8 @@ export function prepareProject(root: string): void {
   }
   const modelPath = modelEntryPath(root)
   if (!Fs.existsSync(modelPath)) throw new Error('Docgen requires .sdk/model/sdk.aontu')
-  const model = Fs.readFileSync(modelPath,'utf8'), include='@"./edition/edition-index.aontu"'
-  if (!model.split('\n').some(s=>sameInclude(s, include))) writes[modelPath]=model+'\n'+include+'\n'
+  const model = Fs.readFileSync(modelPath,'utf8'), entry = entryWithIndex(model, true)
+  if (entry !== model) writes[modelPath] = entry
   for (const [path,text] of Object.entries(writes)) {Fs.mkdirSync(Path.dirname(path),{recursive:true});Fs.writeFileSync(path,text)}
   Fs.mkdirSync(Path.dirname(marker),{recursive:true});Fs.writeFileSync(marker,JSON.stringify({version:1})+'\n')
 }

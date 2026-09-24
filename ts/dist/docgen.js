@@ -515,14 +515,45 @@ function modelEntryPath(root) {
     const legacy = (0, ledger_1.inside)(root, '.sdk/model/sdk.aon', node_fs_1.default);
     return node_fs_1.default.existsSync(legacy) ? legacy : current;
 }
+const INDEX_INCLUDE = '@"./edition/edition-index.aontu"';
+const LEGACY_INDEX_INCLUDE = '@"./edition/edition-index.aon"';
+// aontu refuses a `.aon` include, so a legacy index line is rewritten in place,
+// or dropped where the `.aontu` include is already present.
+function entryWithIndex(model, append) {
+    const lines = model.split('\n');
+    const legacy = lines.findIndex(s => sameInclude(s, LEGACY_INDEX_INCLUDE));
+    const current = lines.some(s => sameInclude(s, INDEX_INCLUDE));
+    if (0 <= legacy) {
+        if (current)
+            lines.splice(legacy, 1);
+        else
+            lines[legacy] = lines[legacy].replace(/\.aon"/, '.aontu"');
+        return lines.join('\n');
+    }
+    return current || !append ? model : model + '\n' + INDEX_INCLUDE + '\n';
+}
+// Once bootstrapped, only a legacy line is repaired, and only toward an index
+// that exists: an include the project removed stays removed.
+function repairEntryIndex(root) {
+    const modelPath = modelEntryPath(root);
+    if (!node_fs_1.default.existsSync(modelPath) ||
+        !node_fs_1.default.existsSync((0, ledger_1.inside)(root, '.sdk/model/edition/edition-index.aontu', node_fs_1.default)))
+        return;
+    const model = node_fs_1.default.readFileSync(modelPath, 'utf8');
+    const next = entryWithIndex(model, false);
+    if (next !== model)
+        node_fs_1.default.writeFileSync(modelPath, next);
+}
 function prepareProject(root) {
     root = node_path_1.default.resolve(root);
     const sdk = node_path_1.default.join(root, '.sdk');
     if (!node_fs_1.default.existsSync(sdk))
         throw new Error('Docgen requires an existing .sdk setup');
     const marker = (0, ledger_1.inside)(root, '.sdk/doc/setup.json', node_fs_1.default);
-    if (node_fs_1.default.existsSync(marker))
+    if (node_fs_1.default.existsSync(marker)) {
+        repairEntryIndex(root);
         return topUpEditionTemplates(root);
+    }
     const defaults = scaffoldDefaults();
     const writes = {};
     for (const [rel, text] of Object.entries(defaults)) {
@@ -540,9 +571,9 @@ function prepareProject(root) {
     const modelPath = modelEntryPath(root);
     if (!node_fs_1.default.existsSync(modelPath))
         throw new Error('Docgen requires .sdk/model/sdk.aontu');
-    const model = node_fs_1.default.readFileSync(modelPath, 'utf8'), include = '@"./edition/edition-index.aontu"';
-    if (!model.split('\n').some(s => sameInclude(s, include)))
-        writes[modelPath] = model + '\n' + include + '\n';
+    const model = node_fs_1.default.readFileSync(modelPath, 'utf8'), entry = entryWithIndex(model, true);
+    if (entry !== model)
+        writes[modelPath] = entry;
     for (const [path, text] of Object.entries(writes)) {
         node_fs_1.default.mkdirSync(node_path_1.default.dirname(path), { recursive: true });
         node_fs_1.default.writeFileSync(path, text);
