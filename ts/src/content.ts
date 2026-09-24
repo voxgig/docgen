@@ -194,7 +194,7 @@ export function summary(v: ReturnType<typeof view>): string {
   }
   if (v.features.length) lines.push('## Operational features', '',
     'Features supply behaviour around API calls, such as request handling, diagnostics, or local testing. Inclusion in this project does not mean a feature is enabled at runtime. Check the selected SDK’s supported features and configuration defaults, then enable the behaviour your application needs.', '',
-    ...v.features.map(f => '- ' + link(code(f.name), 'features/' + encodeURIComponent(f.name) + '.html', 'features', f.name) + ': ' + prose(f.title || f.description || f.name)), '',
+    ...v.features.map(f => '- ' + link(code(f.name), 'features/' + encodeURIComponent(f.name) + '.html', 'features', f.name) + ': ' + prose(f.description || f.title || f.name)), '',
     'Start with the default client configuration. Add request limits and diagnostics as needed, test error paths, and review retry behaviour before using operations that change data. A retry can repeat an operation unless the API provides a suitable guarantee.', '')
   lines.push('## Continue with the documentation', '',
     '- Follow the ' + link('first-call guide', 'guides/first-call.html') + ' for the setup sequence.',
