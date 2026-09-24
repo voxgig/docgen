@@ -329,6 +329,24 @@ test('project bootstrap installs defaults once and preserves customised template
     Assert.ok(!Fs.existsSync(Path.join(root,'.sdk/tm/edition/presentation')))
   } finally { Fs.rmSync(root,{recursive:true,force:true}) }
 })
+test('the entry gains the .aontu edition index once, whatever the .aon one says', () => {
+  for (const [entry, before] of [
+    ['sdk.aon', 'main: kit: {}\n@"edition/edition-index.aon"\n'],
+    ['sdk.aontu', 'main: kit: {}\n@"edition/edition-index.aontu"\n'],
+  ]) {
+    const root = Fs.mkdtempSync(Path.join(Os.tmpdir(), 'docgen-entry-'))
+    try {
+      Fs.mkdirSync(Path.join(root,'.sdk/model/edition'),{recursive:true})
+      Fs.writeFileSync(Path.join(root,'.sdk/model',entry),before)
+      Fs.writeFileSync(Path.join(root,'.sdk/model/edition/edition-index.aon'),'# Populated by docgen.\n')
+      prepareProject(root)
+      const after = Fs.readFileSync(Path.join(root,'.sdk/model',entry),'utf8')
+      Assert.equal(after.split('edition-index.aontu').length,2,entry)
+      Assert.ok(after.includes('@"edition/edition-index.aon"\n') === entry.endsWith('.aon'),entry)
+      Assert.match(Fs.readFileSync(Path.join(root,'.sdk/model/edition/edition-index.aontu'),'utf8'),/^@"\.\/summary\.aontu"$/m,entry)
+    } finally { Fs.rmSync(root,{recursive:true,force:true}) }
+  }
+})
 test('local branding assets retain their bytes in the website and presentation', async () => {
   const m:any = model()
   m.main.kit.doc.style={logo:'logo.png',fontFile:'brand.woff2'}

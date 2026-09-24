@@ -436,11 +436,9 @@ export function scaffoldDefaults(): Record<string, string> {
   return out
 }
 
+// `./` is optional; the extension is not: a `.aon` line names another file.
 function sameInclude(a: string, b: string): boolean {
-  // Either extension: a legacy index line names the same include.
-  const norm = (s: string) => s.trim()
-    .replace(/^@"\.\//, '@"')
-    .replace(/\.aon"$/, '.aontu"')
+  const norm = (s: string) => s.trim().replace(/^@"\.\//, '@"')
   return norm(a) === norm(b)
 }
 

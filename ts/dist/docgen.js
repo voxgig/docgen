@@ -501,11 +501,9 @@ function scaffoldDefaults() {
     out['model/edition/edition-index.aontu'] = defaults.map(n => '@"./' + n + '.aontu"').join('\n') + '\n';
     return out;
 }
+// `./` is optional; the extension is not: a `.aon` line names another file.
 function sameInclude(a, b) {
-    // Either extension: a legacy index line names the same include.
-    const norm = (s) => s.trim()
-        .replace(/^@"\.\//, '@"')
-        .replace(/\.aon"$/, '.aontu"');
+    const norm = (s) => s.trim().replace(/^@"\.\//, '@"');
     return norm(a) === norm(b);
 }
 // The entry model a project HAS: `.aontu`, else the pre-rename `.aon`.

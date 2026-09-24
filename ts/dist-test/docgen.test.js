@@ -367,6 +367,27 @@ function fixture(m = model()) {
         node_fs_1.default.rmSync(root, { recursive: true, force: true });
     }
 });
+(0, node_test_1.test)('the entry gains the .aontu edition index once, whatever the .aon one says', () => {
+    for (const [entry, before] of [
+        ['sdk.aon', 'main: kit: {}\n@"edition/edition-index.aon"\n'],
+        ['sdk.aontu', 'main: kit: {}\n@"edition/edition-index.aontu"\n'],
+    ]) {
+        const root = node_fs_1.default.mkdtempSync(node_path_1.default.join(node_os_1.default.tmpdir(), 'docgen-entry-'));
+        try {
+            node_fs_1.default.mkdirSync(node_path_1.default.join(root, '.sdk/model/edition'), { recursive: true });
+            node_fs_1.default.writeFileSync(node_path_1.default.join(root, '.sdk/model', entry), before);
+            node_fs_1.default.writeFileSync(node_path_1.default.join(root, '.sdk/model/edition/edition-index.aon'), '# Populated by docgen.\n');
+            (0, docgen_1.prepareProject)(root);
+            const after = node_fs_1.default.readFileSync(node_path_1.default.join(root, '.sdk/model', entry), 'utf8');
+            strict_1.default.equal(after.split('edition-index.aontu').length, 2, entry);
+            strict_1.default.ok(after.includes('@"edition/edition-index.aon"\n') === entry.endsWith('.aon'), entry);
+            strict_1.default.match(node_fs_1.default.readFileSync(node_path_1.default.join(root, '.sdk/model/edition/edition-index.aontu'), 'utf8'), /^@"\.\/summary\.aontu"$/m, entry);
+        }
+        finally {
+            node_fs_1.default.rmSync(root, { recursive: true, force: true });
+        }
+    }
+});
 (0, node_test_1.test)('local branding assets retain their bytes in the website and presentation', async () => {
     const m = model();
     m.main.kit.doc.style = { logo: 'logo.png', fontFile: 'brand.woff2' };
