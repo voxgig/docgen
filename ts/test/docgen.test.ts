@@ -329,6 +329,49 @@ test('project bootstrap installs defaults once and preserves customised template
     Assert.ok(!Fs.existsSync(Path.join(root,'.sdk/tm/edition/presentation')))
   } finally { Fs.rmSync(root,{recursive:true,force:true}) }
 })
+test('the entry gains the .aontu edition index once, whatever the .aon one says', () => {
+  for (const [entry, before] of [
+    ['sdk.aon', 'main: kit: {}\n@"edition/edition-index.aon"\n'],
+    ['sdk.aontu', 'main: kit: {}\n@"edition/edition-index.aontu"\n'],
+  ]) {
+    const root = Fs.mkdtempSync(Path.join(Os.tmpdir(), 'docgen-entry-'))
+    try {
+      Fs.mkdirSync(Path.join(root,'.sdk/model/edition'),{recursive:true})
+      Fs.writeFileSync(Path.join(root,'.sdk/model',entry),before)
+      Fs.writeFileSync(Path.join(root,'.sdk/model/edition/edition-index.aon'),'# Populated by docgen.\n')
+      prepareProject(root)
+      const after = Fs.readFileSync(Path.join(root,'.sdk/model',entry),'utf8')
+      Assert.equal(after.split('edition-index.aontu').length,2,entry)
+      Assert.ok(!after.includes('edition-index.aon"'),entry)
+      Assert.match(after,/^@"edition\/edition-index\.aontu"$/m,entry)
+      Assert.match(Fs.readFileSync(Path.join(root,'.sdk/model/edition/edition-index.aontu'),'utf8'),/^@"\.\/summary\.aontu"$/m,entry)
+    } finally { Fs.rmSync(root,{recursive:true,force:true}) }
+  }
+})
+test('a bootstrapped project has its legacy index include repaired, and nothing added', () => {
+  const setup = (entry: string, index: boolean) => {
+    const root = Fs.mkdtempSync(Path.join(Os.tmpdir(), 'docgen-repair-'))
+    Fs.mkdirSync(Path.join(root,'.sdk/model/edition'),{recursive:true})
+    Fs.mkdirSync(Path.join(root,'.sdk/doc'),{recursive:true})
+    Fs.writeFileSync(Path.join(root,'.sdk/doc/setup.json'),'{"version":1}\n')
+    Fs.writeFileSync(Path.join(root,'.sdk/model/sdk.aontu'),entry)
+    if (index) Fs.writeFileSync(Path.join(root,'.sdk/model/edition/edition-index.aontu'),'@"./summary.aontu"\n')
+    return root
+  }
+  const cases: [string, boolean, string][] = [
+    ['x: 1\n@"edition/edition-index.aon"\n', true, 'x: 1\n@"edition/edition-index.aontu"\n'],
+    ['@"./edition/edition-index.aontu"\n@"edition/edition-index.aon"\n', true, '@"./edition/edition-index.aontu"\n'],
+    ['x: 1\n@"edition/edition-index.aon"\n', false, 'x: 1\n@"edition/edition-index.aon"\n'],
+    ['x: 1\n', true, 'x: 1\n'],
+  ]
+  for (const [before, index, expected] of cases) {
+    const root = setup(before, index)
+    try {
+      prepareProject(root)
+      Assert.equal(Fs.readFileSync(Path.join(root,'.sdk/model/sdk.aontu'),'utf8'), expected, JSON.stringify(before))
+    } finally { Fs.rmSync(root,{recursive:true,force:true}) }
+  }
+})
 test('local branding assets retain their bytes in the website and presentation', async () => {
   const m:any = model()
   m.main.kit.doc.style={logo:'logo.png',fontFile:'brand.woff2'}
