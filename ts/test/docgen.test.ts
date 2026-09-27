@@ -997,3 +997,33 @@ test('a recursive response schema does not stall the summary', { timeout: 20000 
   // The walk still collected the description it was there to find.
   Assert.match(md, /The thing name\./)
 })
+
+// Resolved facts are a graph, so a schema reached from many places is harvested
+// once per path unless identity stops it. Unguarded, the collected text outgrows
+// the longest string V8 allocates and generation dies in Array.join.
+test('a shared response graph does not outgrow the QA vocabulary join', { timeout: 60000 }, async () => {
+  const f = fixture()
+  try {
+    Fs.unlinkSync(Path.join(f.root, '.sdk/def/' + f.m.def))
+
+    // Wide sharing at every level: small as a graph, vast as a tree.
+    let node: any = { type: 'string', description: 'Leaf description text.' }
+    for (let d = 0; d < 12; d++) {
+      const parent: any = { type: 'object', description: 'Level ' + d + ' description.', properties: {} }
+      for (let i = 0; i < 8; i++) parent.properties['p' + i] = node
+      node = parent
+    }
+    const facts = {
+      operationId: 'sharedGraphLookup',
+      responses: { 200: { description: 'Shared graph records', content: { 'application/json': { schema: node } } } },
+    }
+
+    await generate({ folder: f.root, model: f.m, meta: { apidef: { operation: () => facts } } })
+
+    const vocabulary = f.read('.sdk/doc/qa/styles/config/vocabularies/Docgen/accept.txt')
+    Assert.ok(vocabulary.split('\n').some(line => line && new RegExp('^' + line + '$').test('sharedGraphLookup')),
+      'the operation id did not reach the vocabulary')
+    // Bounded: the cap is on unique words, not on how many paths reach them.
+    Assert.ok(vocabulary.split('\n').length < 40000, 'vocabulary is unbounded: ' + vocabulary.split('\n').length)
+  } finally { f.clean() }
+})

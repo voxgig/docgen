@@ -223,11 +223,18 @@ function qaResources(model: any, resolved?: any): Record<string, string> {
       .map((point: any) => operationFacts(point, resolved))))
   const operationIds = facts.map(fact => fact.operationId)
   const described: string[] = []
+  // The facts are a resolved GRAPH: one schema is reached from many places, so a
+  // depth limit alone still harvests it once per path. Stripe's definition then
+  // collected enough text that joining it exceeded the longest string V8 will
+  // allocate, and generation died in Array.join.
+  const seen = new Set<any>()
   const harvest = (node: any, depth = 0): void => {
     if (!node || 24 < depth) return
     if ('string' === typeof node) { described.push(node); return }
-    if (Array.isArray(node)) { for (const item of node) harvest(item, depth + 1); return }
     if ('object' !== typeof node) return
+    if (seen.has(node)) return
+    seen.add(node)
+    if (Array.isArray(node)) { for (const item of node) harvest(item, depth + 1); return }
     for (const key of ['desc', 'description', 'short', 'title', 'summary', 'sh', 'h']) {
       if ('string' === typeof node[key]) described.push(node[key])
     }
@@ -236,7 +243,18 @@ function qaResources(model: any, resolved?: any): Record<string, string> {
   harvest(model.main.kit.entity)
   harvest(model.main.kit.info)
   harvest(facts)
-  const specWords = [...new Set(described.join(' ').match(/[A-Za-z][A-Za-z0-9]{1,}/g) ?? [])].slice(0, 20000)
+  // Scanned per string rather than over one joined document, so the vocabulary
+  // never depends on holding every description in a single allocation.
+  const WORD_LIMIT = 20000
+  const specWordSet = new Set<string>()
+  for (const text of described) {
+    for (const word of text.match(/[A-Za-z][A-Za-z0-9]{1,}/g) ?? []) {
+      specWordSet.add(word)
+      if (WORD_LIMIT <= specWordSet.size) break
+    }
+    if (WORD_LIMIT <= specWordSet.size) break
+  }
+  const specWords = [...specWordSet]
 
   const words = [model.name, ...rows(model.main.kit.target).flatMap(t => [t.name, t.title]), ...rows(model.main.kit.entity).flatMap(e => [e.name, entityNames(e.name)]), ...operationIds, ...specWords, ...vocabulary]
     .filter(Boolean).map(w => Array.from(String(w), c => /[a-z]/i.test(c) ? '[' + c.toUpperCase() + c.toLowerCase() + ']' : c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join(''))
