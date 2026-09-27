@@ -1066,4 +1066,39 @@ function ledgerOf(f) { return JSON.parse(f.read('.sdk/doc/generated.json')); }
         f.clean();
     }
 });
+// A self-referential response schema must not stall the guide's field walk.
+// Unguarded, it holds a core at 99% with flat memory and writes nothing, so the
+// timeout fails the case here rather than hanging the suite.
+(0, node_test_1.test)('a recursive response schema does not stall the summary', { timeout: 20000 }, () => {
+    const { summary } = require('../dist/content');
+    const selfRef = {
+        type: 'object',
+        properties: { name: { type: 'string', description: 'The thing name.' } },
+    };
+    selfRef.properties.child = selfRef;
+    const shared = { type: 'object', properties: { ref: selfRef } };
+    const facts = {
+        responses: {
+            '200': {
+                description: 'OK',
+                content: { 'application/json': { schema: selfRef } },
+                extra: shared,
+            },
+        },
+    };
+    const v = {
+        title: 'T', description: 'D', targets: [], kit: { doc: {} }, info: {},
+        features: [], edition: { output: { path: 'SUMMARY.md' } },
+        resolved: { operation: () => facts },
+        entities: [{
+                name: 'thing', Name: 'Thing', short: 'A thing',
+                fields: { name: { n: 'name', sh: 'fallback' } },
+                op: { load: { name: 'load', points: [{ m: 'GET', o: '/thing' }] } },
+            }],
+    };
+    const md = summary(v);
+    strict_1.default.match(md, /Thing/);
+    // The walk still collected the description it was there to find.
+    strict_1.default.match(md, /The thing name\./);
+});
 //# sourceMappingURL=docgen.test.js.map

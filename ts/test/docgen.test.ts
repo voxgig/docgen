@@ -957,3 +957,43 @@ test('a stored record without roots still retires its own files',async()=>{
     Assert.deepEqual(after.prune,{files:[],folders:[],refused:[]})
   } finally { f.clean() }
 })
+
+// A self-referential response schema must not stall the guide's field walk.
+// Unguarded, it holds a core at 99% with flat memory and writes nothing, so the
+// timeout fails the case here rather than hanging the suite.
+test('a recursive response schema does not stall the summary', { timeout: 20000 }, () => {
+  const { summary } = require('../dist/content')
+
+  const selfRef: any = {
+    type: 'object',
+    properties: { name: { type: 'string', description: 'The thing name.' } },
+  }
+  selfRef.properties.child = selfRef
+  const shared = { type: 'object', properties: { ref: selfRef } }
+
+  const facts = {
+    responses: {
+      '200': {
+        description: 'OK',
+        content: { 'application/json': { schema: selfRef } },
+        extra: shared,
+      },
+    },
+  }
+
+  const v: any = {
+    title: 'T', description: 'D', targets: [], kit: { doc: {} }, info: {},
+    features: [], edition: { output: { path: 'SUMMARY.md' } },
+    resolved: { operation: () => facts },
+    entities: [{
+      name: 'thing', Name: 'Thing', short: 'A thing',
+      fields: { name: { n: 'name', sh: 'fallback' } },
+      op: { load: { name: 'load', points: [{ m: 'GET', o: '/thing' }] } },
+    }],
+  }
+
+  const md = summary(v)
+  Assert.match(md, /Thing/)
+  // The walk still collected the description it was there to find.
+  Assert.match(md, /The thing name\./)
+})

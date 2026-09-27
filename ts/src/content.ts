@@ -133,8 +133,15 @@ export function summary(v: ReturnType<typeof view>): string {
     if (results.length) lines.push('Results: ' + results.map(prose).join('; ').replace(/[.]+$/, '') + '.', '')
     lines.push('SDK operations: ' + rows(entity.op).map(o => code(o.name)).join(', ') + '.', '')
     const descriptions: Record<string, string> = {}
+    // Facts are a RESOLVED graph, not a tree: apidef returns the same object for
+    // each reference and cuts only true back-edges, so one schema is reached from
+    // many places and a self-referential one reaches itself. Without `seen` this
+    // walk does not return, and it allocates nothing as it spins -- hubspot-cms
+    // held 99% of a core with flat memory until it was killed.
+    const seen = new Set<any>()
     const describe = (schema: any) => {
-      if (!schema || typeof schema !== 'object') return
+      if (!schema || typeof schema !== 'object' || seen.has(schema)) return
+      seen.add(schema)
       for (const [name, field] of Object.entries<any>(schema.properties || {})) {
         if (field && field.description && !descriptions[name]) descriptions[name] = field.description
       }
