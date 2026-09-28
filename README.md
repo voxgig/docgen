@@ -19,7 +19,15 @@ normal SDK build when documentation must include guide overrides.
 
 `create-sdkgen` installs summary and GitHub Pages editions by default,
 during project dependency installation. With `--no-install`, setup runs
-after you install the project dependencies. Presentation is optional.
+after you install the project dependencies. Summary is active. GitHub Pages
+is inactive, so no site and no deployment are generated until the project
+turns it on in a model file it owns, such as `.sdk/model/project.aontu`:
+
+```aontu
+main: kit: doc: edition: 'github-pages': active: true
+```
+
+Presentation is optional.
 Each edition covers the project as a whole and can select targets,
 entities, and features. Several instances can have different names and
 output paths. One GitHub Pages deployment is allowed per repository.
@@ -203,8 +211,9 @@ deactivate that edition while another stays active and regenerate.
 
 Docgen generates `.github/workflows/docgen.yml`. It regenerates the
 project, runs the local prose gate and Vale against all active editions,
-builds any presentations, and deploys the HTML site after checks pass on
-`main`. Pull requests run checks without deployment. Set the repository's
+builds any presentations, and, with an active Pages edition, deploys the
+HTML site after checks pass on `main`. Pull requests run checks without
+deployment. Set the repository's
 Pages source to **GitHub Actions** before the first deployment.
 Pages staging selects files from `.sdk/doc/generated.json`; project-owned
 notes under `docs/` are excluded from the uploaded artifact.
