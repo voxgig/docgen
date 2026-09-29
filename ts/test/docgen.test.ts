@@ -102,6 +102,15 @@ test('an entity named index does not collide with the API landing page',async()=
 test('default scaffold contains summary and Pages, without Slidev',()=>{
   const files=scaffoldDefaults();Assert.ok(files['model/edition/summary.aontu']);Assert.ok(files['model/edition/github-pages.aontu']);Assert.ok(!Object.keys(files).some(p=>p.includes('presentation')))
 })
+test('the scaffolded Pages edition is off until the project turns it on',()=>{
+  const {Aontu}=require('aontu')
+  const path=Path.join(PACKAGE,'model/docgen.aontu')
+  const schema=Fs.readFileSync(path,'utf8')
+  const pages=scaffoldDefaults()['model/edition/github-pages.aontu'].replace(/^@.*\r?\n/,'')
+  Assert.equal(new Aontu().generate(schema+'\n'+pages,{path}).main.kit.doc.edition['github-pages'].active,false)
+  const on=schema+'\n'+pages+"\nmain: kit: doc: edition: 'github-pages': active: true"
+  Assert.equal(new Aontu().generate(on,{path}).main.kit.doc.edition['github-pages'].active,true)
+})
 test('all editions render model content; site links resolve and output is deterministic',async()=>{
   const m=model();(m.main.kit.doc.edition as any).presentation={kind:'presentation',active:true,output:{path:'presentation'}}
   const f=fixture(m)
@@ -647,7 +656,7 @@ test('Voxgig defaults and project themes are independent in all visual editions'
 })
 
 
-test('Pages admin script is generated with executable permissions and removed when Pages is disabled',async()=>{
+test('Pages admin script and deploy job are generated for an active Pages edition and removed when it is disabled',async()=>{
   const m:any=model(), f=fixture(m)
   try {
     await generate({folder:f.root,model:m,control:{dryrun:true}})
@@ -656,11 +665,13 @@ test('Pages admin script is generated with executable permissions and removed wh
     const file=Path.join(f.root,'.sdk/admin/setup-github-pages.sh')
     Assert.match(f.read('.sdk/admin/setup-github-pages.sh'),/docgen\/dist\/admin\/github-pages.js/)
     if(process.platform!=='win32')Assert.ok(Fs.statSync(file).mode&0o111)
+    Assert.match(f.read('.github/workflows/docgen.yml'),/actions\/deploy-pages/)
     f.write('.sdk/admin/status.sh','# status belongs to the scaffold\n')
     f.write('.sdk/admin/custom.sh','# project script\n')
     m.main.kit.doc.edition['github-pages'].active=false
     await generate({folder:f.root,model:m})
     Assert.ok(!Fs.existsSync(file))
+    Assert.doesNotMatch(f.read('.github/workflows/docgen.yml'),/deploy-pages|pages: write/)
     Assert.ok(Fs.existsSync(Path.join(f.root,'.sdk/admin/status.sh')))
     Assert.ok(Fs.existsSync(Path.join(f.root,'.sdk/admin/custom.sh')))
   }finally{f.clean()}

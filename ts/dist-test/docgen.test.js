@@ -120,6 +120,15 @@ function fixture(m = model()) {
     strict_1.default.ok(files['model/edition/github-pages.aontu']);
     strict_1.default.ok(!Object.keys(files).some(p => p.includes('presentation')));
 });
+(0, node_test_1.test)('the scaffolded Pages edition is off until the project turns it on', () => {
+    const { Aontu } = require('aontu');
+    const path = node_path_1.default.join(PACKAGE, 'model/docgen.aontu');
+    const schema = node_fs_1.default.readFileSync(path, 'utf8');
+    const pages = (0, docgen_1.scaffoldDefaults)()['model/edition/github-pages.aontu'].replace(/^@.*\r?\n/, '');
+    strict_1.default.equal(new Aontu().generate(schema + '\n' + pages, { path }).main.kit.doc.edition['github-pages'].active, false);
+    const on = schema + '\n' + pages + "\nmain: kit: doc: edition: 'github-pages': active: true";
+    strict_1.default.equal(new Aontu().generate(on, { path }).main.kit.doc.edition['github-pages'].active, true);
+});
 (0, node_test_1.test)('all editions render model content; site links resolve and output is deterministic', async () => {
     const m = model();
     m.main.kit.doc.edition.presentation = { kind: 'presentation', active: true, output: { path: 'presentation' } };
@@ -721,7 +730,7 @@ function fixture(m = model()) {
         f.clean();
     }
 });
-(0, node_test_1.test)('Pages admin script is generated with executable permissions and removed when Pages is disabled', async () => {
+(0, node_test_1.test)('Pages admin script and deploy job are generated for an active Pages edition and removed when it is disabled', async () => {
     const m = model(), f = fixture(m);
     try {
         await (0, docgen_1.generate)({ folder: f.root, model: m, control: { dryrun: true } });
@@ -731,11 +740,13 @@ function fixture(m = model()) {
         strict_1.default.match(f.read('.sdk/admin/setup-github-pages.sh'), /docgen\/dist\/admin\/github-pages.js/);
         if (process.platform !== 'win32')
             strict_1.default.ok(node_fs_1.default.statSync(file).mode & 0o111);
+        strict_1.default.match(f.read('.github/workflows/docgen.yml'), /actions\/deploy-pages/);
         f.write('.sdk/admin/status.sh', '# status belongs to the scaffold\n');
         f.write('.sdk/admin/custom.sh', '# project script\n');
         m.main.kit.doc.edition['github-pages'].active = false;
         await (0, docgen_1.generate)({ folder: f.root, model: m });
         strict_1.default.ok(!node_fs_1.default.existsSync(file));
+        strict_1.default.doesNotMatch(f.read('.github/workflows/docgen.yml'), /deploy-pages|pages: write/);
         strict_1.default.ok(node_fs_1.default.existsSync(node_path_1.default.join(f.root, '.sdk/admin/status.sh')));
         strict_1.default.ok(node_fs_1.default.existsSync(node_path_1.default.join(f.root, '.sdk/admin/custom.sh')));
     }

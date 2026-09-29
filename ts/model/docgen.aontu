@@ -51,7 +51,8 @@ main: kit: doc: {
   edition: &: {
     name: key()
     kind: string
-    active: *true | boolean
+    # Weaker than an edition file's own default, so an edition can ship off.
+    active: **true | boolean
     base: *'' | string
     origname: *'' | string
     package: *'' | string
