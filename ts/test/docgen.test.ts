@@ -106,7 +106,7 @@ test('the scaffolded Pages edition is off until the project turns it on',()=>{
   const {Aontu}=require('aontu')
   const path=Path.join(PACKAGE,'model/docgen.aontu')
   const schema=Fs.readFileSync(path,'utf8')
-  const pages=scaffoldDefaults()['model/edition/github-pages.aontu'].replace(/^@.*\n/,'')
+  const pages=scaffoldDefaults()['model/edition/github-pages.aontu'].replace(/^@.*\r?\n/,'')
   Assert.equal(new Aontu().generate(schema+'\n'+pages,{path}).main.kit.doc.edition['github-pages'].active,false)
   const on=schema+'\n'+pages+"\nmain: kit: doc: edition: 'github-pages': active: true"
   Assert.equal(new Aontu().generate(on,{path}).main.kit.doc.edition['github-pages'].active,true)

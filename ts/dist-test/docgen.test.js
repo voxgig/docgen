@@ -124,7 +124,7 @@ function fixture(m = model()) {
     const { Aontu } = require('aontu');
     const path = node_path_1.default.join(PACKAGE, 'model/docgen.aontu');
     const schema = node_fs_1.default.readFileSync(path, 'utf8');
-    const pages = (0, docgen_1.scaffoldDefaults)()['model/edition/github-pages.aontu'].replace(/^@.*\n/, '');
+    const pages = (0, docgen_1.scaffoldDefaults)()['model/edition/github-pages.aontu'].replace(/^@.*\r?\n/, '');
     strict_1.default.equal(new Aontu().generate(schema + '\n' + pages, { path }).main.kit.doc.edition['github-pages'].active, false);
     const on = schema + '\n' + pages + "\nmain: kit: doc: edition: 'github-pages': active: true";
     strict_1.default.equal(new Aontu().generate(on, { path }).main.kit.doc.edition['github-pages'].active, true);
