@@ -381,6 +381,39 @@ test('a bootstrapped project has its legacy index include repaired, and nothing 
     } finally { Fs.rmSync(root,{recursive:true,force:true}) }
   }
 })
+test('an untouched Pages edition file from before the default changed takes the current default', () => {
+  // Byte for byte what docgen installed from the .aontu rename until the Pages default changed.
+  const installed = '@"@voxgig/docgen/model/docgen.aontu"\n' +
+    "main: kit: doc: edition: 'github-pages': {\n" +
+    "  kind: 'github-pages'\n" +
+    '  active: *true | boolean\n' +
+    "  base: 'node_modules/@voxgig/docgen/project/.sdk'\n" +
+    "  package: '@voxgig/docgen'\n" +
+    "  output: path: *'docs' | string\n" +
+    '}\n'
+  const current = scaffoldDefaults()['model/edition/github-pages.aontu']
+  const edited = installed.replace("*'docs'", "*'site'")
+  const run = (text: string, bootstrapped: boolean, published = false) => {
+    const root = Fs.mkdtempSync(Path.join(Os.tmpdir(), 'docgen-retired-'))
+    try {
+      const write = (p: string, s: string) => { Fs.mkdirSync(Path.dirname(Path.join(root, p)), { recursive: true }); Fs.writeFileSync(Path.join(root, p), s) }
+      write('.sdk/model/sdk.aontu', 'main: kit: {}\n@"./edition/edition-index.aontu"\n')
+      write('.sdk/model/edition/edition-index.aontu', '@"./summary.aontu"\n@"./github-pages.aontu"\n')
+      write('.sdk/model/edition/github-pages.aontu', text)
+      if (bootstrapped) write('.sdk/doc/setup.json', '{"version":1}\n')
+      if (published) write('.sdk/model/sdk.json', JSON.stringify({ main: { kit: { doc: { edition: { 'github-pages': { published: true } } } } } }))
+      prepareProject(root)
+      return Fs.readFileSync(Path.join(root, '.sdk/model/edition/github-pages.aontu'), 'utf8')
+    } finally { Fs.rmSync(root, { recursive: true, force: true }) }
+  }
+  Assert.match(current, /active: \*false/)
+  Assert.equal(run(installed, true), current)
+  Assert.equal(run(installed, false), current)
+  Assert.equal(run(current, true), current)
+  Assert.equal(run(edited, true), edited)
+  // A project that recorded its site as served relies on the edition being on.
+  Assert.equal(run(installed, true, true), installed)
+})
 test('local branding assets retain their bytes in the website and presentation', async () => {
   const m:any = model()
   m.main.kit.doc.style={logo:'logo.png',fontFile:'brand.woff2'}
@@ -675,6 +708,71 @@ test('Pages admin script and deploy job are generated for an active Pages editio
     Assert.ok(Fs.existsSync(Path.join(f.root,'.sdk/admin/status.sh')))
     Assert.ok(Fs.existsSync(Path.join(f.root,'.sdk/admin/custom.sh')))
   }finally{f.clean()}
+})
+
+
+// The `run` block of a workflow step, as the runner's shell receives it.
+function stepScript(workflow: string, name: string): string {
+  const lines = workflow.split('\n'), indent = (line: string) => /^ */.exec(line)![0].length
+  const at = lines.findIndex(line => line.trim() === '- name: ' + name)
+  const run = lines.findIndex((line, i) => at < i && /^ +run: \|$/.test(line))
+  Assert.ok(0 <= at && at < run, 'no run block for ' + name)
+  const body: string[] = []
+  for (const line of lines.slice(run + 1)) {
+    if (line.trim() && indent(line) <= indent(lines[run])) break
+    body.push(line)
+  }
+  const margin = Math.min(...body.filter(line => line.trim()).map(indent))
+  return body.map(line => line.slice(margin)).join('\n')
+}
+
+test('the Pages deploy skips a repository with no Pages site, with a notice, and never enables one', async () => {
+  const f = fixture()
+  try {
+    await generate({ folder: f.root, model: f.m })
+    const workflow = f.read('.github/workflows/docgen.yml')
+    Assert.doesNotMatch(workflow, /enablement/)
+    Assert.match(workflow, /\n  pages:\n(?:    .*\n)*    permissions:\n      pages: read\n/)
+    Assert.match(workflow, /\n  deploy:\n    needs: pages\n    if: needs\.pages\.outputs\.site == 'true'\n/)
+    Assert.ok(workflow.indexOf('  pages:') < workflow.indexOf('actions/configure-pages'))
+    if (process.platform === 'win32') return
+
+    const script = stepScript(workflow, 'Look for the GitHub Pages site')
+    const stub = Path.join(f.root, 'stub'), calls = Path.join(f.root, 'curl-calls')
+    Fs.mkdirSync(stub)
+    Fs.writeFileSync(Path.join(stub, 'curl'), '#!/bin/sh\necho "$@" >> "$CURL_CALLS"\nprintf %s "$CURL_STATUS"\nexit "$CURL_EXIT"\n', { mode: 0o755 })
+    const run = (status: string, exit = '0') => {
+      const output = Path.join(f.root, 'output-' + status)
+      Fs.writeFileSync(output, '')
+      const result = spawnSync('bash', ['-e', '-c', script], { encoding: 'utf8', env: { ...process.env,
+        PATH: stub + Path.delimiter + process.env.PATH, CURL_STATUS: status, CURL_EXIT: exit, CURL_CALLS: calls,
+        GITHUB_OUTPUT: output, GITHUB_API_URL: 'https://api.github.test', GITHUB_REPOSITORY: 'acme/petstore-sdk', GITHUB_TOKEN: 'token' } })
+      return { status: result.status, stdout: result.stdout, output: Fs.readFileSync(output, 'utf8') }
+    }
+
+    const missing = run('404')
+    Assert.equal(missing.status, 0)
+    Assert.equal(missing.output.trim(), 'site=false')
+    Assert.match(missing.stdout, /^::notice title=GitHub Pages is not enabled::/m)
+    Assert.match(missing.stdout, /setup-github-pages\.sh/)
+    Assert.match(missing.stdout, /main: kit: doc: edition: 'github-pages': active: false/)
+
+    const present = run('200')
+    Assert.equal(present.status, 0)
+    Assert.equal(present.output.trim(), 'site=true')
+    Assert.doesNotMatch(present.stdout, /::notice/)
+
+    // A refusal or an unreachable API is not evidence that no site exists.
+    for (const [status, exit] of [['403', '0'], ['500', '0'], ['000', '7']]) {
+      const failed = run(status, exit)
+      Assert.notEqual(failed.status, 0, status)
+      Assert.equal(failed.output, '', status)
+    }
+    for (const call of Fs.readFileSync(calls, 'utf8').trim().split('\n')) {
+      Assert.match(call, /https:\/\/api\.github\.test\/repos\/acme\/petstore-sdk\/pages$/)
+      Assert.doesNotMatch(call, /--request|-X |POST|PUT/)
+    }
+  } finally { f.clean() }
 })
 
 

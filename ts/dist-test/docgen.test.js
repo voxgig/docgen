@@ -426,6 +426,44 @@ function fixture(m = model()) {
         }
     }
 });
+(0, node_test_1.test)('an untouched Pages edition file from before the default changed takes the current default', () => {
+    // Byte for byte what docgen installed from the .aontu rename until the Pages default changed.
+    const installed = '@"@voxgig/docgen/model/docgen.aontu"\n' +
+        "main: kit: doc: edition: 'github-pages': {\n" +
+        "  kind: 'github-pages'\n" +
+        '  active: *true | boolean\n' +
+        "  base: 'node_modules/@voxgig/docgen/project/.sdk'\n" +
+        "  package: '@voxgig/docgen'\n" +
+        "  output: path: *'docs' | string\n" +
+        '}\n';
+    const current = (0, docgen_1.scaffoldDefaults)()['model/edition/github-pages.aontu'];
+    const edited = installed.replace("*'docs'", "*'site'");
+    const run = (text, bootstrapped, published = false) => {
+        const root = node_fs_1.default.mkdtempSync(node_path_1.default.join(node_os_1.default.tmpdir(), 'docgen-retired-'));
+        try {
+            const write = (p, s) => { node_fs_1.default.mkdirSync(node_path_1.default.dirname(node_path_1.default.join(root, p)), { recursive: true }); node_fs_1.default.writeFileSync(node_path_1.default.join(root, p), s); };
+            write('.sdk/model/sdk.aontu', 'main: kit: {}\n@"./edition/edition-index.aontu"\n');
+            write('.sdk/model/edition/edition-index.aontu', '@"./summary.aontu"\n@"./github-pages.aontu"\n');
+            write('.sdk/model/edition/github-pages.aontu', text);
+            if (bootstrapped)
+                write('.sdk/doc/setup.json', '{"version":1}\n');
+            if (published)
+                write('.sdk/model/sdk.json', JSON.stringify({ main: { kit: { doc: { edition: { 'github-pages': { published: true } } } } } }));
+            (0, docgen_1.prepareProject)(root);
+            return node_fs_1.default.readFileSync(node_path_1.default.join(root, '.sdk/model/edition/github-pages.aontu'), 'utf8');
+        }
+        finally {
+            node_fs_1.default.rmSync(root, { recursive: true, force: true });
+        }
+    };
+    strict_1.default.match(current, /active: \*false/);
+    strict_1.default.equal(run(installed, true), current);
+    strict_1.default.equal(run(installed, false), current);
+    strict_1.default.equal(run(current, true), current);
+    strict_1.default.equal(run(edited, true), edited);
+    // A project that recorded its site as served relies on the edition being on.
+    strict_1.default.equal(run(installed, true, true), installed);
+});
 (0, node_test_1.test)('local branding assets retain their bytes in the website and presentation', async () => {
     const m = model();
     m.main.kit.doc.style = { logo: 'logo.png', fontFile: 'brand.woff2' };
@@ -749,6 +787,69 @@ function fixture(m = model()) {
         strict_1.default.doesNotMatch(f.read('.github/workflows/docgen.yml'), /deploy-pages|pages: write/);
         strict_1.default.ok(node_fs_1.default.existsSync(node_path_1.default.join(f.root, '.sdk/admin/status.sh')));
         strict_1.default.ok(node_fs_1.default.existsSync(node_path_1.default.join(f.root, '.sdk/admin/custom.sh')));
+    }
+    finally {
+        f.clean();
+    }
+});
+// The `run` block of a workflow step, as the runner's shell receives it.
+function stepScript(workflow, name) {
+    const lines = workflow.split('\n'), indent = (line) => /^ */.exec(line)[0].length;
+    const at = lines.findIndex(line => line.trim() === '- name: ' + name);
+    const run = lines.findIndex((line, i) => at < i && /^ +run: \|$/.test(line));
+    strict_1.default.ok(0 <= at && at < run, 'no run block for ' + name);
+    const body = [];
+    for (const line of lines.slice(run + 1)) {
+        if (line.trim() && indent(line) <= indent(lines[run]))
+            break;
+        body.push(line);
+    }
+    const margin = Math.min(...body.filter(line => line.trim()).map(indent));
+    return body.map(line => line.slice(margin)).join('\n');
+}
+(0, node_test_1.test)('the Pages deploy skips a repository with no Pages site, with a notice, and never enables one', async () => {
+    const f = fixture();
+    try {
+        await (0, docgen_1.generate)({ folder: f.root, model: f.m });
+        const workflow = f.read('.github/workflows/docgen.yml');
+        strict_1.default.doesNotMatch(workflow, /enablement/);
+        strict_1.default.match(workflow, /\n  pages:\n(?:    .*\n)*    permissions:\n      pages: read\n/);
+        strict_1.default.match(workflow, /\n  deploy:\n    needs: pages\n    if: needs\.pages\.outputs\.site == 'true'\n/);
+        strict_1.default.ok(workflow.indexOf('  pages:') < workflow.indexOf('actions/configure-pages'));
+        if (process.platform === 'win32')
+            return;
+        const script = stepScript(workflow, 'Look for the GitHub Pages site');
+        const stub = node_path_1.default.join(f.root, 'stub'), calls = node_path_1.default.join(f.root, 'curl-calls');
+        node_fs_1.default.mkdirSync(stub);
+        node_fs_1.default.writeFileSync(node_path_1.default.join(stub, 'curl'), '#!/bin/sh\necho "$@" >> "$CURL_CALLS"\nprintf %s "$CURL_STATUS"\nexit "$CURL_EXIT"\n', { mode: 0o755 });
+        const run = (status, exit = '0') => {
+            const output = node_path_1.default.join(f.root, 'output-' + status);
+            node_fs_1.default.writeFileSync(output, '');
+            const result = (0, node_child_process_1.spawnSync)('bash', ['-e', '-c', script], { encoding: 'utf8', env: { ...process.env,
+                    PATH: stub + node_path_1.default.delimiter + process.env.PATH, CURL_STATUS: status, CURL_EXIT: exit, CURL_CALLS: calls,
+                    GITHUB_OUTPUT: output, GITHUB_API_URL: 'https://api.github.test', GITHUB_REPOSITORY: 'acme/petstore-sdk', GITHUB_TOKEN: 'token' } });
+            return { status: result.status, stdout: result.stdout, output: node_fs_1.default.readFileSync(output, 'utf8') };
+        };
+        const missing = run('404');
+        strict_1.default.equal(missing.status, 0);
+        strict_1.default.equal(missing.output.trim(), 'site=false');
+        strict_1.default.match(missing.stdout, /^::notice title=GitHub Pages is not enabled::/m);
+        strict_1.default.match(missing.stdout, /setup-github-pages\.sh/);
+        strict_1.default.match(missing.stdout, /main: kit: doc: edition: 'github-pages': active: false/);
+        const present = run('200');
+        strict_1.default.equal(present.status, 0);
+        strict_1.default.equal(present.output.trim(), 'site=true');
+        strict_1.default.doesNotMatch(present.stdout, /::notice/);
+        // A refusal or an unreachable API is not evidence that no site exists.
+        for (const [status, exit] of [['403', '0'], ['500', '0'], ['000', '7']]) {
+            const failed = run(status, exit);
+            strict_1.default.notEqual(failed.status, 0, status);
+            strict_1.default.equal(failed.output, '', status);
+        }
+        for (const call of node_fs_1.default.readFileSync(calls, 'utf8').trim().split('\n')) {
+            strict_1.default.match(call, /https:\/\/api\.github\.test\/repos\/acme\/petstore-sdk\/pages$/);
+            strict_1.default.doesNotMatch(call, /--request|-X |POST|PUT/);
+        }
     }
     finally {
         f.clean();

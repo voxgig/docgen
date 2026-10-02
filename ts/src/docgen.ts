@@ -437,14 +437,49 @@ export function stageSite(root: string, name: string): string {
   return destination
 }
 
+const installedModel = (source: string): string =>
+  source.replace("base: 'BASE'", "base: 'node_modules/@voxgig/docgen/project/.sdk'\n  package: '@voxgig/docgen'")
+const editionModel = (name: string): string =>
+  installedModel(Fs.readFileSync(Path.join(PACKAGE, 'project/.sdk/model/edition/' + name + '.aontu'), 'utf8'))
+
+// Edition models a past release shipped, before the default they set changed.
+// A copy installed from one and never edited holds the package's choice rather
+// than the project's, so setup moves it to the current default.
+const RETIRED_MODELS: Record<string, string[]> = {
+  'github-pages': [[
+    '@"@voxgig/docgen/model/docgen.aontu"',
+    "main: kit: doc: edition: 'github-pages': {",
+    "  kind: 'github-pages'",
+    '  active: *true | boolean',
+    "  base: 'BASE'",
+    "  output: path: *'docs' | string",
+    '}', ''].join('\n')],
+}
+
+function retireDefaults(root: string): void {
+  for (const [name, shipped] of Object.entries(RETIRED_MODELS)) {
+    const file = inside(root, '.sdk/model/edition/' + name + '.aontu', Fs)
+    if (!Fs.existsSync(file)) continue
+    const text = Fs.readFileSync(file, 'utf8')
+    if (shipped.some(source => installedModel(source) === text) && !published(root, name)) Fs.writeFileSync(file, editionModel(name))
+  }
+}
+
+// An edition the compiled model records as served stays as it is: its site is live.
+function published(root: string, name: string): boolean {
+  try {
+    const model = JSON.parse(Fs.readFileSync(inside(root, '.sdk/model/sdk.json', Fs), 'utf8'))
+    return true === model?.main?.kit?.doc?.edition?.[name]?.published
+  } catch { return false }
+}
+
 // create-sdkgen installs this package-owned starter set after dependencies are available.
 // Explicit edition add remains the resync path for existing projects.
 export function scaffoldDefaults(): Record<string, string> {
   const out: Record<string, string> = {}
   const defaults = ['summary', 'github-pages']
   for (const name of defaults) {
-    const source = Fs.readFileSync(Path.join(PACKAGE, 'project/.sdk/model/edition/' + name + '.aontu'), 'utf8')
-    out['model/edition/' + name + '.aontu'] = source.replace("base: 'BASE'", "base: 'node_modules/@voxgig/docgen/project/.sdk'\n  package: '@voxgig/docgen'")
+    out['model/edition/' + name + '.aontu'] = editionModel(name)
     for (const tree of ['src/cmp/edition/', 'tm/edition/']) {
       const dir = Path.join(PACKAGE, 'project/.sdk', tree, name)
       for (const file of walk(Fs, dir)) out[tree + name + '/' + file] = Fs.readFileSync(Path.join(dir,file),'utf8')
@@ -507,6 +542,7 @@ export function prepareProject(root: string): void {
   root = Path.resolve(root)
   const sdk = Path.join(root, '.sdk')
   if (!Fs.existsSync(sdk)) throw new Error('Docgen requires an existing .sdk setup')
+  retireDefaults(root)
   const marker = inside(root, '.sdk/doc/setup.json', Fs)
   if (Fs.existsSync(marker)) {
     repairEntryIndex(root)

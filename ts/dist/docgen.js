@@ -505,14 +505,49 @@ function stageSite(root, name) {
     }
     return destination;
 }
+const installedModel = (source) => source.replace("base: 'BASE'", "base: 'node_modules/@voxgig/docgen/project/.sdk'\n  package: '@voxgig/docgen'");
+const editionModel = (name) => installedModel(node_fs_1.default.readFileSync(node_path_1.default.join(PACKAGE, 'project/.sdk/model/edition/' + name + '.aontu'), 'utf8'));
+// Edition models a past release shipped, before the default they set changed.
+// A copy installed from one and never edited holds the package's choice rather
+// than the project's, so setup moves it to the current default.
+const RETIRED_MODELS = {
+    'github-pages': [[
+            '@"@voxgig/docgen/model/docgen.aontu"',
+            "main: kit: doc: edition: 'github-pages': {",
+            "  kind: 'github-pages'",
+            '  active: *true | boolean',
+            "  base: 'BASE'",
+            "  output: path: *'docs' | string",
+            '}', ''
+        ].join('\n')],
+};
+function retireDefaults(root) {
+    for (const [name, shipped] of Object.entries(RETIRED_MODELS)) {
+        const file = (0, ledger_1.inside)(root, '.sdk/model/edition/' + name + '.aontu', node_fs_1.default);
+        if (!node_fs_1.default.existsSync(file))
+            continue;
+        const text = node_fs_1.default.readFileSync(file, 'utf8');
+        if (shipped.some(source => installedModel(source) === text) && !published(root, name))
+            node_fs_1.default.writeFileSync(file, editionModel(name));
+    }
+}
+// An edition the compiled model records as served stays as it is: its site is live.
+function published(root, name) {
+    try {
+        const model = JSON.parse(node_fs_1.default.readFileSync((0, ledger_1.inside)(root, '.sdk/model/sdk.json', node_fs_1.default), 'utf8'));
+        return true === model?.main?.kit?.doc?.edition?.[name]?.published;
+    }
+    catch {
+        return false;
+    }
+}
 // create-sdkgen installs this package-owned starter set after dependencies are available.
 // Explicit edition add remains the resync path for existing projects.
 function scaffoldDefaults() {
     const out = {};
     const defaults = ['summary', 'github-pages'];
     for (const name of defaults) {
-        const source = node_fs_1.default.readFileSync(node_path_1.default.join(PACKAGE, 'project/.sdk/model/edition/' + name + '.aontu'), 'utf8');
-        out['model/edition/' + name + '.aontu'] = source.replace("base: 'BASE'", "base: 'node_modules/@voxgig/docgen/project/.sdk'\n  package: '@voxgig/docgen'");
+        out['model/edition/' + name + '.aontu'] = editionModel(name);
         for (const tree of ['src/cmp/edition/', 'tm/edition/']) {
             const dir = node_path_1.default.join(PACKAGE, 'project/.sdk', tree, name);
             for (const file of walk(node_fs_1.default, dir))
@@ -570,6 +605,7 @@ function prepareProject(root) {
     const sdk = node_path_1.default.join(root, '.sdk');
     if (!node_fs_1.default.existsSync(sdk))
         throw new Error('Docgen requires an existing .sdk setup');
+    retireDefaults(root);
     const marker = (0, ledger_1.inside)(root, '.sdk/doc/setup.json', node_fs_1.default);
     if (node_fs_1.default.existsSync(marker)) {
         repairEntryIndex(root);
