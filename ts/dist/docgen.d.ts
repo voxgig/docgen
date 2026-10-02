@@ -13,6 +13,7 @@ export type GenerateOptions = {
 export type EditionResult = {
     files: Record<string, string | Buffer>;
     qa: string[];
+    quoted?: Record<string, string[]>;
 };
 export type GenerateResult = {
     editions: string[];

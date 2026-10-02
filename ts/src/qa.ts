@@ -7,6 +7,9 @@ const md = new MarkdownIt({ html: false })
 const PACKAGE = Path.resolve(__dirname, '..')
 
 const stripUrls = (s: string): string => s.replace(/\b[a-z][a-z0-9+.-]*:\/\/[^\s<>"')\]]+/gi, ' ')
+// Hyphenated, these are region or locale codes; in upper case, the plural object names the country.
+const FIRST_PERSON = /(?<!-)\b(?:I|me|my|mine|we|our|ours)\b(?!-)/i
+const PLURAL_OBJECT = /(?<!-)\bus\b(?!-)/
 
 export function proseText(source: string, format = 'md'): string {
   if (format === 'html' || format === 'vue') {
@@ -23,30 +26,40 @@ export function proseText(source: string, format = 'md'): string {
   }).join(' ')
   return stripUrls(collect(md.parse(source, {}))).replace(/[ \t]+/g, ' ').replace(/ *\n */g, '\n').replace(/\n{3,}/g, '\n\n').trim()
 }
-export function authored(source: string, format: string): string {
+// Without table cells and quoted vendor text. A quote is matched by its words,
+// whatever markup surrounds it, longest first so a shorter one cannot split it.
+export function authored(source: string, format: string, quoted: string[] = []): string {
   const stripped = 'html' === format || 'vue' === format
     ? source.replace(/<td\b[^>]*>[\s\S]*?<\/td>/gi, ' ')
     : source.split('\n').filter(line => !/^\s*\|/.test(line)).join('\n')
-  return proseText(stripped, format)
+  let text = proseText(stripped, format)
+  for (const quote of [...quoted].sort((a, b) => b.length - a.length)) {
+    const words = proseText(quote).split(/\s+/).filter(Boolean)
+    if (!words.length) continue
+    const edge = (word: string) => /\w/.test(word) ? '\\b' : ''
+    const pattern = words.map(word => word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('\\s+')
+    text = text.replace(new RegExp(edge(words[0][0]) + pattern + edge(words[words.length - 1].slice(-1)), 'g'), ' ')
+  }
+  return text
 }
 
 // What the Vale pass reads: everything rendered, not only what docgen wrote.
 // A generated API reference keeps the vendor's schema descriptions in table
-// cells, so a gate that skips them skips most of the page. Cells can be
-// linted because cell() renders identifiers as code, and code is not prose.
+// cells, so a gate that skips them skips most of the page. Vendor text can be
+// linted because its identifiers render as code, and code is not prose.
 export const valeText = proseText
 
 // A house-style rule says how THIS PROJECT writes, so it reads only what
 // docgen wrote: applying it to a quoted vendor description asks an SDK author
 // to edit someone else's specification. A defect is a defect wherever it
 // appears, so those rules read everything rendered.
-export function checkText(source: string, format = 'md', rejectFile = Path.join(PACKAGE, 'qa/styles/config/vocabularies/Docgen/reject.txt')): string[] {
-  const text = proseText(source, format), own = authored(source, format), errors: string[] = []
+export function checkText(source: string, format = 'md', rejectFile = Path.join(PACKAGE, 'qa/styles/config/vocabularies/Docgen/reject.txt'), quoted: string[] = []): string[] {
+  const text = proseText(source, format), own = authored(source, format, quoted), errors: string[] = []
   const patterns = Fs.readFileSync(rejectFile, 'utf8').split('\n').map(s => s.trim()).filter(s => s && !s.startsWith('#'))
   for (const pattern of patterns) if (new RegExp('\\b(?:' + pattern + ')\\b', 'i').test(own)) errors.push('Avoid: ' + pattern)
   if (/\b(\w+)[ \t]+\1\b/i.test(text)) errors.push('Remove the repeated word')
   if (/—/.test(text)) errors.push('Use a comma, colon, parentheses, or a new sentence instead of an em dash')
-  if (/\b(I|me|my|mine|we|us|our|ours)\b/i.test(own)) errors.push('Use neutral or second-person prose')
+  if (FIRST_PERSON.test(own) || PLURAL_OBJECT.test(own)) errors.push('Use neutral or second-person prose')
   if (/\p{Extended_Pictographic}/u.test(text)) errors.push('Do not use emoji in documentation')
   if (/!/.test(text)) errors.push('Use statements without exclamation marks')
   return errors
@@ -65,7 +78,8 @@ export function runQA(manifestPath: string, root = process.cwd(), vale = true): 
     const inputs: string[] = []
     for (const [index, file] of manifest.files.entries()) {
       const text = Fs.readFileSync(safe(file), 'utf8'), format = file.endsWith('.html') ? 'html' : file.endsWith('.vue') ? 'vue' : 'md'
-      errors.push(...checkText(text, format, reject).map(e => file + ': ' + e))
+      const quoted = manifest.quoted?.[file]
+      errors.push(...checkText(text, format, reject, Array.isArray(quoted) ? quoted.filter((q: unknown) => 'string' === typeof q) : []).map(e => file + ': ' + e))
       if (format === 'html') {
         for (const match of text.matchAll(/(?:href|src)="([^"]+)"/g)) {
           const url = md.utils.unescapeAll(match[1])

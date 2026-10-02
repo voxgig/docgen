@@ -272,6 +272,93 @@ test('an identifier in a vendor description is rendered as code, not prose', () 
   Assert.doesNotMatch(prose('under {{ contact.NAME }}'), /`/)
 }, )
 
+test('the first-person rule reads the pronoun, not the country or a hyphenated code', () => {
+  const voice = 'Use neutral or second-person prose'
+  for (const text of ['Amounts are in US dollars.', 'Deploy to us-east-1 or me-central-1.', 'Send en-us as the locale.']) {
+    Assert.ok(!checkText(text).includes(voice), text)
+  }
+  for (const text of ['Contact us for access.', 'We send the request.', 'Our API returns records.', 'Tell me more.']) {
+    Assert.ok(checkText(text).includes(voice), text)
+  }
+})
+
+test('an identifier that starts or ends with an underscore is code; emphasis, code and links are kept', () => {
+  const { cell } = require('../dist/content')
+  Assert.equal(cell('Prefixed drv_ or drvrun_, keyed by _id.'), 'Prefixed `drv_` or `drvrun_`, keyed by `_id`.')
+  Assert.equal(cell('An _important_ note.'), 'An _important_ note.')
+  Assert.equal(cell('Use `asset_id` as the key.'), 'Use `asset_id` as the key.')
+  Assert.equal(cell('See https://example.test/rate_limits for limits.'), 'See https://example.test/rate_limits for limits.')
+  Assert.equal(cell('Read asset_id<br>next'), 'Read `asset_id` next')
+})
+
+test('identifiers in vendor prose outside tables are code, and slots stay out of code', async () => {
+  const { quote, quoteInline } = require('../dist/content')
+  Assert.doesNotMatch(quote('under {{ contact.NAME }}'), /`/)
+  Assert.doesNotMatch(quoteInline('under {{ contact.NAME }}'), /`/)
+
+  const m: any = model()
+  m.main.kit.info.description = 'Records carry an asset_id, keyed by _id.'
+  m.main.kit.entity.pet.desc = 'A pet, found by its pet_id.'
+  m.main.kit.entity.pet.fields.id.sh = 'Prefixed with drv_.'
+  const f = fixture(m)
+  try {
+    await generate({ folder: f.root, model: m })
+    const summary = f.read('SUMMARY.md')
+    Assert.match(summary, /an `asset_id`, keyed by `_id`\./)
+    Assert.match(summary, /found by its `pet_id`\./)
+    Assert.match(summary, /Prefixed with `drv_`\./)
+    for (const [file, format] of [['SUMMARY.md', 'md'], ['docs/index.html', 'html'], ['docs/api/pet.html', 'html']]) {
+      Assert.doesNotMatch(proseText(f.read(file), format), /asset_id|\b_id|pet_id|drv_/, file)
+    }
+  } finally { f.clean() }
+})
+
+test('house style skips vendor text wherever it is rendered, and still reads the project', async () => {
+  const { authored } = require('../dist/qa')
+  const page = 'Docgen wrote this.\n\n- `url`: The url to which we should POST reports.\n'
+  const quoted = ['The url to which we should POST reports.']
+  Assert.match(authored(page, 'md', quoted), /Docgen wrote this/)
+  Assert.doesNotMatch(authored(page, 'md', quoted), /POST reports/)
+  Assert.match(authored(page, 'md'), /POST reports/)
+
+  const { runQA } = require('../dist/docgen')
+  const voice = (root: string) => runQA('.sdk/doc/qa-manifest.json', root, false).errors
+    .filter((e: string) => e.includes('Use neutral or second-person prose'))
+  const m: any = model()
+  m.main.kit.info.description = 'Our API is designed for pets. Refer to our documentation.'
+  m.main.kit.info.servers[0].description = 'Our production server'
+  m.main.kit.entity.pet.fields.id.sh = 'The url to which we should POST delivery reports.'
+  definitions.get(m).paths['/pets/{id}'].get.responses['200'].description = 'The pet we found'
+  const f = fixture(m)
+  try {
+    await generate({ folder: f.root, model: m })
+    Assert.deepEqual(voice(f.root), [])
+    m.main.kit.doc.brand = { notice: 'We are not affiliated with the API provider.' }
+    await generate({ folder: f.root, model: m })
+    Assert.ok(voice(f.root).some((e: string) => e.startsWith('SUMMARY.md')))
+  } finally { f.clean() }
+})
+
+test('a vendor description written in blocks keeps them, as a quotation', async () => {
+  const m: any = model()
+  m.main.kit.info.description = 'Send SMS messages.\n\n### Authorization\nAuthorization at SMSAPI uses OAuth 2 tokens.\n\n' +
+    '### URL addresses\nAPI URL addresses:\n* `https://api.smsapi.com/` - for secure connections\n* `http://api.smsapi.com/` - for plain connections\n'
+  m.main.kit.entity.pet.desc = 'A pet record.\n  It wraps onto a second line.'
+  const f = fixture(m)
+  try {
+    await generate({ folder: f.root, model: m })
+    const summary = f.read('SUMMARY.md')
+    Assert.match(summary, /^> ### Authorization\n> Authorization at SMSAPI uses OAuth 2 tokens\.$/m)
+    Assert.match(summary, /^> \* `https:\/\/api\.smsapi\.com\/` - for secure connections$/m)
+    Assert.match(summary, /^A pet record\. It wraps onto a second line\.$/m)
+    const index = f.read('docs/index.html')
+    Assert.match(index, /<blockquote>[\s\S]*<h3[^>]*>Authorization<\/h3>[\s\S]*<li><code>https:\/\/api\.smsapi\.com\/<\/code> - for secure connections<\/li>[\s\S]*<\/blockquote>/)
+    for (const [text, format] of [[summary, 'md'], [index, 'html']]) {
+      Assert.ok(!checkText(text, format).includes('Remove the repeated word'), format)
+    }
+  } finally { f.clean() }
+})
+
 test('model prose cannot execute HTML or Vue expressions',async()=>{
   const m:any=model();m.main.kit.info.summary='<script>alert(1)</script> {{ execute() }}'
   m.main.kit.doc.edition.presentation={kind:'presentation',active:true,output:{path:'presentation'}}
@@ -709,7 +796,6 @@ test('Pages admin script and deploy job are generated for an active Pages editio
     Assert.ok(Fs.existsSync(Path.join(f.root,'.sdk/admin/custom.sh')))
   }finally{f.clean()}
 })
-
 
 // The `run` block of a workflow step, as the runner's shell receives it.
 function stepScript(workflow: string, name: string): string {

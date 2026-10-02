@@ -3,7 +3,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.METHODS = exports.cell = exports.code = exports.prose = exports.html = void 0;
+exports.METHODS = exports.quoteInline = exports.cell = exports.code = exports.prose = exports.html = void 0;
+exports.unmark = unmark;
+exports.quote = quote;
 exports.entityPage = entityPage;
 exports.fence = fence;
 exports.rows = rows;
@@ -13,17 +15,21 @@ exports.view = view;
 exports.surface = surface;
 exports.installation = installation;
 exports.summary = summary;
+exports.quotedSummary = quotedSummary;
 exports.operationFacts = operationFacts;
 exports.slugFor = slugFor;
 exports.typeName = typeName;
 exports.pages = pages;
 exports.slideBodies = slideBodies;
 exports.slides = slides;
+exports.quotedSlides = quotedSlides;
 const sdk_reference_1 = require("./sdk-reference");
 const examples_1 = require("./examples");
 const jostraca_1 = require("jostraca");
 const node_path_1 = __importDefault(require("node:path"));
 const sdkgen_1 = require("@voxgig/sdkgen");
+const MarkdownIt = require('markdown-it');
+const md = new MarkdownIt({ html: false });
 const html = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 exports.html = html;
 const NEVER_DOUBLED = ['the', 'a', 'an', 'of', 'to', 'and', 'in', 'for', 'on', 'at', 'by', 'with', 'from'];
@@ -35,11 +41,16 @@ const code = (v) => '`' + String(v ?? '').replace(/`/g, '') + '`';
 exports.code = code;
 // Vendor schema descriptions name enum values and template slots inline. As
 // prose they are linted as English; they are not prose, and both extractions
-// ignore code. Cells only, never prose(): prose escapes braces to defuse
-// Slidev, which interpolates inside a code span too. No table reaches a deck.
-const IDENTIFIER = /\{\{[^{}]*\}\}|[A-Za-z][A-Za-z0-9]*(?:_[A-Za-z0-9]+)+/g;
-const cell = (v) => {
-    const source = String(v ?? '');
+// ignore code. Slots in cells only: prose escapes braces to defuse Slidev,
+// which interpolates inside a code span too. No table reaches a deck.
+const SLOT = /\{\{[^{}]*\}\}/;
+// A word with an underscore anywhere in it; one wrapped in underscores is emphasis.
+const IDENTIFIER = /(?<!\w)(?=\w*_)(?=\w*[A-Za-z])(?!_\w*_(?!\w))\w+/;
+// Already code, or a link that a code span would break.
+const KEPT = /(?<kept>(?<ticks>`+)[^`]*?\k<ticks>|\b[a-z][a-z0-9+.-]*:\/\/[^\s<>"')\]]+)/;
+const tokens = (...parts) => new RegExp(parts.map(part => part.source).join('|'), 'gi');
+const CELL_CODE = tokens(KEPT, SLOT, IDENTIFIER), PROSE_CODE = tokens(KEPT, IDENTIFIER);
+function withCode(source, found) {
     // prose() trims, which is right for a whole cell and wrong for a fragment
     // of one: without this a code span fuses to the words either side of it.
     const span = (text) => {
@@ -47,18 +58,58 @@ const cell = (v) => {
         const body = (0, exports.prose)(text);
         return '' === body ? (lead || tail) : lead + body + tail;
     };
-    const parts = [];
+    const text = unwrap(source), parts = [];
     let at = 0;
-    for (const match of source.matchAll(IDENTIFIER)) {
-        parts.push(span(source.slice(at, match.index)), (0, exports.code)(match[0]));
+    for (const match of text.matchAll(found)) {
+        parts.push(span(text.slice(at, match.index)), match.groups?.kept ? span(match[0]) : (0, exports.code)(match[0]));
         at = match.index + match[0].length;
     }
-    parts.push(span(source.slice(at)));
-    // GFM escapes a pipe inside an inline span the same way, so this stays
-    // correct for the code spans above.
-    return parts.join('').trim().replace(/\|/g, '\\|').replace(/[\r\n]+/g, ' ');
-};
+    parts.push(span(text.slice(at)));
+    return parts.join('').trim();
+}
+// GFM escapes a pipe inside an inline span the same way, so this stays
+// correct for the code spans withCode() writes.
+const cell = (v) => withCode(String(v ?? ''), CELL_CODE).replace(/\|/g, '\\|');
 exports.cell = cell;
+// Vendor text is marked where it is rendered, and the marks become the page's
+// quotes, so the house-style rules can leave it out whatever markup surrounds it.
+const MARKS = /[\uE000\uE001]/g;
+const mark = (text) => '' === text ? '' : '\uE000' + text + '\uE001';
+function unmark(text) {
+    const quotes = new Set();
+    const clean = text.replace(/\uE000([^\uE000\uE001]*)\uE001/g, (_, quote) => {
+        quotes.add(quote);
+        return quote;
+    }).replace(MARKS, '');
+    return { markdown: clean, quotes: [...quotes].sort() };
+}
+const quoteInline = (v) => mark(withCode(String(v ?? '').replace(MARKS, ''), PROSE_CODE));
+exports.quoteInline = quoteInline;
+// A vendor description given its own block keeps the blocks it was written in:
+// flattened, a heading runs into the paragraph under it. More than one block is
+// a quotation; code blocks are escaped and nothing else.
+function quote(v) {
+    const lines = String(v ?? '').replace(MARKS, '').replace(/\r\n?/g, '\n')
+        .replace(/<\s*br\s*\/?\s*>[ \t]*\n?/gi, '\n').replace(/<\/?\s*p\s*>/gi, '\n\n')
+        .split('\n').map(line => line.trimEnd());
+    const margin = Math.min(...lines.slice(1).filter(Boolean).map(line => /^\s*/.exec(line)[0].length));
+    const text = [lines[0].trim(), ...lines.slice(1).map(line => Number.isFinite(margin) ? line.slice(margin) : line)]
+        .join('\n').replace(/\n{3,}/g, '\n\n').trim();
+    const blocks = md.parse(text, {});
+    if (!blocks.length || (3 === blocks.length && 'paragraph_open' === blocks[0].type))
+        return (0, exports.quoteInline)(text);
+    const fenced = new Set();
+    for (const block of blocks)
+        if (['fence', 'code_block'].includes(block.type)) {
+            for (let line = block.map[0]; line < block.map[1]; line++)
+                fenced.add(line);
+        }
+    return mark(text.split('\n').map((line, at) => {
+        const body = fenced.has(at) ? (0, exports.html)(line).replace(/\{/g, '&#123;').replace(/\}/g, '&#125;')
+            : /^\s*/.exec(line)[0] + withCode(line, PROSE_CODE);
+        return '' === body.trim() ? '>' : '> ' + body;
+    }).join('\n'));
+}
 const RESERVED_API_PAGES = new Set(['index']);
 function entityPage(name) {
     const slug = encodeURIComponent(name);
@@ -117,6 +168,9 @@ function installation(model, target) {
     return model.main.kit.doc?.target?.[target.name]?.install || ((0, sdkgen_1.isPublished)(model, target.name) ? (0, sdkgen_1.installCommand)(model, target.name) : 'Not published. Build from the ' + target.name + ' directory.');
 }
 function summary(v) {
+    return quotedSummary(v).markdown;
+}
+function quotedSummary(v) {
     const sdks = v.targets.filter(t => surface(t, v.kit) === 'sdk');
     const tools = v.targets.filter(t => surface(t, v.kit) !== 'sdk');
     const routes = v.entities.flatMap(entity => rows(entity.op).flatMap(op => (op.points ?? []).filter((p) => p.a !== false).map((point) => ({ entity, op, point, facts: operationFacts(point, v.resolved) }))));
@@ -132,7 +186,7 @@ function summary(v) {
     };
     const apiLink = (e) => link(e.Name, 'api/' + entityPage(e.name) + '.html', 'entities', e.name);
     const sdkLink = (t) => link(t.title || t.name, 'sdks/' + encodeURIComponent(t.name) + '.html', 'targets', t.name);
-    const lines = ['# ' + (0, exports.prose)(v.title), '', (0, exports.prose)(v.description), '', '## Start here', '',
+    const lines = ['# ' + (0, exports.prose)(v.title), '', quote(v.description), '', '## Start here', '',
         'This guide introduces the API, the client libraries, and the companion tools in this repository. Start with the API capabilities, choose a client for your application, and use the linked reference when you need exact request and response details.', '',
         'The selected API surface contains ' + v.entities.length + ' entities and ' + routes.length + ' HTTP routes. ' +
             (sdks.length ? 'There are ' + sdks.length + ' SDK targets' + (tools.length ? ' and ' + tools.length + ' companion tools' : '') + '.' : 'No SDK targets are selected.'), '',
@@ -147,9 +201,9 @@ function summary(v) {
         const description = v.info.entity_desc?.[entity.name] || entity.desc || entity.short;
         lines.push('### ' + apiLink(entity), '');
         if (description)
-            lines.push((0, exports.prose)(description), '');
+            lines.push(quote(description), '');
         if (results.length)
-            lines.push('Results: ' + results.map(exports.prose).join('; ').replace(/[.]+$/, '') + '.', '');
+            lines.push('Results: ' + results.map((r, at) => (0, exports.quoteInline)(at === results.length - 1 ? r.trim().replace(/[.]+$/, '') : r)).join('; ') + '.', '');
         lines.push('SDK operations: ' + rows(entity.op).map(o => (0, exports.code)(o.name)).join(', ') + '.', '');
         const descriptions = {};
         // Facts are a RESOLVED graph, not a tree: apidef returns the same object for
@@ -172,21 +226,21 @@ function summary(v) {
         entityRoutes.forEach(r => describe(r.facts.responses));
         const fields = Object.values(entity.fields ?? {}).filter(f => f.a !== false && (f.sh || descriptions[f.n])).slice(0, 5);
         if (fields.length)
-            lines.push('Key fields to recognise:', '', ...fields.map((f) => '- ' + (0, exports.code)(f.n) + ': ' + (0, exports.prose)(descriptions[f.n] || f.sh)), '');
+            lines.push('Key fields to recognise:', '', ...fields.map((f) => '- ' + (0, exports.code)(f.n) + ': ' + (0, exports.quoteInline)(descriptions[f.n] || f.sh)), '');
     }
     if (routes.length)
         lines.push('### Route map', '', 'Use this map to locate a capability. Consult the entity reference before supplying request data; routes for the same operation can require different fields.', '', '| Entity | SDK operation | HTTP route | Authentication |', '| --- | --- | --- | --- |', ...routes.map(r => '| ' + apiLink(r.entity) + ' | ' + (0, exports.code)(r.op.name) + ' | ' + (0, exports.code)(r.point.m.toUpperCase() + ' ' + r.point.o) + ' | ' +
             (Array.isArray(r.facts.security) ? (anonymous(r.facts) ? 'Not required' : 'Required') : 'See reference') + ' |'), '');
     lines.push('## Connect to the API', '');
     for (const server of v.info.servers || [])
-        lines.push('- ' + (0, exports.prose)(server.description || 'API server') + ': ' + (0, exports.code)(server.url));
+        lines.push('- ' + (server.description ? (0, exports.quoteInline)(server.description) : 'API server') + ': ' + (0, exports.code)(server.url));
     lines.push('');
     const security = v.info.security || {};
     if (security.name)
         lines.push('The default credential is sent in the ' + (0, exports.code)(security.name) + ' ' + (0, exports.prose)(security.in || 'header') +
             (security.prefix ? ' with the ' + (0, exports.code)(security.prefix) + ' prefix' : '') + '.', '');
     const authDescriptions = [...new Set(routes.flatMap(r => Object.values(r.facts.securitySchemes || {}).map(s => s.description).filter(Boolean)))];
-    lines.push(...authDescriptions.flatMap(s => [(0, exports.prose)(s), '']));
+    lines.push(...authDescriptions.flatMap(s => [quote(s), '']));
     lines.push('Check authentication for the route you plan to call. A route that declares no authentication can be used without credentials; this does not change the requirements of other routes. Keep credentials in environment variables or a configured secret provider, and keep them out of source control and logs.', '', '## Make a first request', '', '1. Choose the API server and an operation that matches your task.', '2. Check the operation’s required input and authentication. Use values valid for your account and environment.', '3. Send one request and inspect the returned data before adding retries, concurrency, or a larger batch.', '');
     const first = routes.find(r => r.point.m.toUpperCase() === 'GET' && !/[{}]/.test(r.point.o) &&
         anonymous(r.facts) && !r.facts.requestBody &&
@@ -215,7 +269,7 @@ function summary(v) {
     if (v.features.length)
         lines.push('## Operational features', '', 'Features supply behaviour around API calls, such as request handling, diagnostics, or local testing. Inclusion in this project does not mean a feature is enabled at runtime. Check the selected SDK’s supported features and configuration defaults, then enable the behaviour your application needs.', '', ...v.features.map(f => '- ' + link((0, exports.code)(f.name), 'features/' + encodeURIComponent(f.name) + '.html', 'features', f.name) + ': ' + (0, exports.prose)(f.description || f.title || f.name)), '', 'Start with the default client configuration. Add request limits and diagnostics as needed, test error paths, and review retry behaviour before using operations that change data. A retry can repeat an operation unless the API provides a suitable guarantee.', '');
     lines.push('## Continue with the documentation', '', '- Follow the ' + link('first-call guide', 'guides/first-call.html') + ' for the setup sequence.', '- Read the ' + link('authentication guide', 'guides/authentication.html') + ' before using protected routes.', '- Use the ' + link('API reference', 'api/index.html') + ' for request schemas, response formats, and status codes.', '- Check the chosen SDK or companion tool reference for its configuration and supported operations.', '');
-    return lines.join('\n') + '\n';
+    return unmark(lines.join('\n') + '\n');
 }
 function fieldsTable(fields) {
     return ['| Field | Type | Required | Description |', '| --- | --- | --- | --- |',
@@ -399,7 +453,7 @@ function entityReference(entity, resolved, examples) {
         lines.push(examples);
     lines.push('## Fields', '', fieldsTable(entity.fields ?? {}), '');
     for (const op of rows(entity.op)) {
-        lines.push('## ' + (0, exports.prose)(op.name), '', (0, exports.prose)(op.short || op.description || ''), '');
+        lines.push('## ' + (0, exports.prose)(op.name), '', quote(op.short || op.description || ''), '');
         for (const r of routes.filter(x => x.op.name === op.name)) {
             lines.push('### ' + r.heading, '');
             if (r.c.operationId)
@@ -420,7 +474,7 @@ function entityReference(entity, resolved, examples) {
                 lines.push('#### Responses', '');
                 for (const [status, response] of Object.entries(responses)) {
                     const described = String(response?.description || '').replace(/\.+$/, '');
-                    lines.push('##### ' + (0, exports.prose)(status) + (described ? ': ' + (0, exports.prose)(described) : ''), '');
+                    lines.push('##### ' + (0, exports.prose)(status) + (described ? ': ' + (0, exports.quoteInline)(described) : ''), '');
                     lines.push(...bodyText(response?.content, 'response'));
                 }
             }
@@ -433,12 +487,15 @@ function entityReference(entity, resolved, examples) {
 }
 function pages(v, examples = {}) {
     const out = [];
-    const add = (path, title, group, body) => out.push({ path, title, group, markdown: '# ' + (0, exports.prose)(title) + '\n\n' + body + '\n' });
-    add('index', v.title, 'Overview', (0, exports.prose)(v.description));
+    const add = (path, title, group, body) => {
+        const { markdown, quotes } = unmark('# ' + (0, exports.prose)(title) + '\n\n' + body + '\n');
+        out.push({ path, title, group, markdown, quotes });
+    };
+    add('index', v.title, 'Overview', quote(v.description));
     const servers = v.info.servers ?? [];
     const spec = specLink(v.model);
-    add('api/index', 'API overview', 'API', [(0, exports.prose)(v.info.summary || ''), '',
-        ...servers.map((s) => '- ' + (0, exports.code)(s.url) + (s.description ? ': ' + (0, exports.prose)(s.description) : '')),
+    add('api/index', 'API overview', 'API', [quote(v.info.summary || ''), '',
+        ...servers.map((s) => '- ' + (0, exports.code)(s.url) + (s.description ? ': ' + (0, exports.quoteInline)(s.description) : '')),
         ...(spec ? ['', 'This documentation is generated from the [OpenAPI specification](' + spec + ') held in the SDK repository.'] : []),
         '', ...v.entities.map(e => '- [' + (0, exports.prose)(e.Name) + '](' + entityPage(e.name) + '.html)')].join('\n'));
     add('guides/authentication', 'Authentication', 'Guides', v.info.security && Object.keys(v.info.security).length ?
@@ -458,7 +515,7 @@ function pages(v, examples = {}) {
         'SDKs expose the API operations using each language’s conventions. Read the language reference for configuration and return values.');
     for (const entity of v.entities) {
         const reference = entityReference(entity, v.resolved, entityExamples(v, entity, examples));
-        add('api/' + entityPage(entity.name), entity.Name, 'API', [(0, exports.prose)(v.info.entity_desc?.[entity.name] || entity.desc || entity.short || ''), '',
+        add('api/' + entityPage(entity.name), entity.Name, 'API', [quote(v.info.entity_desc?.[entity.name] || entity.desc || entity.short || ''), '',
             reference.markdown].join('\n'));
         out[out.length - 1].sections = reference.sections;
     }
@@ -517,6 +574,9 @@ function pages(v, examples = {}) {
     return out;
 }
 function slideBodies(v, example = '') {
+    return markedSlides(v, example).map(chunk => unmark(chunk).markdown);
+}
+function markedSlides(v, example = '') {
     const chunks = [];
     const group = (items, size) => Array.from({ length: Math.ceil(items.length / size) }, (_, i) => items.slice(i * size, i * size + size));
     const titled = (label, parts) => parts.forEach((part, i) => chunks.push(label + (1 < parts.length ? ' ' + (i + 1) + ' / ' + parts.length : '') + '\n\n' + part.join('\n')));
@@ -529,7 +589,7 @@ function slideBodies(v, example = '') {
     const first = v.entities.flatMap(e => rows(e.op).flatMap(op => (op.points || []).filter((p) => p.a !== false).map((p) => ({ e, op, p }))))[0];
     const primary = sdks.find(t => 'ts' === (t.origname || t.name)) || sdks[0];
     // --- ACT ONE: what the SDK gives you --------------------------------------
-    chunks.push((0, exports.prose)(v.title) + '\n\n' + (0, exports.prose)(v.info.summary || v.description) +
+    chunks.push((0, exports.prose)(v.title) + '\n\n' + quote(v.info.summary || v.description) +
         (v.kit.doc?.brand?.notice ? '\n\n' + (0, exports.prose)(v.kit.doc.brand.notice) : ''));
     const many = (n, one, more = one + 's') => n + ' ' + (1 === n ? one : more);
     const scale = [
@@ -618,6 +678,9 @@ function slideBodies(v, example = '') {
     return chunks;
 }
 function slides(v, example = '') {
-    return slideBodies(v, example).map(c => '# ' + c).join('\n\n---\n\n') + '\n';
+    return quotedSlides(v, example).markdown;
+}
+function quotedSlides(v, example = '') {
+    return unmark(markedSlides(v, example).map(c => '# ' + c).join('\n\n---\n\n') + '\n');
 }
 //# sourceMappingURL=content.js.map

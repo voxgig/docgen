@@ -248,7 +248,10 @@ node .sdk/node_modules/@voxgig/docgen/bin/voxgig-docgen qa
 
 The [style guide](docs/STYLE-GUIDE.md) adapts aontu's rules to neutral API
 and SDK prose. The output manifest includes every edition and authored
-page. `qa --local-only` runs the fast checks without Vale; CI requires both.
+page, and the specification descriptions each page quotes: the banned
+phrase list and the neutral-voice rule read only the text docgen and the
+project wrote. `qa --local-only` runs the fast checks without Vale; CI
+requires both.
 Use `ci.active: false` to manage the workflow separately.
 
 ## Develop

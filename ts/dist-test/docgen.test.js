@@ -298,6 +298,95 @@ function fixture(m = model()) {
     // interpolates `{{ }}` inside a code span as readily as outside one.
     strict_1.default.doesNotMatch(prose('under {{ contact.NAME }}'), /`/);
 });
+(0, node_test_1.test)('the first-person rule reads the pronoun, not the country or a hyphenated code', () => {
+    const voice = 'Use neutral or second-person prose';
+    for (const text of ['Amounts are in US dollars.', 'Deploy to us-east-1 or me-central-1.', 'Send en-us as the locale.']) {
+        strict_1.default.ok(!(0, docgen_1.checkText)(text).includes(voice), text);
+    }
+    for (const text of ['Contact us for access.', 'We send the request.', 'Our API returns records.', 'Tell me more.']) {
+        strict_1.default.ok((0, docgen_1.checkText)(text).includes(voice), text);
+    }
+});
+(0, node_test_1.test)('an identifier that starts or ends with an underscore is code; emphasis, code and links are kept', () => {
+    const { cell } = require('../dist/content');
+    strict_1.default.equal(cell('Prefixed drv_ or drvrun_, keyed by _id.'), 'Prefixed `drv_` or `drvrun_`, keyed by `_id`.');
+    strict_1.default.equal(cell('An _important_ note.'), 'An _important_ note.');
+    strict_1.default.equal(cell('Use `asset_id` as the key.'), 'Use `asset_id` as the key.');
+    strict_1.default.equal(cell('See https://example.test/rate_limits for limits.'), 'See https://example.test/rate_limits for limits.');
+    strict_1.default.equal(cell('Read asset_id<br>next'), 'Read `asset_id` next');
+});
+(0, node_test_1.test)('identifiers in vendor prose outside tables are code, and slots stay out of code', async () => {
+    const { quote, quoteInline } = require('../dist/content');
+    strict_1.default.doesNotMatch(quote('under {{ contact.NAME }}'), /`/);
+    strict_1.default.doesNotMatch(quoteInline('under {{ contact.NAME }}'), /`/);
+    const m = model();
+    m.main.kit.info.description = 'Records carry an asset_id, keyed by _id.';
+    m.main.kit.entity.pet.desc = 'A pet, found by its pet_id.';
+    m.main.kit.entity.pet.fields.id.sh = 'Prefixed with drv_.';
+    const f = fixture(m);
+    try {
+        await (0, docgen_1.generate)({ folder: f.root, model: m });
+        const summary = f.read('SUMMARY.md');
+        strict_1.default.match(summary, /an `asset_id`, keyed by `_id`\./);
+        strict_1.default.match(summary, /found by its `pet_id`\./);
+        strict_1.default.match(summary, /Prefixed with `drv_`\./);
+        for (const [file, format] of [['SUMMARY.md', 'md'], ['docs/index.html', 'html'], ['docs/api/pet.html', 'html']]) {
+            strict_1.default.doesNotMatch((0, docgen_1.proseText)(f.read(file), format), /asset_id|\b_id|pet_id|drv_/, file);
+        }
+    }
+    finally {
+        f.clean();
+    }
+});
+(0, node_test_1.test)('house style skips vendor text wherever it is rendered, and still reads the project', async () => {
+    const { authored } = require('../dist/qa');
+    const page = 'Docgen wrote this.\n\n- `url`: The url to which we should POST reports.\n';
+    const quoted = ['The url to which we should POST reports.'];
+    strict_1.default.match(authored(page, 'md', quoted), /Docgen wrote this/);
+    strict_1.default.doesNotMatch(authored(page, 'md', quoted), /POST reports/);
+    strict_1.default.match(authored(page, 'md'), /POST reports/);
+    const { runQA } = require('../dist/docgen');
+    const voice = (root) => runQA('.sdk/doc/qa-manifest.json', root, false).errors
+        .filter((e) => e.includes('Use neutral or second-person prose'));
+    const m = model();
+    m.main.kit.info.description = 'Our API is designed for pets. Refer to our documentation.';
+    m.main.kit.info.servers[0].description = 'Our production server';
+    m.main.kit.entity.pet.fields.id.sh = 'The url to which we should POST delivery reports.';
+    definitions.get(m).paths['/pets/{id}'].get.responses['200'].description = 'The pet we found';
+    const f = fixture(m);
+    try {
+        await (0, docgen_1.generate)({ folder: f.root, model: m });
+        strict_1.default.deepEqual(voice(f.root), []);
+        m.main.kit.doc.brand = { notice: 'We are not affiliated with the API provider.' };
+        await (0, docgen_1.generate)({ folder: f.root, model: m });
+        strict_1.default.ok(voice(f.root).some((e) => e.startsWith('SUMMARY.md')));
+    }
+    finally {
+        f.clean();
+    }
+});
+(0, node_test_1.test)('a vendor description written in blocks keeps them, as a quotation', async () => {
+    const m = model();
+    m.main.kit.info.description = 'Send SMS messages.\n\n### Authorization\nAuthorization at SMSAPI uses OAuth 2 tokens.\n\n' +
+        '### URL addresses\nAPI URL addresses:\n* `https://api.smsapi.com/` - for secure connections\n* `http://api.smsapi.com/` - for plain connections\n';
+    m.main.kit.entity.pet.desc = 'A pet record.\n  It wraps onto a second line.';
+    const f = fixture(m);
+    try {
+        await (0, docgen_1.generate)({ folder: f.root, model: m });
+        const summary = f.read('SUMMARY.md');
+        strict_1.default.match(summary, /^> ### Authorization\n> Authorization at SMSAPI uses OAuth 2 tokens\.$/m);
+        strict_1.default.match(summary, /^> \* `https:\/\/api\.smsapi\.com\/` - for secure connections$/m);
+        strict_1.default.match(summary, /^A pet record\. It wraps onto a second line\.$/m);
+        const index = f.read('docs/index.html');
+        strict_1.default.match(index, /<blockquote>[\s\S]*<h3[^>]*>Authorization<\/h3>[\s\S]*<li><code>https:\/\/api\.smsapi\.com\/<\/code> - for secure connections<\/li>[\s\S]*<\/blockquote>/);
+        for (const [text, format] of [[summary, 'md'], [index, 'html']]) {
+            strict_1.default.ok(!(0, docgen_1.checkText)(text, format).includes('Remove the repeated word'), format);
+        }
+    }
+    finally {
+        f.clean();
+    }
+});
 (0, node_test_1.test)('model prose cannot execute HTML or Vue expressions', async () => {
     const m = model();
     m.main.kit.info.summary = '<script>alert(1)</script> {{ execute() }}';
