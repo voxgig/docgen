@@ -166,16 +166,22 @@ function renderEdition(props) {
         repoLink: '<a class="repo-link" href="' + (0, content_1.html)(repo.url) + '">' + (0, content_1.html)(repo.path) + '</a>',
         notice: (0, content_1.html)(brand.notice || ''), shortNotice: (0, content_1.html)(brand.shortNotice || brand.notice || ''),
     };
-    const result = { files: {}, qa: [] }, files = result.files;
+    const quoted = {}, result = { files: {}, qa: [], quoted }, files = result.files;
     const examplePath = (0, ledger_1.inside)(props.root, '.sdk/tm/edition/' + edition.name + '/sdk-setup.json', props.fs);
     const setupTemplates = props.fs.existsSync(examplePath) ? JSON.parse(props.fs.readFileSync(examplePath, 'utf8')) : {};
     const examples = Object.fromEntries(v.targets.map(t => [t.name, (0, sdk_reference_1.setupExample)(props.model, t, setupTemplates)]));
-    const put = (name, text, qa = false) => { files[name] = text; if (qa)
-        result.qa.push(name); };
+    const put = (name, text, qa = false, quotes = []) => {
+        files[name] = text;
+        if (qa)
+            result.qa.push(name);
+        if (quotes.length)
+            quoted[name] = quotes;
+    };
     if (edition.kind === 'summary') {
         if (!path.endsWith('.md'))
             throw new Error('The summary output path must end in .md');
-        put(path, template(props, 'summary.md', { content: (0, content_1.summary)(v) }), true);
+        const content = (0, content_1.quotedSummary)(v);
+        put(path, template(props, 'summary.md', { content: content.markdown }), true, content.quotes);
     }
     else if (edition.kind === 'github-pages') {
         const prefix = path + '/', own = authored(props), all = [...(0, content_1.pages)(v, examples), ...own.pages];
@@ -213,7 +219,7 @@ function renderEdition(props) {
             put(prefix + page.path + '.html', template(props, 'page.html', {
                 ...branding, notice: safeMarkdown(brand.notice || '', true), title: (0, content_1.html)(page.title), site: (0, content_1.html)(v.title), content: safeMarkdown(page.markdown), nav, base, presentationLinks, section: (0, content_1.html)(page.group),
                 logo: logo ? '<img class="logo" src="' + base + 'assets/' + logo + '" alt="' + (0, content_1.html)(v.title) + '">' : '',
-            }), true);
+            }), true, page.quotes);
         }
         put(prefix + '.nojekyll', '');
         put(prefix + 'assets/search.js', 'window.DOCGEN_SEARCH=' + JSON.stringify(all.map(p => ({ title: p.title, path: p.path + '.html', text: p.markdown.replace(/```[\s\S]*?```/g, '').slice(0, 15000) }))).replace(/</g, '\\u003c') + ';\n' + template(props, 'search.js', {}));
@@ -221,7 +227,8 @@ function renderEdition(props) {
     else if (edition.kind === 'presentation') {
         const prefix = path + '/';
         // System/local fonts only: Slidev must not request Google Fonts at runtime.
-        put(prefix + 'slides.md', template(props, 'slides.md', { content: (0, content_1.slides)(v, examples.ts ? '\n```ts\n' + examples.ts + '\n```\n' : ''), title: JSON.stringify(v.title), mode: styleFor(props.model, edition).mode }), true);
+        const deck = (0, content_1.quotedSlides)(v, examples.ts ? '\n```ts\n' + examples.ts + '\n```\n' : '');
+        put(prefix + 'slides.md', template(props, 'slides.md', { content: deck.markdown, title: JSON.stringify(v.title), mode: styleFor(props.model, edition).mode }), true, deck.quotes);
         const { logo } = styleFiles(props, prefix, 'style.css', files);
         put(prefix + 'global-top.vue', template(props, 'global-top.vue', { ...branding, logo, logoImage: logo ? '<img class="deck-logo" src="./assets/' + logo + '" alt="">' : '', title: (0, content_1.html)(v.title) }), true);
         put(prefix + 'style.css', '@import "./assets/style.css";\n');
@@ -359,7 +366,7 @@ async function generate(opts) {
     if (!editions.length)
         return { editions: [], files: [], prune: NOTHING };
     const resolved = opts.meta?.apidef || await resolveDefinition(root, model, fs);
-    const files = {}, qa = [], claims = [];
+    const files = {}, qa = [], quoted = {}, claims = [];
     // The prune is confined to these, so each one is declared beside the writes
     // it covers and nothing else in the repository is ever a candidate.
     const roots = [LEDGER, '.sdk/doc/qa', '.sdk/doc/qa-manifest.json'];
@@ -399,13 +406,20 @@ async function generate(opts) {
             files[file] = content;
         }
         qa.push(...(result.qa ?? []));
+        for (const [file, quotes] of Object.entries(result.quoted ?? {})) {
+            if (file in result.files && Array.isArray(quotes))
+                quoted[file] = quotes.filter(q => 'string' === typeof q);
+        }
         // Always gate actual rendered text, even when a custom component omits qa.
         qa.push(...Object.keys(result.files).filter(p => /\.(md|html|vue)$/.test(p)));
     }
     Object.assign(files, qaResources(model, resolved));
     const routes = Object.fromEntries(editions.filter(e => e.kind === 'github-pages').flatMap(site => nestedPresentations(model, site).filter(e => e.active !== false && e.site?.active !== false)
         .map(e => [e.output.path + '/index.html', e.output.path + '/dist/index.html'])));
-    files['.sdk/doc/qa-manifest.json'] = JSON.stringify({ files: [...new Set(qa)].sort(), config: '.sdk/doc/qa/vale.ini', routes }, null, 2) + '\n';
+    const checked = [...new Set(qa)].sort();
+    // With the vendor text each page quotes, which the house-style rules leave out.
+    files['.sdk/doc/qa-manifest.json'] = JSON.stringify({ files: checked, config: '.sdk/doc/qa/vale.ini', routes,
+        quoted: Object.fromEntries(checked.filter(file => quoted[file]?.length).map(file => [file, quoted[file]])) }, null, 2) + '\n';
     if (doc.ci?.active !== false) {
         const sites = editions.filter(e => e.kind === 'github-pages');
         if (sites.length > 1)
@@ -507,14 +521,49 @@ function stageSite(root, name) {
     }
     return destination;
 }
+const installedModel = (source) => source.replace("base: 'BASE'", "base: 'node_modules/@voxgig/docgen/project/.sdk'\n  package: '@voxgig/docgen'");
+const editionModel = (name) => installedModel(node_fs_1.default.readFileSync(node_path_1.default.join(PACKAGE, 'project/.sdk/model/edition/' + name + '.aontu'), 'utf8'));
+// Edition models a past release shipped, before the default they set changed.
+// A copy installed from one and never edited holds the package's choice rather
+// than the project's, so setup moves it to the current default.
+const RETIRED_MODELS = {
+    'github-pages': [[
+            '@"@voxgig/docgen/model/docgen.aontu"',
+            "main: kit: doc: edition: 'github-pages': {",
+            "  kind: 'github-pages'",
+            '  active: *true | boolean',
+            "  base: 'BASE'",
+            "  output: path: *'docs' | string",
+            '}', ''
+        ].join('\n')],
+};
+function retireDefaults(root) {
+    for (const [name, shipped] of Object.entries(RETIRED_MODELS)) {
+        const file = (0, ledger_1.inside)(root, '.sdk/model/edition/' + name + '.aontu', node_fs_1.default);
+        if (!node_fs_1.default.existsSync(file))
+            continue;
+        const text = node_fs_1.default.readFileSync(file, 'utf8');
+        if (shipped.some(source => installedModel(source) === text) && !published(root, name))
+            node_fs_1.default.writeFileSync(file, editionModel(name));
+    }
+}
+// An edition the compiled model records as served stays as it is: its site is live.
+function published(root, name) {
+    try {
+        const model = JSON.parse(node_fs_1.default.readFileSync((0, ledger_1.inside)(root, '.sdk/model/sdk.json', node_fs_1.default), 'utf8'));
+        return true === model?.main?.kit?.doc?.edition?.[name]?.published;
+    }
+    catch {
+        return false;
+    }
+}
 // create-sdkgen installs this package-owned starter set after dependencies are available.
 // Explicit edition add remains the resync path for existing projects.
 function scaffoldDefaults() {
     const out = {};
     const defaults = ['summary', 'github-pages'];
     for (const name of defaults) {
-        const source = node_fs_1.default.readFileSync(node_path_1.default.join(PACKAGE, 'project/.sdk/model/edition/' + name + '.aontu'), 'utf8');
-        out['model/edition/' + name + '.aontu'] = source.replace("base: 'BASE'", "base: 'node_modules/@voxgig/docgen/project/.sdk'\n  package: '@voxgig/docgen'");
+        out['model/edition/' + name + '.aontu'] = editionModel(name);
         for (const tree of ['src/cmp/edition/', 'tm/edition/']) {
             const dir = node_path_1.default.join(PACKAGE, 'project/.sdk', tree, name);
             for (const file of walk(node_fs_1.default, dir))
@@ -572,6 +621,7 @@ function prepareProject(root) {
     const sdk = node_path_1.default.join(root, '.sdk');
     if (!node_fs_1.default.existsSync(sdk))
         throw new Error('Docgen requires an existing .sdk setup');
+    retireDefaults(root);
     const marker = (0, ledger_1.inside)(root, '.sdk/doc/setup.json', node_fs_1.default);
     if (node_fs_1.default.existsSync(marker)) {
         repairEntryIndex(root);

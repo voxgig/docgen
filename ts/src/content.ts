@@ -3,8 +3,11 @@ import { entityExample, exampleLanguage } from './examples'
 import { names } from 'jostraca'
 import Path from 'node:path'
 import { installCommand, packageName, isPublished, targetFeatures, repoInfo } from '@voxgig/sdkgen'
+const MarkdownIt = require('markdown-it')
+const md = new MarkdownIt({ html: false })
 
-export type Page = { path: string, title: string, group: string, markdown: string, sections?: Section[] }
+export type Page = { path: string, title: string, group: string, markdown: string, sections?: Section[], quotes?: string[] }
+export type Quoted = { markdown: string, quotes: string[] }
 export const html = (v: any): string => String(v ?? '').replace(/[&<>"']/g,
   c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!))
 const NEVER_DOUBLED = ['the', 'a', 'an', 'of', 'to', 'and', 'in', 'for', 'on', 'at', 'by', 'with', 'from']
@@ -18,11 +21,17 @@ export const prose = (v: any): string => html(unwrap(undouble(String(v ?? ''))).
 export const code = (v: any): string => '`' + String(v ?? '').replace(/`/g, '') + '`'
 // Vendor schema descriptions name enum values and template slots inline. As
 // prose they are linted as English; they are not prose, and both extractions
-// ignore code. Cells only, never prose(): prose escapes braces to defuse
-// Slidev, which interpolates inside a code span too. No table reaches a deck.
-const IDENTIFIER = /\{\{[^{}]*\}\}|[A-Za-z][A-Za-z0-9]*(?:_[A-Za-z0-9]+)+/g
-export const cell = (v: any): string => {
-  const source = String(v ?? '')
+// ignore code. Slots in cells only: prose escapes braces to defuse Slidev,
+// which interpolates inside a code span too. No table reaches a deck.
+const SLOT = /\{\{[^{}]*\}\}/
+// A word with an underscore anywhere in it; one wrapped in underscores is emphasis.
+const IDENTIFIER = /(?<!\w)(?=\w*_)(?=\w*[A-Za-z])(?!_\w*_(?!\w))\w+/
+// Already code, or a URL or link destination that a code span would break.
+const KEPT = /(?<kept>(?<ticks>`+)[^`]*?\k<ticks>|\b[a-z][a-z0-9+.-]*:\/\/[^\s<>"')\]]+|\]\([^()\s]*\))/
+const tokens = (...parts: RegExp[]) => new RegExp(parts.map(part => part.source).join('|'), 'gi')
+const CELL_CODE = tokens(KEPT, SLOT, IDENTIFIER), PROSE_CODE = tokens(KEPT, IDENTIFIER)
+
+function withCode(source: string, found: RegExp): string {
   // prose() trims, which is right for a whole cell and wrong for a fragment
   // of one: without this a code span fuses to the words either side of it.
   const span = (text: string): string => {
@@ -30,16 +39,54 @@ export const cell = (v: any): string => {
     const body = prose(text)
     return '' === body ? (lead || tail) : lead + body + tail
   }
-  const parts: string[] = []
+  const text = unwrap(source), parts: string[] = []
   let at = 0
-  for (const match of source.matchAll(IDENTIFIER)) {
-    parts.push(span(source.slice(at, match.index)), code(match[0]))
+  for (const match of text.matchAll(found)) {
+    parts.push(span(text.slice(at, match.index)), match.groups?.kept ? span(match[0]) : code(match[0]))
     at = match.index + match[0].length
   }
-  parts.push(span(source.slice(at)))
-  // GFM escapes a pipe inside an inline span the same way, so this stays
-  // correct for the code spans above.
-  return parts.join('').trim().replace(/\|/g, '\\|').replace(/[\r\n]+/g, ' ')
+  parts.push(span(text.slice(at)))
+  return parts.join('').trim()
+}
+// GFM escapes a pipe inside an inline span the same way, so this stays
+// correct for the code spans withCode() writes.
+export const cell = (v: any): string => withCode(String(v ?? ''), CELL_CODE).replace(/\|/g, '\\|')
+
+// Vendor text is marked where it is rendered, and the marks become the page's
+// quotes, so the house-style rules can leave it out whatever markup surrounds it.
+const MARKS = /[\uE000\uE001]/g
+const mark = (text: string): string => '' === text ? '' : '\uE000' + text + '\uE001'
+export function unmark(text: string): Quoted {
+  const quotes = new Set<string>()
+  const clean = text.replace(/\uE000([^\uE000\uE001]*)\uE001/g, (_, quote: string) => {
+    quotes.add(quote)
+    return quote
+  }).replace(MARKS, '')
+  return { markdown: clean, quotes: [...quotes].sort() }
+}
+export const quoteInline = (v: any): string => mark(withCode(String(v ?? '').replace(MARKS, ''), PROSE_CODE))
+
+// A vendor description given its own block keeps the blocks it was written in:
+// flattened, a heading runs into the paragraph under it. More than one block is
+// a quotation; code blocks are escaped and nothing else.
+export function quote(v: any): string {
+  const lines = String(v ?? '').replace(MARKS, '').replace(/\r\n?/g, '\n')
+    .replace(/<\s*br\s*\/?\s*>[ \t]*\n?/gi, '\n').replace(/<\/?\s*p\s*>/gi, '\n\n')
+    .split('\n').map(line => line.trimEnd())
+  const margin = Math.min(...lines.slice(1).filter(Boolean).map(line => /^\s*/.exec(line)![0].length))
+  const text = [lines[0].trim(), ...lines.slice(1).map(line => Number.isFinite(margin) ? line.slice(margin) : line)]
+    .join('\n').replace(/\n{3,}/g, '\n\n').trim()
+  const blocks = md.parse(text, {})
+  if (!blocks.length || (3 === blocks.length && 'paragraph_open' === blocks[0].type)) return quoteInline(text)
+  const fenced = new Set<number>()
+  for (const block of blocks) if (['fence', 'code_block'].includes(block.type)) {
+    for (let line = block.map[0]; line < block.map[1]; line++) fenced.add(line)
+  }
+  return mark(text.split('\n').map((line, at) => {
+    const body = fenced.has(at) ? html(line).replace(/\{/g, '&#123;').replace(/\}/g, '&#125;')
+      : /^\s*/.exec(line)![0] + withCode(line, PROSE_CODE)
+    return '' === body.trim() ? '>' : '> ' + body
+  }).join('\n'))
 }
 const RESERVED_API_PAGES = new Set(['index'])
 
@@ -101,6 +148,9 @@ export function installation(model: any, target: any): string {
   return model.main.kit.doc?.target?.[target.name]?.install || (isPublished(model, target.name) ? installCommand(model, target.name) : 'Not published. Build from the ' + target.name + ' directory.')
 }
 export function summary(v: ReturnType<typeof view>): string {
+  return quotedSummary(v).markdown
+}
+export function quotedSummary(v: ReturnType<typeof view>): Quoted {
   const sdks = v.targets.filter(t => surface(t, v.kit) === 'sdk')
   const tools = v.targets.filter(t => surface(t, v.kit) !== 'sdk')
   const routes = v.entities.flatMap(entity => rows(entity.op).flatMap(op =>
@@ -116,7 +166,7 @@ export function summary(v: ReturnType<typeof view>): string {
   }
   const apiLink = (e: any) => link(e.Name, 'api/' + entityPage(e.name) + '.html', 'entities', e.name)
   const sdkLink = (t: any) => link(t.title || t.name, 'sdks/' + encodeURIComponent(t.name) + '.html', 'targets', t.name)
-  const lines = ['# ' + prose(v.title), '', prose(v.description), '', '## Start here', '',
+  const lines = ['# ' + prose(v.title), '', quote(v.description), '', '## Start here', '',
     'This guide introduces the API, the client libraries, and the companion tools in this repository. Start with the API capabilities, choose a client for your application, and use the linked reference when you need exact request and response details.', '',
     'The selected API surface contains ' + v.entities.length + ' entities and ' + routes.length + ' HTTP routes. ' +
       (sdks.length ? 'There are ' + sdks.length + ' SDK targets' + (tools.length ? ' and ' + tools.length + ' companion tools' : '') + '.' : 'No SDK targets are selected.'), '',
@@ -129,8 +179,9 @@ export function summary(v: ReturnType<typeof view>): string {
       .filter(([status]) => /^2\d\d$/.test(status)).map(([,response]) => response.description).filter(Boolean)))]
     const description = v.info.entity_desc?.[entity.name] || entity.desc || entity.short
     lines.push('### ' + apiLink(entity), '')
-    if (description) lines.push(prose(description), '')
-    if (results.length) lines.push('Results: ' + results.map(prose).join('; ').replace(/[.]+$/, '') + '.', '')
+    if (description) lines.push(quote(description), '')
+    if (results.length) lines.push('Results: ' + results.map((r, at) =>
+      quoteInline(at === results.length - 1 ? r.trim().replace(/[.]+$/, '') : r)).join('; ') + '.', '')
     lines.push('SDK operations: ' + rows(entity.op).map(o => code(o.name)).join(', ') + '.', '')
     const descriptions: Record<string, string> = {}
     // Facts are a RESOLVED graph, not a tree: apidef returns the same object for
@@ -149,7 +200,7 @@ export function summary(v: ReturnType<typeof view>): string {
     }
     entityRoutes.forEach(r => describe(r.facts.responses))
     const fields = Object.values<any>(entity.fields ?? {}).filter(f => f.a !== false && (f.sh || descriptions[f.n])).slice(0, 5)
-    if (fields.length) lines.push('Key fields to recognise:', '', ...fields.map((f: any) => '- ' + code(f.n) + ': ' + prose(descriptions[f.n] || f.sh)), '')
+    if (fields.length) lines.push('Key fields to recognise:', '', ...fields.map((f: any) => '- ' + code(f.n) + ': ' + quoteInline(descriptions[f.n] || f.sh)), '')
   }
   if (routes.length) lines.push('### Route map', '',
     'Use this map to locate a capability. Consult the entity reference before supplying request data; routes for the same operation can require different fields.', '',
@@ -157,13 +208,13 @@ export function summary(v: ReturnType<typeof view>): string {
     ...routes.map(r => '| ' + apiLink(r.entity) + ' | ' + code(r.op.name) + ' | ' + code(r.point.m.toUpperCase() + ' ' + r.point.o) + ' | ' +
       (Array.isArray(r.facts.security) ? (anonymous(r.facts) ? 'Not required' : 'Required') : 'See reference') + ' |'), '')
   lines.push('## Connect to the API', '')
-  for (const server of v.info.servers || []) lines.push('- ' + prose(server.description || 'API server') + ': ' + code(server.url))
+  for (const server of v.info.servers || []) lines.push('- ' + (server.description ? quoteInline(server.description) : 'API server') + ': ' + code(server.url))
   lines.push('')
   const security = v.info.security || {}
   if (security.name) lines.push('The default credential is sent in the ' + code(security.name) + ' ' + prose(security.in || 'header') +
     (security.prefix ? ' with the ' + code(security.prefix) + ' prefix' : '') + '.', '')
   const authDescriptions = [...new Set<string>(routes.flatMap(r => Object.values<any>(r.facts.securitySchemes || {}).map(s => s.description).filter(Boolean)))]
-  lines.push(...authDescriptions.flatMap(s => [prose(s), '']))
+  lines.push(...authDescriptions.flatMap(s => [quote(s), '']))
   lines.push('Check authentication for the route you plan to call. A route that declares no authentication can be used without credentials; this does not change the requirements of other routes. Keep credentials in environment variables or a configured secret provider, and keep them out of source control and logs.', '',
     '## Make a first request', '',
     '1. Choose the API server and an operation that matches your task.',
@@ -208,7 +259,7 @@ export function summary(v: ReturnType<typeof view>): string {
     '- Read the ' + link('authentication guide', 'guides/authentication.html') + ' before using protected routes.',
     '- Use the ' + link('API reference', 'api/index.html') + ' for request schemas, response formats, and status codes.',
     '- Check the chosen SDK or companion tool reference for its configuration and supported operations.', '')
-  return lines.join('\n') + '\n'
+  return unmark(lines.join('\n') + '\n')
 }
 function fieldsTable(fields: Record<string, any>): string {
   return ['| Field | Type | Required | Description |', '| --- | --- | --- | --- |',
@@ -415,7 +466,7 @@ function entityReference(entity: any, resolved: any, examples: string): { markdo
   lines.push('## Fields', '', fieldsTable(entity.fields ?? {}), '')
 
   for (const op of rows(entity.op)) {
-    lines.push('## ' + prose(op.name), '', prose(op.short || op.description || ''), '')
+    lines.push('## ' + prose(op.name), '', quote(op.short || op.description || ''), '')
     for (const r of routes.filter(x => x.op.name === op.name)) {
       lines.push('### ' + r.heading, '')
       if (r.c.operationId) lines.push('Operation ID: ' + code(r.c.operationId) + '.', '')
@@ -439,7 +490,7 @@ function entityReference(entity: any, resolved: any, examples: string): { markdo
         lines.push('#### Responses', '')
         for (const [status, response] of Object.entries<any>(responses)) {
           const described = String(response?.description || '').replace(/\.+$/, '')
-          lines.push('##### ' + prose(status) + (described ? ': ' + prose(described) : ''), '')
+          lines.push('##### ' + prose(status) + (described ? ': ' + quoteInline(described) : ''), '')
           lines.push(...bodyText(response?.content, 'response'))
         }
       }
@@ -453,13 +504,15 @@ function entityReference(entity: any, resolved: any, examples: string): { markdo
 }
 export function pages(v: ReturnType<typeof view>, examples: Record<string,string> = {}): Page[] {
   const out: Page[] = []
-  const add = (path: string, title: string, group: string, body: string) =>
-    out.push({ path, title, group, markdown: '# ' + prose(title) + '\n\n' + body + '\n' })
-  add('index', v.title, 'Overview', prose(v.description))
+  const add = (path: string, title: string, group: string, body: string) => {
+    const { markdown, quotes } = unmark('# ' + prose(title) + '\n\n' + body + '\n')
+    out.push({ path, title, group, markdown, quotes })
+  }
+  add('index', v.title, 'Overview', quote(v.description))
   const servers = v.info.servers ?? []
   const spec = specLink(v.model)
-  add('api/index', 'API overview', 'API', [prose(v.info.summary || ''), '',
-    ...servers.map((s: any) => '- ' + code(s.url) + (s.description ? ': ' + prose(s.description) : '')),
+  add('api/index', 'API overview', 'API', [quote(v.info.summary || ''), '',
+    ...servers.map((s: any) => '- ' + code(s.url) + (s.description ? ': ' + quoteInline(s.description) : '')),
     ...(spec ? ['', 'This documentation is generated from the [OpenAPI specification](' + spec + ') held in the SDK repository.'] : []),
     '', ...v.entities.map(e => '- [' + prose(e.Name) + '](' + entityPage(e.name) + '.html)')].join('\n'))
   add('guides/authentication', 'Authentication', 'Guides',
@@ -483,7 +536,7 @@ export function pages(v: ReturnType<typeof view>, examples: Record<string,string
   for (const entity of v.entities) {
     const reference = entityReference(entity, v.resolved, entityExamples(v, entity, examples))
     add('api/' + entityPage(entity.name), entity.Name, 'API',
-      [prose(v.info.entity_desc?.[entity.name] || entity.desc || entity.short || ''), '',
+      [quote(v.info.entity_desc?.[entity.name] || entity.desc || entity.short || ''), '',
         reference.markdown].join('\n'))
     out[out.length - 1].sections = reference.sections
   }
@@ -540,6 +593,9 @@ export function pages(v: ReturnType<typeof view>, examples: Record<string,string
   return out
 }
 export function slideBodies(v: ReturnType<typeof view>, example = ''): string[] {
+  return markedSlides(v, example).map(chunk => unmark(chunk).markdown)
+}
+function markedSlides(v: ReturnType<typeof view>, example = ''): string[] {
   const chunks: string[] = []
   const group = <T,>(items: T[], size: number): T[][] =>
     Array.from({ length: Math.ceil(items.length / size) }, (_, i) => items.slice(i * size, i * size + size))
@@ -556,7 +612,7 @@ export function slideBodies(v: ReturnType<typeof view>, example = ''): string[] 
   const primary = sdks.find(t => 'ts' === (t.origname || t.name)) || sdks[0]
 
   // --- ACT ONE: what the SDK gives you --------------------------------------
-  chunks.push(prose(v.title) + '\n\n' + prose(v.info.summary || v.description) +
+  chunks.push(prose(v.title) + '\n\n' + quote(v.info.summary || v.description) +
     (v.kit.doc?.brand?.notice ? '\n\n' + prose(v.kit.doc.brand.notice) : ''))
 
   const many = (n: number, one: string, more = one + 's') => n + ' ' + (1 === n ? one : more)
@@ -660,5 +716,8 @@ export function slideBodies(v: ReturnType<typeof view>, example = ''): string[] 
 }
 
 export function slides(v: ReturnType<typeof view>, example = ''): string {
-  return slideBodies(v, example).map(c => '# ' + c).join('\n\n---\n\n') + '\n'
+  return quotedSlides(v, example).markdown
+}
+export function quotedSlides(v: ReturnType<typeof view>, example = ''): Quoted {
+  return unmark(markedSlides(v, example).map(c => '# ' + c).join('\n\n---\n\n') + '\n')
 }

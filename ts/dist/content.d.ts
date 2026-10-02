@@ -4,11 +4,19 @@ export type Page = {
     group: string;
     markdown: string;
     sections?: Section[];
+    quotes?: string[];
+};
+export type Quoted = {
+    markdown: string;
+    quotes: string[];
 };
 export declare const html: (v: any) => string;
 export declare const prose: (v: any) => string;
 export declare const code: (v: any) => string;
 export declare const cell: (v: any) => string;
+export declare function unmark(text: string): Quoted;
+export declare const quoteInline: (v: any) => string;
+export declare function quote(v: any): string;
 export declare function entityPage(name: string): string;
 export declare function fence(text: string, language?: string): string;
 export declare function rows(map: any): any[];
@@ -32,6 +40,7 @@ export declare function view(model: any, edition: any, resolved?: any): {
 export declare function surface(target: any, kit: any): string;
 export declare function installation(model: any, target: any): string;
 export declare function summary(v: ReturnType<typeof view>): string;
+export declare function quotedSummary(v: ReturnType<typeof view>): Quoted;
 export declare function operationFacts(point: any, resolved?: any): any;
 export declare const METHODS = "GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS";
 export type Section = {
@@ -43,3 +52,4 @@ export declare function typeName(schema: any): string;
 export declare function pages(v: ReturnType<typeof view>, examples?: Record<string, string>): Page[];
 export declare function slideBodies(v: ReturnType<typeof view>, example?: string): string[];
 export declare function slides(v: ReturnType<typeof view>, example?: string): string;
+export declare function quotedSlides(v: ReturnType<typeof view>, example?: string): Quoted;

@@ -4,7 +4,7 @@ import Path from 'node:path'
 import Os from 'node:os'
 import { createRequire } from 'node:module'
 import { Jostraca, Project, Folder, File, Content, names } from 'jostraca'
-import { operationFacts, rows, view, summary, pages, slides, slideBodies, html, repoLinkFor, slugFor, METHODS, type Page } from './content'
+import { operationFacts, rows, view, quotedSummary, pages, quotedSlides, html, repoLinkFor, slugFor, METHODS, type Page } from './content'
 import { relativePath, inside, within, ledgerText, readLedger, prunePlan, applyPrune, type PrunePlan } from './ledger'
 const MarkdownIt = require('markdown-it')
 const markdown = new MarkdownIt({ html: false, linkify: false, typographer: false })
@@ -34,7 +34,7 @@ export type GenerateOptions = {
   folder: string, model: any, fs?: any, log?: any, control?: { dryrun?: boolean },
   existing?: any, [key: string]: any,
 }
-export type EditionResult = { files: Record<string, string | Buffer>, qa: string[] }
+export type EditionResult = { files: Record<string, string | Buffer>, qa: string[], quoted?: Record<string, string[]> }
 export type GenerateResult = { editions: string[], files: string[], prune: PrunePlan }
 export type EditionProps = { model: any, edition: any, root: string, fs: any, resolved?: any }
 
@@ -148,14 +148,19 @@ export function renderEdition(props: EditionProps): EditionResult {
     repoLink: '<a class="repo-link" href="' + html(repo.url) + '">' + html(repo.path) + '</a>',
     notice: html(brand.notice || ''), shortNotice: html(brand.shortNotice || brand.notice || ''),
   }
-  const result: EditionResult = { files: {}, qa: [] }, files = result.files
+  const quoted: Record<string, string[]> = {}, result: EditionResult = { files: {}, qa: [], quoted }, files = result.files
   const examplePath = inside(props.root, '.sdk/tm/edition/' + edition.name + '/sdk-setup.json', props.fs)
   const setupTemplates = props.fs.existsSync(examplePath) ? JSON.parse(props.fs.readFileSync(examplePath, 'utf8')) : {}
   const examples = Object.fromEntries(v.targets.map(t => [t.name, setupExample(props.model,t,setupTemplates)]))
-  const put = (name: string, text: string, qa = false) => { files[name] = text; if (qa) result.qa.push(name) }
+  const put = (name: string, text: string, qa = false, quotes: string[] = []) => {
+    files[name] = text
+    if (qa) result.qa.push(name)
+    if (quotes.length) quoted[name] = quotes
+  }
   if (edition.kind === 'summary') {
     if (!path.endsWith('.md')) throw new Error('The summary output path must end in .md')
-    put(path, template(props, 'summary.md', { content: summary(v) }), true)
+    const content = quotedSummary(v)
+    put(path, template(props, 'summary.md', { content: content.markdown }), true, content.quotes)
   } else if (edition.kind === 'github-pages') {
     const prefix = path + '/', own = authored(props), all = [...pages(v, examples), ...own.pages]
     const seen = new Set<string>()
@@ -190,14 +195,15 @@ export function renderEdition(props: EditionProps): EditionResult {
       put(prefix + page.path + '.html', template(props, 'page.html', {
         ...branding, notice: safeMarkdown(brand.notice || '', true), title: html(page.title), site: html(v.title), content: safeMarkdown(page.markdown), nav, base, presentationLinks, section: html(page.group),
         logo: logo ? '<img class="logo" src="' + base + 'assets/' + logo + '" alt="' + html(v.title) + '">' : '',
-      }), true)
+      }), true, page.quotes)
     }
     put(prefix + '.nojekyll', '')
     put(prefix + 'assets/search.js', 'window.DOCGEN_SEARCH=' + JSON.stringify(all.map(p => ({ title: p.title, path: p.path + '.html', text: p.markdown.replace(/```[\s\S]*?```/g, '').slice(0,15000) }))).replace(/</g, '\\u003c') + ';\n' + template(props, 'search.js', {}))
   } else if (edition.kind === 'presentation') {
     const prefix = path + '/'
     // System/local fonts only: Slidev must not request Google Fonts at runtime.
-    put(prefix + 'slides.md', template(props, 'slides.md', { content: slides(v, examples.ts ? '\n```ts\n' + examples.ts + '\n```\n' : ''), title: JSON.stringify(v.title), mode: styleFor(props.model, edition).mode }), true)
+    const deck = quotedSlides(v, examples.ts ? '\n```ts\n' + examples.ts + '\n```\n' : '')
+    put(prefix + 'slides.md', template(props, 'slides.md', { content: deck.markdown, title: JSON.stringify(v.title), mode: styleFor(props.model, edition).mode }), true, deck.quotes)
     const { logo } = styleFiles(props, prefix, 'style.css', files)
     put(prefix + 'global-top.vue', template(props, 'global-top.vue', { ...branding, logo, logoImage: logo ? '<img class="deck-logo" src="./assets/' + logo + '" alt="">' : '', title: html(v.title) }), true)
     put(prefix + 'style.css', '@import "./assets/style.css";\n')
@@ -316,7 +322,7 @@ export async function generate(opts: GenerateOptions): Promise<GenerateResult> {
   const editions = Object.keys(doc.edition ?? {}).sort().map(name => ({ ...doc.edition[name], name })).filter(e => e.active !== false)
   if (!editions.length) return { editions: [], files: [], prune: NOTHING }
   const resolved = opts.meta?.apidef || await resolveDefinition(root, model, fs)
-  const files: EditionResult['files'] = {}, qa: string[] = [], claims: { path: string, kind: string }[] = []
+  const files: EditionResult['files'] = {}, qa: string[] = [], quoted: Record<string, string[]> = {}, claims: { path: string, kind: string }[] = []
   // The prune is confined to these, so each one is declared beside the writes
   // it covers and nothing else in the repository is ever a candidate.
   const roots: string[] = [LEDGER, '.sdk/doc/qa', '.sdk/doc/qa-manifest.json']
@@ -350,6 +356,9 @@ export async function generate(opts: GenerateOptions): Promise<GenerateResult> {
       files[file] = content
     }
     qa.push(...(result.qa ?? []))
+    for (const [file, quotes] of Object.entries(result.quoted ?? {})) {
+      if (file in result.files && Array.isArray(quotes)) quoted[file] = quotes.filter(q => 'string' === typeof q)
+    }
     // Always gate actual rendered text, even when a custom component omits qa.
     qa.push(...Object.keys(result.files).filter(p => /\.(md|html|vue)$/.test(p)))
   }
@@ -357,7 +366,10 @@ export async function generate(opts: GenerateOptions): Promise<GenerateResult> {
   const routes = Object.fromEntries(editions.filter(e => e.kind === 'github-pages').flatMap(site =>
     nestedPresentations(model, site).filter(e => e.active !== false && e.site?.active !== false)
       .map(e => [e.output.path + '/index.html', e.output.path + '/dist/index.html'])))
-  files['.sdk/doc/qa-manifest.json'] = JSON.stringify({ files: [...new Set(qa)].sort(), config: '.sdk/doc/qa/vale.ini', routes }, null, 2) + '\n'
+  const checked = [...new Set(qa)].sort()
+  // With the vendor text each page quotes, which the house-style rules leave out.
+  files['.sdk/doc/qa-manifest.json'] = JSON.stringify({ files: checked, config: '.sdk/doc/qa/vale.ini', routes,
+    quoted: Object.fromEntries(checked.filter(file => quoted[file]?.length).map(file => [file, quoted[file]])) }, null, 2) + '\n'
   if (doc.ci?.active !== false) {
     const sites = editions.filter(e => e.kind === 'github-pages')
     if (sites.length > 1) throw new Error('Only one GitHub Pages deployment can be configured per repository')
@@ -439,14 +451,49 @@ export function stageSite(root: string, name: string): string {
   return destination
 }
 
+const installedModel = (source: string): string =>
+  source.replace("base: 'BASE'", "base: 'node_modules/@voxgig/docgen/project/.sdk'\n  package: '@voxgig/docgen'")
+const editionModel = (name: string): string =>
+  installedModel(Fs.readFileSync(Path.join(PACKAGE, 'project/.sdk/model/edition/' + name + '.aontu'), 'utf8'))
+
+// Edition models a past release shipped, before the default they set changed.
+// A copy installed from one and never edited holds the package's choice rather
+// than the project's, so setup moves it to the current default.
+const RETIRED_MODELS: Record<string, string[]> = {
+  'github-pages': [[
+    '@"@voxgig/docgen/model/docgen.aontu"',
+    "main: kit: doc: edition: 'github-pages': {",
+    "  kind: 'github-pages'",
+    '  active: *true | boolean',
+    "  base: 'BASE'",
+    "  output: path: *'docs' | string",
+    '}', ''].join('\n')],
+}
+
+function retireDefaults(root: string): void {
+  for (const [name, shipped] of Object.entries(RETIRED_MODELS)) {
+    const file = inside(root, '.sdk/model/edition/' + name + '.aontu', Fs)
+    if (!Fs.existsSync(file)) continue
+    const text = Fs.readFileSync(file, 'utf8')
+    if (shipped.some(source => installedModel(source) === text) && !published(root, name)) Fs.writeFileSync(file, editionModel(name))
+  }
+}
+
+// An edition the compiled model records as served stays as it is: its site is live.
+function published(root: string, name: string): boolean {
+  try {
+    const model = JSON.parse(Fs.readFileSync(inside(root, '.sdk/model/sdk.json', Fs), 'utf8'))
+    return true === model?.main?.kit?.doc?.edition?.[name]?.published
+  } catch { return false }
+}
+
 // create-sdkgen installs this package-owned starter set after dependencies are available.
 // Explicit edition add remains the resync path for existing projects.
 export function scaffoldDefaults(): Record<string, string> {
   const out: Record<string, string> = {}
   const defaults = ['summary', 'github-pages']
   for (const name of defaults) {
-    const source = Fs.readFileSync(Path.join(PACKAGE, 'project/.sdk/model/edition/' + name + '.aontu'), 'utf8')
-    out['model/edition/' + name + '.aontu'] = source.replace("base: 'BASE'", "base: 'node_modules/@voxgig/docgen/project/.sdk'\n  package: '@voxgig/docgen'")
+    out['model/edition/' + name + '.aontu'] = editionModel(name)
     for (const tree of ['src/cmp/edition/', 'tm/edition/']) {
       const dir = Path.join(PACKAGE, 'project/.sdk', tree, name)
       for (const file of walk(Fs, dir)) out[tree + name + '/' + file] = Fs.readFileSync(Path.join(dir,file),'utf8')
@@ -509,6 +556,7 @@ export function prepareProject(root: string): void {
   root = Path.resolve(root)
   const sdk = Path.join(root, '.sdk')
   if (!Fs.existsSync(sdk)) throw new Error('Docgen requires an existing .sdk setup')
+  retireDefaults(root)
   const marker = inside(root, '.sdk/doc/setup.json', Fs)
   if (Fs.existsSync(marker)) {
     repairEntryIndex(root)

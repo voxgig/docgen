@@ -85,16 +85,31 @@ including custom component output and authored website pages. Code,
 scripts, and styles are excluded from prose checks.
 
 Which text a rule reads depends on the kind of rule it is. A house-style
-rule states how this project writes, so it reads only the prose docgen
-wrote: the banned phrase list and the neutral-voice rule skip table cells,
-because the words in a cell are the specification's and an SDK author
-cannot edit them. Every other rule reads all the rendered prose, cells
+rule states how this project writes, so it reads only the prose docgen and
+the project wrote: the banned phrase list and the neutral-voice rule skip
+table cells and every specification description a page quotes, because
+those words are the specification's and an SDK author cannot edit them.
+Generation records the descriptions each page quotes in the QA manifest, so
+the rules recognise them in a paragraph, a list item, or a heading as well
+as in a cell. Every other rule reads all the rendered prose, quotations
 included, because a defect is a defect wherever it appears.
+
+The neutral-voice rule reads the pronoun "us" in lower case only, and never
+as part of a hyphenated word, so the country abbreviation and codes such as
+`us-east-1` and `en-us` are not first person.
 
 Vale is in the second group. It reads the whole page, which is most of an
 API reference: the schema tables carry more words than the surrounding
 prose. Identifiers inside a description, such as an enumerated value or a
-template slot, are rendered as code and so are not linted as English.
+field name with an underscore, are rendered as code wherever the
+description appears, and so are not linted as English. A template slot is
+rendered as code in a table cell only, because the presentation does not
+render tables and Slidev evaluates a slot even inside code.
+
+A description written in several blocks keeps its paragraphs, headings,
+and lists, rendered as a quotation. Joined into one paragraph, a heading
+would run into the paragraph below it, and a reader would see the
+heading and list markers as literal text.
 
 The local gate checks banned phrases across line wraps, first person,
 punctuation, emoji, and repeated words within a line. Vale checks spelling,

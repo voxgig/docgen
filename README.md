@@ -27,6 +27,21 @@ turns it on in a model file it owns, such as `.sdk/model/project.aontu`:
 main: kit: doc: edition: 'github-pages': active: true
 ```
 
+A project created before docgen 0.30.0 received the GitHub Pages edition
+switched on. The same setup gives such a project the current default when
+its edition file is still exactly as docgen installed it, so the website
+stops at the next generation. An edited file is kept, as is a file whose
+site the compiled model records as `published: true`. In any project,
+whatever its edition file says, turn the website off in
+`.sdk/model/project.aontu` and regenerate:
+
+```aontu
+main: kit: doc: edition: 'github-pages': active: false
+```
+
+Regeneration removes the generated site, the Pages jobs in the workflow,
+and `.sdk/admin/setup-github-pages.sh`.
+
 Presentation is optional.
 Each edition covers the project as a whole and can select targets,
 entities, and features. Several instances can have different names and
@@ -218,6 +233,12 @@ Pages source to **GitHub Actions** before the first deployment.
 Pages staging selects files from `.sdk/doc/generated.json`; project-owned
 notes under `docs/` are excluded from the uploaded artifact.
 
+Before deploying, the workflow reads the repository's Pages site from the
+GitHub API. A repository without one skips the deployment with a notice
+that says how to enable Pages or turn the edition off, rather than failing
+on every push. The workflow never creates a Pages site. Any other API
+response fails the job, because it cannot show whether a site exists.
+
 Run the same text checks from the SDK repository root:
 
 ```sh
@@ -227,7 +248,10 @@ node .sdk/node_modules/@voxgig/docgen/bin/voxgig-docgen qa
 
 The [style guide](docs/STYLE-GUIDE.md) adapts aontu's rules to neutral API
 and SDK prose. The output manifest includes every edition and authored
-page. `qa --local-only` runs the fast checks without Vale; CI requires both.
+page, and the specification descriptions each page quotes: the banned
+phrase list and the neutral-voice rule read only the text docgen and the
+project wrote. `qa --local-only` runs the fast checks without Vale; CI
+requires both.
 Use `ci.active: false` to manage the workflow separately.
 
 ## Develop
