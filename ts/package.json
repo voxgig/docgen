@@ -67,7 +67,7 @@
     "jostraca": ">=0.33.1"
   },
   "dependencies": {
-    "markdown-it": "14.1.0"
+    "markdown-it": "14.3.2"
   },
   "bin": {
     "voxgig-docgen": "bin/voxgig-docgen"
