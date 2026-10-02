@@ -254,7 +254,9 @@ function qaResources(model: any, resolved?: any): Record<string, string> {
   const WORD_LIMIT = 20000
   const specWordSet = new Set<string>()
   for (const text of described) {
-    for (const word of text.match(/[A-Za-z][A-Za-z0-9]{1,}/g) ?? []) {
+    // Vale reads a snake_case identifier as one word, so it is kept whole beside its parts.
+    const identifiers = text.match(/[A-Za-z][A-Za-z0-9]*(?:_[A-Za-z0-9]+)+/g) ?? []
+    for (const word of [...(text.match(/[A-Za-z][A-Za-z0-9]{1,}/g) ?? []), ...identifiers]) {
       specWordSet.add(word)
       if (WORD_LIMIT <= specWordSet.size) break
     }
