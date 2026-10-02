@@ -289,6 +289,10 @@ test('an identifier that starts or ends with an underscore is code; emphasis, co
   Assert.equal(cell('Use `asset_id` as the key.'), 'Use `asset_id` as the key.')
   Assert.equal(cell('See https://example.test/rate_limits for limits.'), 'See https://example.test/rate_limits for limits.')
   Assert.equal(cell('Read asset_id<br>next'), 'Read `asset_id` next')
+  Assert.equal(cell('See [limits](./rate_limits.md) or [details](#rate_limits).'), 'See [limits](./rate_limits.md) or [details](#rate_limits).')
+  Assert.equal(cell('Read [rate_limits](./rate_limits.md).'), 'Read [`rate_limits`](./rate_limits.md).')
+  const { quoteInline, unmark } = require('../dist/content')
+  Assert.equal(unmark(quoteInline('See [details](#rate_limits).')).markdown, 'See [details](#rate_limits).')
 })
 
 test('identifiers in vendor prose outside tables are code, and slots stay out of code', async () => {

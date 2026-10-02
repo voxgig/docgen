@@ -26,8 +26,8 @@ export const code = (v: any): string => '`' + String(v ?? '').replace(/`/g, '') 
 const SLOT = /\{\{[^{}]*\}\}/
 // A word with an underscore anywhere in it; one wrapped in underscores is emphasis.
 const IDENTIFIER = /(?<!\w)(?=\w*_)(?=\w*[A-Za-z])(?!_\w*_(?!\w))\w+/
-// Already code, or a link that a code span would break.
-const KEPT = /(?<kept>(?<ticks>`+)[^`]*?\k<ticks>|\b[a-z][a-z0-9+.-]*:\/\/[^\s<>"')\]]+)/
+// Already code, or a URL or link destination that a code span would break.
+const KEPT = /(?<kept>(?<ticks>`+)[^`]*?\k<ticks>|\b[a-z][a-z0-9+.-]*:\/\/[^\s<>"')\]]+|\]\([^()\s]*\))/
 const tokens = (...parts: RegExp[]) => new RegExp(parts.map(part => part.source).join('|'), 'gi')
 const CELL_CODE = tokens(KEPT, SLOT, IDENTIFIER), PROSE_CODE = tokens(KEPT, IDENTIFIER)
 

@@ -314,6 +314,10 @@ function fixture(m = model()) {
     strict_1.default.equal(cell('Use `asset_id` as the key.'), 'Use `asset_id` as the key.');
     strict_1.default.equal(cell('See https://example.test/rate_limits for limits.'), 'See https://example.test/rate_limits for limits.');
     strict_1.default.equal(cell('Read asset_id<br>next'), 'Read `asset_id` next');
+    strict_1.default.equal(cell('See [limits](./rate_limits.md) or [details](#rate_limits).'), 'See [limits](./rate_limits.md) or [details](#rate_limits).');
+    strict_1.default.equal(cell('Read [rate_limits](./rate_limits.md).'), 'Read [`rate_limits`](./rate_limits.md).');
+    const { quoteInline, unmark } = require('../dist/content');
+    strict_1.default.equal(unmark(quoteInline('See [details](#rate_limits).')).markdown, 'See [details](#rate_limits).');
 });
 (0, node_test_1.test)('identifiers in vendor prose outside tables are code, and slots stay out of code', async () => {
     const { quote, quoteInline } = require('../dist/content');
