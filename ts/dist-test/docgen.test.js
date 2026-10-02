@@ -900,7 +900,7 @@ function stepScript(workflow, name) {
     const f = fixture();
     try {
         await (0, docgen_1.generate)({ folder: f.root, model: f.m });
-        const workflow = f.read('.github/workflows/docgen.yml');
+        const workflow = f.read('.github/workflows/docgen.yml').replace(/\r\n/g, '\n');
         strict_1.default.doesNotMatch(workflow, /enablement/);
         strict_1.default.match(workflow, /\n  pages:\n(?:    .*\n)*    permissions:\n      pages: read\n/);
         strict_1.default.match(workflow, /\n  deploy:\n    needs: pages\n    if: needs\.pages\.outputs\.site == 'true'\n/);

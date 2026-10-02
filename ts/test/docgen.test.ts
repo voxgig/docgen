@@ -816,7 +816,7 @@ test('the Pages deploy skips a repository with no Pages site, with a notice, and
   const f = fixture()
   try {
     await generate({ folder: f.root, model: f.m })
-    const workflow = f.read('.github/workflows/docgen.yml')
+    const workflow = f.read('.github/workflows/docgen.yml').replace(/\r\n/g, '\n')
     Assert.doesNotMatch(workflow, /enablement/)
     Assert.match(workflow, /\n  pages:\n(?:    .*\n)*    permissions:\n      pages: read\n/)
     Assert.match(workflow, /\n  deploy:\n    needs: pages\n    if: needs\.pages\.outputs\.site == 'true'\n/)
