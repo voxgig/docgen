@@ -878,6 +878,19 @@ function fixture(m = model()) {
         f.clean();
     }
 });
+(0, node_test_1.test)('QA vocabulary keeps snake_case identifiers from the specification whole', async () => {
+    const f = fixture();
+    try {
+        await (0, docgen_1.generate)({ folder: f.root, model: f.m, meta: { apidef: { operation: () => ({ operationId: 'listPets', responses: { 200: { description: 'Deprecated. Use segment_id or ORDER_STATUS instead.' } } }) } } });
+        const vocabulary = f.read('.sdk/doc/qa/styles/config/vocabularies/Docgen/accept.txt').split('\n');
+        const accepts = (word) => vocabulary.some(line => line && new RegExp('^' + line + '$').test(word));
+        for (const word of ['segment_id', 'ORDER_STATUS', 'segment', 'Deprecated'])
+            strict_1.default.ok(accepts(word), 'not accepted: ' + word);
+    }
+    finally {
+        f.clean();
+    }
+});
 (0, node_test_1.test)('standalone CLI reads the local specification with compact model points', () => {
     const f = fixture();
     try {
