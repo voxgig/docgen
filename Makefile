@@ -36,6 +36,11 @@ reset:
 #
 # There is deliberately no version input on the workflow itself; it reads
 # ts/package.json, so the dispatch and the file cannot disagree.
+#
+# PUBLISH_REMOTE_WAIT is how many seconds to wait for origin to show the
+# pushed release commit before dispatching.
+PUBLISH_REMOTE_WAIT ?= 120
+
 publish:
 	@test -n "$(V)" || (echo "Usage: make publish V=x.y.z" && exit 1)
 	@echo "$(V)" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$$' || \
@@ -76,7 +81,22 @@ publish:
 	@# `--ref main` is a MOVING target: another commit can land between the
 	@# push above and the run resolving, and get published under the
 	@# version just bumped. Pin the dispatch to the SHA we pushed.
-	gh workflow run publish.yml --ref main -f expect_sha=$$(git rev-parse HEAD)
+	@#
+	@# `git push` returns before every GitHub read path sees the new ref, and
+	@# a dispatch that resolves main to the commit before it is refused by
+	@# the expect_sha guard. Wait until origin shows the pushed SHA.
+	@target=$$(git rev-parse HEAD); waited=0; \
+	until [ "$$(git ls-remote origin refs/heads/main | cut -f1)" = "$$target" ]; do \
+	  if [ $$waited -ge $(PUBLISH_REMOTE_WAIT) ]; then \
+	    echo "publish: origin/main does not show $$target after $(PUBLISH_REMOTE_WAIT)s."; \
+	    echo "publish: the release commit is pushed but nothing was dispatched. Once origin shows it, run:"; \
+	    echo "  gh workflow run publish.yml --ref main -f expect_sha=$$target"; \
+	    exit 1; \
+	  fi; \
+	  echo "publish: waiting for origin/main to reach $$target ($$waited/$(PUBLISH_REMOTE_WAIT)s)"; \
+	  sleep 3; waited=$$((waited + 3)); \
+	done; \
+	gh workflow run publish.yml --ref main -f expect_sha=$$target
 	@echo
 	@echo "dispatched. watch with:  gh run list --workflow=publish.yml --limit 1"
 
