@@ -11,6 +11,7 @@ exports.fence = fence;
 exports.rows = rows;
 exports.repoLinkFor = repoLinkFor;
 exports.specLink = specLink;
+exports.readmeText = readmeText;
 exports.view = view;
 exports.surface = surface;
 exports.installation = installation;
@@ -151,14 +152,20 @@ function specLink(model) {
     return repoLinkFor(model).url + '/blob/' + encodeURIComponent(branch) +
         '/.sdk/def/' + encodeURIComponent(def);
 }
+// The project's README wording over the spec's. An sdkgen without modelText
+// predates main.kit.text, so its models carry none.
+function readmeText(model) {
+    return 'function' === typeof sdkgen_1.modelText ? (0, sdkgen_1.modelText)(model) : (model?.main?.kit?.info ?? {});
+}
 function view(model, edition, resolved) {
     const kit = model.main.kit;
     const entities = pick(rows(kit.entity), edition.filter?.entities);
     const targets = pick(rows(kit.target), edition.filter?.targets);
     const features = pick(rows(kit.feature), edition.filter?.features);
     entities.forEach(e => (0, jostraca_1.names)(e, e.name));
-    return { model, kit, edition, resolved, entities, targets, features, title: edition.title || kit.info?.title || model.name,
-        description: kit.info?.description || kit.info?.summary || '', info: kit.info ?? {} };
+    const info = readmeText(model);
+    return { model, kit, edition, resolved, entities, targets, features, title: edition.title || info.title || model.name,
+        description: kit.info?.description || info.summary || '', info };
 }
 function surface(target, kit) {
     return kit.doc?.target?.[target.name]?.kind ||

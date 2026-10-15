@@ -2,7 +2,7 @@ import { clientDefaults, toolContracts } from './sdk-reference'
 import { entityExample, exampleLanguage } from './examples'
 import { names } from 'jostraca'
 import Path from 'node:path'
-import { installCommand, packageName, isPublished, targetFeatures, repoInfo } from '@voxgig/sdkgen'
+import { installCommand, packageName, isPublished, targetFeatures, repoInfo, modelText } from '@voxgig/sdkgen'
 const MarkdownIt = require('markdown-it')
 const md = new MarkdownIt({ html: false })
 
@@ -131,14 +131,21 @@ export function specLink(model: any): string {
     '/.sdk/def/' + encodeURIComponent(def)
 }
 
+// The project's README wording over the spec's. An sdkgen without modelText
+// predates main.kit.text, so its models carry none.
+export function readmeText(model: any): any {
+  return 'function' === typeof modelText ? modelText(model) : (model?.main?.kit?.info ?? {})
+}
+
 export function view(model: any, edition: any, resolved?: any) {
   const kit = model.main.kit
   const entities = pick(rows(kit.entity), edition.filter?.entities)
   const targets = pick(rows(kit.target), edition.filter?.targets)
   const features = pick(rows(kit.feature), edition.filter?.features)
   entities.forEach(e => names(e, e.name))
-  return { model, kit, edition, resolved, entities, targets, features, title: edition.title || kit.info?.title || model.name,
-    description: kit.info?.description || kit.info?.summary || '', info: kit.info ?? {} }
+  const info = readmeText(model)
+  return { model, kit, edition, resolved, entities, targets, features, title: edition.title || info.title || model.name,
+    description: kit.info?.description || info.summary || '', info }
 }
 export function surface(target: any, kit: any): string {
   return kit.doc?.target?.[target.name]?.kind ||

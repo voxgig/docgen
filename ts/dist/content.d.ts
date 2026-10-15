@@ -25,6 +25,7 @@ export declare function repoLinkFor(model: any): {
     path: string;
 };
 export declare function specLink(model: any): string;
+export declare function readmeText(model: any): any;
 export declare function view(model: any, edition: any, resolved?: any): {
     model: any;
     kit: any;

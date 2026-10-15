@@ -391,6 +391,33 @@ function fixture(m = model()) {
         f.clean();
     }
 });
+(0, node_test_1.test)('the project README wording in main.kit.text words over the spec info', async () => {
+    const m = model();
+    m.main.kit.info.entity_desc = { pet: 'Spec wording for a pet.' };
+    m.main.kit.text = { title: 'Quokkadex', summary: 'Catalogues zanzibarian pets.', tagline: '',
+        entity_desc: { pet: 'A marsupialish pet record.' } };
+    const f = fixture(m);
+    try {
+        await (0, docgen_1.generate)({ folder: f.root, model: m });
+        const summary = f.read('SUMMARY.md');
+        strict_1.default.match(summary, /^# Quokkadex$/m);
+        strict_1.default.match(summary, /Catalogues zanzibarian pets\./);
+        strict_1.default.match(summary, /A marsupialish pet record\./);
+        strict_1.default.match(f.read('docs/api/index.html'), /Catalogues zanzibarian pets\./);
+        const entity = f.read('docs/api/pet.html');
+        strict_1.default.match(entity, /A marsupialish pet record\./);
+        for (const page of [summary, f.read('docs/api/index.html'), entity]) {
+            strict_1.default.doesNotMatch(page, /Store and retrieve pet records|Spec wording for a pet/);
+        }
+        const vocabulary = f.read('.sdk/doc/qa/styles/config/vocabularies/Docgen/accept.txt').split('\n');
+        const accepts = (word) => vocabulary.some(line => line && new RegExp('^' + line + '$').test(word));
+        for (const word of ['Quokkadex', 'zanzibarian', 'marsupialish'])
+            strict_1.default.ok(accepts(word), 'not accepted: ' + word);
+    }
+    finally {
+        f.clean();
+    }
+});
 (0, node_test_1.test)('model prose cannot execute HTML or Vue expressions', async () => {
     const m = model();
     m.main.kit.info.summary = '<script>alert(1)</script> {{ execute() }}';

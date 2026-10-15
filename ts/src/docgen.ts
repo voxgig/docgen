@@ -4,7 +4,7 @@ import Path from 'node:path'
 import Os from 'node:os'
 import { createRequire } from 'node:module'
 import { Jostraca, Project, Folder, File, Content, names } from 'jostraca'
-import { operationFacts, rows, view, quotedSummary, pages, quotedSlides, html, repoLinkFor, slugFor, METHODS, type Page } from './content'
+import { operationFacts, rows, view, readmeText, quotedSummary, pages, quotedSlides, html, repoLinkFor, slugFor, METHODS, type Page } from './content'
 import { relativePath, inside, within, ledgerText, readLedger, prunePlan, applyPrune, type PrunePlan } from './ledger'
 const MarkdownIt = require('markdown-it')
 const markdown = new MarkdownIt({ html: false, linkify: false, typographer: false })
@@ -246,8 +246,11 @@ function qaResources(model: any, resolved?: any): Record<string, string> {
     }
     for (const value of Object.values(node)) if (value && 'object' === typeof value) harvest(value, depth + 1)
   }
+  const readme = readmeText(model)
   harvest(model.main.kit.entity)
   harvest(model.main.kit.info)
+  harvest(readme)
+  harvest(Object.values(readme.entity_desc ?? {}))
   harvest(facts)
   // Scanned per string rather than over one joined document, so the vocabulary
   // never depends on holding every description in a single allocation.

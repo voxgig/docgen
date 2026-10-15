@@ -285,8 +285,11 @@ function qaResources(model, resolved) {
             if (value && 'object' === typeof value)
                 harvest(value, depth + 1);
     };
+    const readme = (0, content_1.readmeText)(model);
     harvest(model.main.kit.entity);
     harvest(model.main.kit.info);
+    harvest(readme);
+    harvest(Object.values(readme.entity_desc ?? {}));
     harvest(facts);
     // Scanned per string rather than over one joined document, so the vocabulary
     // never depends on holding every description in a single allocation.

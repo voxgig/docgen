@@ -363,6 +363,30 @@ test('a vendor description written in blocks keeps them, as a quotation', async 
   } finally { f.clean() }
 })
 
+test('the project README wording in main.kit.text words over the spec info', async () => {
+  const m: any = model()
+  m.main.kit.info.entity_desc = { pet: 'Spec wording for a pet.' }
+  m.main.kit.text = { title: 'Quokkadex', summary: 'Catalogues zanzibarian pets.', tagline: '',
+    entity_desc: { pet: 'A marsupialish pet record.' } }
+  const f = fixture(m)
+  try {
+    await generate({ folder: f.root, model: m })
+    const summary = f.read('SUMMARY.md')
+    Assert.match(summary, /^# Quokkadex$/m)
+    Assert.match(summary, /Catalogues zanzibarian pets\./)
+    Assert.match(summary, /A marsupialish pet record\./)
+    Assert.match(f.read('docs/api/index.html'), /Catalogues zanzibarian pets\./)
+    const entity = f.read('docs/api/pet.html')
+    Assert.match(entity, /A marsupialish pet record\./)
+    for (const page of [summary, f.read('docs/api/index.html'), entity]) {
+      Assert.doesNotMatch(page, /Store and retrieve pet records|Spec wording for a pet/)
+    }
+    const vocabulary = f.read('.sdk/doc/qa/styles/config/vocabularies/Docgen/accept.txt').split('\n')
+    const accepts = (word: string) => vocabulary.some(line => line && new RegExp('^' + line + '$').test(word))
+    for (const word of ['Quokkadex', 'zanzibarian', 'marsupialish']) Assert.ok(accepts(word), 'not accepted: ' + word)
+  } finally { f.clean() }
+})
+
 test('model prose cannot execute HTML or Vue expressions',async()=>{
   const m:any=model();m.main.kit.info.summary='<script>alert(1)</script> {{ execute() }}'
   m.main.kit.doc.edition.presentation={kind:'presentation',active:true,output:{path:'presentation'}}
