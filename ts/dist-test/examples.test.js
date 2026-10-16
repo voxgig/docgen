@@ -5,7 +5,16 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const node_test_1 = require("node:test");
 const strict_1 = __importDefault(require("node:assert/strict"));
+const sdkgen_1 = require("@voxgig/sdkgen");
 const examples_1 = require("../dist/examples");
+// An sdkgen that generates a patch method keys it in OP_SUFFIX; an older one
+// does not, and its SDKs have no patch method to call.
+const PATCH = Object.prototype.hasOwnProperty.call(sdkgen_1.OP_SUFFIX, 'patch');
+// The lines a block renders, the patch call after the update when there is one.
+function ops(lines, patch) {
+    const at = lines.findIndex(line => /\b(?:remove|Remove)\(/.test(line));
+    return (PATCH ? [...lines.slice(0, at), patch, ...lines.slice(at)] : lines).join('\n');
+}
 function pet() {
     return { name: 'pet', Name: 'Pet',
         fields: { id: { n: 'id', h: 'Id', t: 'number', r: true }, name: { n: 'name', t: '`$STRING`', r: true }, tags: { n: 'tags', t: '`$ARRAY`', r: false } },
@@ -62,82 +71,85 @@ function planet() {
     strict_1.default.equal((0, examples_1.exampleLanguage)({ name: 'toString' }), undefined);
 });
 (0, node_test_1.test)('only the operations sdkgen generates a method for render, in canonical order', () => {
-    strict_1.default.equal((0, examples_1.entityExample)(pet(), 'ts'), [
+    strict_1.default.equal((0, examples_1.entityExample)(pet(), 'ts'), ops([
         'const pets = await client.Pet().list()',
         'const pet = await client.Pet().load({ id: 1 })',
         'const created = await client.Pet().create({ id: 1, name: "example" })',
         'const updated = await client.Pet().update({ id: 1, name: "example", tags: [] })',
         'await client.Pet().remove({ id: 1 })',
-    ].join('\n'));
+    ], 'const patched = await client.Pet().patch({ id: 1, name: "example", tags: [] })'));
     strict_1.default.equal((0, examples_1.entityExample)(pet(), 'js'), (0, examples_1.entityExample)(pet(), 'ts'));
-    strict_1.default.equal((0, examples_1.entityExample)(pet(), 'py'), [
+    strict_1.default.equal((0, examples_1.entityExample)(pet(), 'py'), ops([
         'pets = client.Pet().list()',
         'pet = client.Pet().load({"id": 1})',
         'created = client.Pet().create({ "id": 1, "name": "example" })',
         'updated = client.Pet().update({"id": 1, "name": "example", "tags": []})',
         'client.Pet().remove({"id": 1})',
-    ].join('\n'));
-    strict_1.default.equal((0, examples_1.entityExample)(pet(), 'rb'), [
+    ], 'patched = client.Pet().patch({"id": 1, "name": "example", "tags": []})'));
+    strict_1.default.equal((0, examples_1.entityExample)(pet(), 'rb'), ops([
         'pets = client.Pet.list()',
         'pet = client.Pet.load({ "id" => 1 })',
         'created = client.Pet.create({ "id" => 1, "name" => "example" })',
         'updated = client.Pet.update({ "id" => 1, "name" => "example", "tags" => [] })',
         'client.Pet.remove({ "id" => 1 })',
-    ].join('\n'));
-    strict_1.default.equal((0, examples_1.entityExample)(pet(), 'php'), [
+    ], 'patched = client.Pet.patch({ "id" => 1, "name" => "example", "tags" => [] })'));
+    strict_1.default.equal((0, examples_1.entityExample)(pet(), 'php'), ops([
         '$pets = $client->Pet()->list();',
         '$pet = $client->Pet()->load(["id" => 1]);',
         '$created = $client->Pet()->create(["id" => 1, "name" => "example"]);',
         '$updated = $client->Pet()->update(["id" => 1, "name" => "example", "tags" => []]);',
         '$client->Pet()->remove(["id" => 1]);',
-    ].join('\n'));
-    strict_1.default.equal((0, examples_1.entityExample)(pet(), 'lua'), [
+    ], '$patched = $client->Pet()->patch(["id" => 1, "name" => "example", "tags" => []]);'));
+    strict_1.default.equal((0, examples_1.entityExample)(pet(), 'lua'), ops([
         'local pets, err = client:Pet():list()',
         'local pet, err = client:Pet():load({ id = 1 })',
         'local created, err = client:Pet():create({ id = 1, name = "example" })',
         'local updated, err = client:Pet():update({ id = 1, name = "example", tags = {} })',
         'local removed, err = client:Pet():remove({ id = 1 })',
-    ].join('\n'));
+    ], 'local patched, err = client:Pet():patch({ id = 1, name = "example", tags = {} })'));
     const check = 'if err != nil {\n    panic(err)\n}\n';
-    strict_1.default.equal((0, examples_1.entityExample)(pet(), 'go'), [
+    strict_1.default.equal((0, examples_1.entityExample)(pet(), 'go'), ops([
         'pets, err := client.Pet(nil).List(nil, nil)\n' + check + 'fmt.Println(pets)',
         'pet, err := client.Pet(nil).Load(map[string]any{"id": 1}, nil)\n' + check + 'fmt.Println(pet)',
         'created, err := client.Pet(nil).Create(map[string]any{"id": 1, "name": "example"}, nil)\n' + check + 'fmt.Println(created)',
         'updated, err := client.Pet(nil).Update(map[string]any{"id": 1, "name": "example", "tags": []any{}}, nil)\n' + check + 'fmt.Println(updated)',
         'removed, err := client.Pet(nil).Remove(map[string]any{"id": 1}, nil)\n' + check + 'fmt.Println(removed)',
-    ].join('\n'));
-    // Neither an inactive op nor `patch` has a generated method to call.
+    ], 'patched, err := client.Pet(nil).Patch(map[string]any{"id": 1, "name": "example", "tags": []any{}}, nil)\n' + check + 'fmt.Println(patched)'));
+    // An inactive op has no generated method, and every call binds a name.
     for (const lang of examples_1.EXAMPLE_LANGUAGES) {
         strict_1.default.doesNotMatch((0, examples_1.entityExample)(pet(), lang), /hidden/);
-        strict_1.default.doesNotMatch((0, examples_1.entityExample)(pet(), lang), /[Pp]atch/);
+        strict_1.default.doesNotMatch((0, examples_1.entityExample)(pet(), lang), /\bundefined\b/);
+        if (!PATCH)
+            strict_1.default.doesNotMatch((0, examples_1.entityExample)(pet(), lang), /[Pp]atch/);
     }
 });
-(0, node_test_1.test)('an update carries the identifier and writable fields on an apidef model', () => {
-    strict_1.default.equal((0, examples_1.entityExample)(planet(), 'ts'), [
+(0, node_test_1.test)('an update and a patch carry the identifier and writable fields on an apidef model', () => {
+    strict_1.default.equal((0, examples_1.entityExample)(planet(), 'ts'), ops([
         'const planets = await client.Planet().list()',
         'const planet = await client.Planet().load({ id: "example_id" })',
         'const created = await client.Planet().create({ diameter: 1, id: "example", kind: "example", name: "example" })',
         'const updated = await client.Planet().update({ id: "example_id", diameter: 1, kind: "example" })',
         'await client.Planet().remove({ id: "example_id" })',
-    ].join('\n'));
-    strict_1.default.equal((0, examples_1.entityExample)(planet(), 'py'), [
+    ], 'const patched = await client.Planet().patch({ id: "example_id", diameter: 1, kind: "example" })'));
+    strict_1.default.equal((0, examples_1.entityExample)(planet(), 'py'), ops([
         'planets = client.Planet().list()',
         'planet = client.Planet().load({"id": "example_id"})',
         'created = client.Planet().create({ "diameter": 1, "id": "example", "kind": "example", "name": "example" })',
         'updated = client.Planet().update({"id": "example_id", "diameter": 1, "kind": "example"})',
         'client.Planet().remove({"id": "example_id"})',
-    ].join('\n'));
+    ], 'patched = client.Planet().patch({"id": "example_id", "diameter": 1, "kind": "example"})'));
     const check = 'if err != nil {\n    panic(err)\n}\n';
-    strict_1.default.equal((0, examples_1.entityExample)(planet(), 'go'), [
+    strict_1.default.equal((0, examples_1.entityExample)(planet(), 'go'), ops([
         'planets, err := client.Planet(nil).List(nil, nil)\n' + check + 'fmt.Println(planets)',
         'planet, err := client.Planet(nil).Load(map[string]any{"id": "example_id"}, nil)\n' + check + 'fmt.Println(planet)',
         'created, err := client.Planet(nil).Create(map[string]any{"diameter": 1, "id": "example", "kind": "example", "name": "example"}, nil)\n' + check + 'fmt.Println(created)',
         'updated, err := client.Planet(nil).Update(map[string]any{"id": "example_id", "diameter": 1, "kind": "example"}, nil)\n' + check + 'fmt.Println(updated)',
         'removed, err := client.Planet(nil).Remove(map[string]any{"id": "example_id"}, nil)\n' + check + 'fmt.Println(removed)',
-    ].join('\n'));
-    // A real shape has the patch op too, and it renders no call.
-    for (const lang of examples_1.EXAMPLE_LANGUAGES)
-        strict_1.default.doesNotMatch((0, examples_1.entityExample)(planet(), lang), /[Pp]atch/);
+    ], 'patched, err := client.Planet(nil).Patch(map[string]any{"id": "example_id", "diameter": 1, "kind": "example"}, nil)\n' + check + 'fmt.Println(patched)'));
+    // With no patch method, a real shape's patch op renders no call.
+    if (!PATCH)
+        for (const lang of examples_1.EXAMPLE_LANGUAGES)
+            strict_1.default.doesNotMatch((0, examples_1.entityExample)(planet(), lang), /[Pp]atch/);
 });
 (0, node_test_1.test)('an sdkgen without the example helpers names the version docgen needs', () => {
     const sdkgenPath = require.resolve('@voxgig/sdkgen'), examplesPath = require.resolve('../dist/examples');

@@ -22,7 +22,7 @@ function exampleLanguage(target) {
     const lang = target?.origname || target?.name;
     return Object.hasOwn(BINDING, lang) ? lang : undefined;
 }
-const RESULT_NAME = { create: 'created', update: 'updated', remove: 'removed' };
+const RESULT_NAME = { create: 'created', update: 'updated', patch: 'patched', remove: 'removed' };
 function resultName(op, entityVar) {
     if ('list' === op)
         return entityVar + 's';
@@ -30,8 +30,8 @@ function resultName(op, entityVar) {
         return entityVar;
     return RESULT_NAME[op];
 }
-// apidef emits `patch` as its own op, which no SDK has a method for:
-// sdkgen's `OP_SUFFIX` keys the ops its Entity components generate.
+// sdkgen's `OP_SUFFIX` keys the ops its Entity components generate; one
+// before the patch method keys no `patch`, though apidef emits it.
 function methodOps(entity) {
     return (0, sdkgen_1.entityOps)(entity).filter(op => Object.hasOwn(sdkgen_1.OP_SUFFIX, op));
 }
@@ -40,13 +40,13 @@ function paramsView(op, items) {
 }
 // dataArg keeps only the required items, which on an apidef model is the id
 // alone; the items chosen here go back to sdkgen as params, for its literals.
-function updateArg(lang, entity, idF, idLit) {
-    const items = (0, sdkgen_1.opRequestShape)(entity, 'update').items;
+function updateArg(lang, entity, op, idF, idLit) {
+    const items = (0, sdkgen_1.opRequestShape)(entity, op).items;
     const own = items.filter(it => it.name !== idF && it.name !== 'id');
     const required = own.filter(it => !it.optional);
     const fields = required.concat(own.filter(it => it.optional)).slice(0, Math.max(2, required.length));
     const id = null == idF ? [] : [items.find(it => it.name === idF) ?? { name: idF, type: null }];
-    return (0, sdkgen_1.matchArg)(lang, paramsView('update', id.concat(fields)), 'update', idF, idLit);
+    return (0, sdkgen_1.matchArg)(lang, paramsView(op, id.concat(fields)), op, idF, idLit);
 }
 function withArg(lang, expr, arg) {
     return expr.replace(/\([^()]*\)$/, '(' + arg + ('go' === lang ? ', nil' : '') + ')');
@@ -74,7 +74,7 @@ function entityExample(entity, lang) {
         const call = (0, sdkgen_1.primaryOpCall)(lang, entity.Name, entityVar, op, idF, entity);
         const idLit = (0, sdkgen_1.idLiteral)(entity, op, idF);
         const arg = 'list' === op ? (0, sdkgen_1.matchArg)(lang, entity, op, idF, idLit) :
-            'update' === op ? updateArg(lang, entity, idF, idLit) : '';
+            'update' === op || 'patch' === op ? updateArg(lang, entity, op, idF, idLit) : '';
         if (arg && 'nil' !== arg)
             call.expr = withArg(lang, call.expr, arg);
         return BINDING[lang]({ ...call, resultVar: resultName(op, entityVar) });
