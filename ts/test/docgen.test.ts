@@ -240,7 +240,7 @@ test('a qualified name in vendor prose renders as code, so it is not linted as t
 test('Vale reads everything for defects and only docgen text for house style', () => {
   const Fs = require('node:fs'), Path = require('node:path')
   const { VALE_ALL, VALE_OWN } = require('../dist/qa')
-  const ini = Fs.readFileSync(Path.join(__dirname, '../qa/vale.ini'), 'utf8')
+  const ini = Fs.readFileSync(Path.join(__dirname, '../qa/vale.ini'), 'utf8').replace(/\r\n/g, '\n')
   const section = (glob: string) => ini.split('\n[' + glob + ']\n')[1].split('\n[')[0]
 
   Assert.match(section('*' + VALE_ALL), /^BasedOnStyles = Vale$/m)

@@ -275,7 +275,7 @@ function fixture(m = model()) {
 (0, node_test_1.test)('Vale reads everything for defects and only docgen text for house style', () => {
     const Fs = require('node:fs'), Path = require('node:path');
     const { VALE_ALL, VALE_OWN } = require('../dist/qa');
-    const ini = Fs.readFileSync(Path.join(__dirname, '../qa/vale.ini'), 'utf8');
+    const ini = Fs.readFileSync(Path.join(__dirname, '../qa/vale.ini'), 'utf8').replace(/\r\n/g, '\n');
     const section = (glob) => ini.split('\n[' + glob + ']\n')[1].split('\n[')[0];
     strict_1.default.match(section('*' + VALE_ALL), /^BasedOnStyles = Vale$/m);
     strict_1.default.match(section('*' + VALE_ALL), /^Vale\.Spelling = error$/m);
