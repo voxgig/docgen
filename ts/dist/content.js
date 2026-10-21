@@ -47,10 +47,12 @@ exports.code = code;
 const SLOT = /\{\{[^{}]*\}\}/;
 // A word with an underscore anywhere in it; one wrapped in underscores is emphasis.
 const IDENTIFIER = /(?<!\w)(?=\w*_)(?=\w*[A-Za-z])(?!_\w*_(?!\w))\w+/;
+// A qualified name such as Models.Payout.Amount. Two-letter segments keep e.g and i.e prose.
+const DOTTED = /(?<![\w.])[A-Za-z_]\w+(?:\.[A-Za-z_]\w+){2,}(?![\w])/;
 // Already code, or a URL or link destination that a code span would break.
 const KEPT = /(?<kept>(?<ticks>`+)[^`]*?\k<ticks>|\b[a-z][a-z0-9+.-]*:\/\/[^\s<>"')\]]+|\]\([^()\s]*\))/;
 const tokens = (...parts) => new RegExp(parts.map(part => part.source).join('|'), 'gi');
-const CELL_CODE = tokens(KEPT, SLOT, IDENTIFIER), PROSE_CODE = tokens(KEPT, IDENTIFIER);
+const CELL_CODE = tokens(KEPT, SLOT, DOTTED, IDENTIFIER), PROSE_CODE = tokens(KEPT, DOTTED, IDENTIFIER);
 function withCode(source, found) {
     // prose() trims, which is right for a whole cell and wrong for a fragment
     // of one: without this a code span fuses to the words either side of it.
@@ -278,10 +280,12 @@ function quotedSummary(v) {
     lines.push('## Continue with the documentation', '', '- Follow the ' + link('first-call guide', 'guides/first-call.html') + ' for the setup sequence.', '- Read the ' + link('authentication guide', 'guides/authentication.html') + ' before using protected routes.', '- Use the ' + link('API reference', 'api/index.html') + ' for request schemas, response formats, and status codes.', '- Check the chosen SDK or companion tool reference for its configuration and supported operations.', '');
     return unmark(lines.join('\n') + '\n');
 }
+// A generated label joins a prefix to a field name, so Card_CardHolder reads Card Card Holder.
+const label = (h) => String(h ?? '').replace(/\b(\w+)(\s+\1)+\b/gi, '$1');
 function fieldsTable(fields) {
     return ['| Field | Type | Required | Description |', '| --- | --- | --- | --- |',
         ...Object.values(fields).filter(f => f.a !== false).map(f => '| ' + (0, exports.code)(f.n) + ' | ' + (0, exports.code)(String(f.t || 'any').replace(/[`$]/g, '').toLowerCase()) + ' | ' +
-            (f.r ? 'Yes' : 'No') + ' | ' + (0, exports.cell)(f.sh || f.h || '') + ' |')].join('\n');
+            (f.r ? 'Yes' : 'No') + ' | ' + (0, exports.cell)(f.sh || label(f.h)) + ' |')].join('\n');
 }
 function operationFacts(point, resolved) {
     return resolved?.operation?.(point?.m, point?.o) || {};
@@ -469,7 +473,7 @@ function entityReference(entity, resolved, examples) {
             if (auth)
                 lines.push(auth, '');
             if (r.c.parameters?.length) {
-                lines.push('#### Parameters', '', '| Parameter | In | Type | Required | Description |', '| --- | --- | --- | --- |', ...r.c.parameters.map((p) => '| ' + (0, exports.code)(p.name) + ' | ' + (0, exports.code)(p.in || '') + ' | ' +
+                lines.push('#### Parameters', '', '| Parameter | In | Type | Required | Description |', '| --- | --- | --- | --- | --- |', ...r.c.parameters.map((p) => '| ' + (0, exports.code)(p.name) + ' | ' + (0, exports.code)(p.in || '') + ' | ' +
                     (0, exports.code)(typeName(p.schema)) + ' | ' + (p.required ? 'Yes' : 'No') + ' | ' +
                     (0, exports.cell)(p.description || '') + ' |'), '');
             }

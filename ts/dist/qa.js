@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.valeText = void 0;
+exports.VALE_OWN = exports.VALE_ALL = exports.valeText = void 0;
 exports.proseText = proseText;
 exports.authored = authored;
 exports.checkText = checkText;
@@ -54,11 +54,10 @@ function authored(source, format, quoted = []) {
     }
     return text;
 }
-// What the Vale pass reads: everything rendered, not only what docgen wrote.
-// A generated API reference keeps the vendor's schema descriptions in table
-// cells, so a gate that skips them skips most of the page. Vendor text can be
-// linted because its identifiers render as code, and code is not prose.
+// The Vale defect rules read everything rendered, vendor cells included; its
+// identifiers render as code. House style reads authored(), split in vale.ini.
 exports.valeText = proseText;
+exports.VALE_ALL = '.all.txt', exports.VALE_OWN = '.own.txt';
 // A house-style rule says how THIS PROJECT writes, so it reads only what
 // docgen wrote: applying it to a quoted vendor description asks an SDK author
 // to edit someone else's specification. A defect is a defect wherever it
@@ -77,7 +76,7 @@ function checkText(source, format = 'md', rejectFile = node_path_1.default.join(
         errors.push('Use neutral or second-person prose');
     if (/\p{Extended_Pictographic}/u.test(text))
         errors.push('Do not use emoji in documentation');
-    if (/!/.test(text))
+    if (/!/.test(own))
         errors.push('Use statements without exclamation marks');
     return errors;
 }
@@ -93,12 +92,15 @@ function runQA(manifestPath, root = process.cwd(), vale = true) {
     };
     const config = safe(manifest.config), reject = node_path_1.default.join(node_path_1.default.dirname(config), 'styles/config/vocabularies/Docgen/reject.txt');
     const errors = [], temp = node_fs_1.default.mkdtempSync(node_path_1.default.join(node_os_1.default.tmpdir(), 'docgen-prose-'));
+    const quotedFor = (file) => {
+        const quoted = manifest.quoted?.[file];
+        return Array.isArray(quoted) ? quoted.filter((q) => 'string' === typeof q) : [];
+    };
     try {
         const inputs = [];
         for (const [index, file] of manifest.files.entries()) {
             const text = node_fs_1.default.readFileSync(safe(file), 'utf8'), format = file.endsWith('.html') ? 'html' : file.endsWith('.vue') ? 'vue' : 'md';
-            const quoted = manifest.quoted?.[file];
-            errors.push(...checkText(text, format, reject, Array.isArray(quoted) ? quoted.filter((q) => 'string' === typeof q) : []).map(e => file + ': ' + e));
+            errors.push(...checkText(text, format, reject, quotedFor(file)).map(e => file + ': ' + e));
             if (format === 'html') {
                 for (const match of text.matchAll(/(?:href|src)="([^"]+)"/g)) {
                     const url = md.utils.unescapeAll(match[1]);
@@ -119,9 +121,10 @@ function runQA(manifestPath, root = process.cwd(), vale = true) {
                     }
                 }
             }
-            const dest = node_path_1.default.join(temp, index + '.txt');
-            node_fs_1.default.writeFileSync(dest, (0, exports.valeText)(text, format));
-            inputs.push(dest);
+            const all = node_path_1.default.join(temp, index + exports.VALE_ALL), own = node_path_1.default.join(temp, index + exports.VALE_OWN);
+            node_fs_1.default.writeFileSync(all, (0, exports.valeText)(text, format));
+            node_fs_1.default.writeFileSync(own, authored(text, format, quotedFor(file)));
+            inputs.push(all, own);
         }
         if (vale) {
             const result = (0, node_child_process_1.spawnSync)('vale', ['--config=' + config, '--minAlertLevel=error', ...inputs], { encoding: 'utf8', cwd: root, maxBuffer: 64 * 1024 * 1024 });
@@ -129,7 +132,7 @@ function runQA(manifestPath, root = process.cwd(), vale = true) {
                 errors.push('Vale is required for text QA: ' + result.error.message);
             else if (result.status !== 0) {
                 let output = (result.stdout || '') + (result.stderr || '');
-                inputs.forEach((p, i) => { output = output.split(p).join(manifest.files[i]); });
+                inputs.forEach((p, i) => { output = output.split(p).join(manifest.files[i >> 1] + (i & 1 ? ' (docgen text)' : '')); });
                 errors.push(output);
             }
         }

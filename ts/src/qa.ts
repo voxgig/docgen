@@ -43,11 +43,10 @@ export function authored(source: string, format: string, quoted: string[] = []):
   return text
 }
 
-// What the Vale pass reads: everything rendered, not only what docgen wrote.
-// A generated API reference keeps the vendor's schema descriptions in table
-// cells, so a gate that skips them skips most of the page. Vendor text can be
-// linted because its identifiers render as code, and code is not prose.
+// The Vale defect rules read everything rendered, vendor cells included; its
+// identifiers render as code. House style reads authored(), split in vale.ini.
 export const valeText = proseText
+export const VALE_ALL = '.all.txt', VALE_OWN = '.own.txt'
 
 // A house-style rule says how THIS PROJECT writes, so it reads only what
 // docgen wrote: applying it to a quoted vendor description asks an SDK author
@@ -61,7 +60,7 @@ export function checkText(source: string, format = 'md', rejectFile = Path.join(
   if (/—/.test(text)) errors.push('Use a comma, colon, parentheses, or a new sentence instead of an em dash')
   if (FIRST_PERSON.test(own) || PLURAL_OBJECT.test(own)) errors.push('Use neutral or second-person prose')
   if (/\p{Extended_Pictographic}/u.test(text)) errors.push('Do not use emoji in documentation')
-  if (/!/.test(text)) errors.push('Use statements without exclamation marks')
+  if (/!/.test(own)) errors.push('Use statements without exclamation marks')
   return errors
 }
 export function runQA(manifestPath: string, root = process.cwd(), vale = true): { files: number, errors: string[] } {
@@ -74,12 +73,15 @@ export function runQA(manifestPath: string, root = process.cwd(), vale = true): 
   }
   const config = safe(manifest.config), reject = Path.join(Path.dirname(config),'styles/config/vocabularies/Docgen/reject.txt')
   const errors: string[] = [], temp = Fs.mkdtempSync(Path.join(Os.tmpdir(), 'docgen-prose-'))
+  const quotedFor = (file: string): string[] => {
+    const quoted = manifest.quoted?.[file]
+    return Array.isArray(quoted) ? quoted.filter((q: unknown) => 'string' === typeof q) : []
+  }
   try {
     const inputs: string[] = []
     for (const [index, file] of manifest.files.entries()) {
       const text = Fs.readFileSync(safe(file), 'utf8'), format = file.endsWith('.html') ? 'html' : file.endsWith('.vue') ? 'vue' : 'md'
-      const quoted = manifest.quoted?.[file]
-      errors.push(...checkText(text, format, reject, Array.isArray(quoted) ? quoted.filter((q: unknown) => 'string' === typeof q) : []).map(e => file + ': ' + e))
+      errors.push(...checkText(text, format, reject, quotedFor(file)).map(e => file + ': ' + e))
       if (format === 'html') {
         for (const match of text.matchAll(/(?:href|src)="([^"]+)"/g)) {
           const url = md.utils.unescapeAll(match[1])
@@ -96,8 +98,9 @@ export function runQA(manifestPath: string, root = process.cwd(), vale = true): 
           }
         }
       }
-      const dest = Path.join(temp, index + '.txt')
-      Fs.writeFileSync(dest, valeText(text, format)); inputs.push(dest)
+      const all = Path.join(temp, index + VALE_ALL), own = Path.join(temp, index + VALE_OWN)
+      Fs.writeFileSync(all, valeText(text, format)); Fs.writeFileSync(own, authored(text, format, quotedFor(file)))
+      inputs.push(all, own)
     }
     if (vale) {
       const result = spawnSync('vale', ['--config=' + config, '--minAlertLevel=error', ...inputs],
@@ -105,7 +108,7 @@ export function runQA(manifestPath: string, root = process.cwd(), vale = true): 
       if (result.error) errors.push('Vale is required for text QA: ' + result.error.message)
       else if (result.status !== 0) {
         let output = (result.stdout || '') + (result.stderr || '')
-        inputs.forEach((p,i) => { output = output.split(p).join(manifest.files[i]) })
+        inputs.forEach((p,i) => { output = output.split(p).join(manifest.files[i >> 1] + (i & 1 ? ' (docgen text)' : '')) })
         errors.push(output)
       }
     }

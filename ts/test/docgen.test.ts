@@ -215,12 +215,38 @@ test('house style reads docgen prose; a defect reads everything rendered', () =>
   Assert.ok(!checkText(cell('Leverage the API.'), 'html').includes(banned))
   Assert.ok(!checkText(row('Leverage the API.'), 'md').includes(banned))
 
+  // Tone is house style: a vendor's exclamation mark is theirs to keep.
+  const exclaim = 'Use statements without exclamation marks'
+  Assert.ok(checkText('<p>Fast! Really fast!</p>', 'html').includes(exclaim))
+  Assert.ok(!checkText(cell('Fast! Really fast!'), 'html').includes(exclaim))
+
   // A defect is a defect wherever it appears, cells included.
-  Assert.ok(checkText(cell('Fast! Really fast!'), 'html').length > 0)
   Assert.ok(checkText(cell('the the repeated word'), 'html').length > 0)
   Assert.ok(checkText(cell('an em — dash'), 'html').length > 0)
 
   Assert.ok(!checkText('<p>See https://docs.microsoft.com/en-us/dotnet/standard</p>', 'html').includes(voice))
+}, )
+
+test('a qualified name in vendor prose renders as code, so it is not linted as two sentences', () => {
+  const { cell, quoteInline, unmark } = require('../dist/content')
+
+  Assert.equal(cell('See NoFrixion.MoneyMoov.Models.Payout.Amount.'), 'See `NoFrixion.MoneyMoov.Models.Payout.Amount`.')
+  Assert.match(unmark(quoteInline('In Models.Payout.Currency, as recorded')).markdown, /In `Models\.Payout\.Currency`, as recorded/)
+  Assert.equal(cell('Sorted, e.g. by date. Then paged.'), 'Sorted, for example by date. Then paged.')
+  Assert.equal(cell('Version 1.2.3 of the spec.'), 'Version 1.2.3 of the spec.')
+  Assert.equal(cell('Read https://docs.example.com/a.b.c now'), 'Read https://docs.example.com/a.b.c now')
+}, )
+
+test('Vale reads everything for defects and only docgen text for house style', () => {
+  const Fs = require('node:fs'), Path = require('node:path')
+  const { VALE_ALL, VALE_OWN } = require('../dist/qa')
+  const ini = Fs.readFileSync(Path.join(__dirname, '../qa/vale.ini'), 'utf8')
+  const section = (glob: string) => ini.split('\n[' + glob + ']\n')[1].split('\n[')[0]
+
+  Assert.match(section('*' + VALE_ALL), /^BasedOnStyles = Vale$/m)
+  Assert.match(section('*' + VALE_ALL), /^Vale\.Spelling = error$/m)
+  Assert.match(section('*' + VALE_OWN), /^BasedOnStyles = Vale, Google, Docgen$/m)
+  Assert.doesNotMatch(ini, /^\[\*\.txt\]$/m)
 }, )
 
 test('upstream spec prose is normalised before it reaches the gate', () => {
@@ -610,6 +636,7 @@ test('summary does not invent anonymous examples or reference an inactive site',
 
 test('the API reference is structured by entity, route and status',async()=>{
   const m:any=model()
+  m.main.kit.entity.pet.fields.Card_CardHolder={n:'Card_CardHolder',h:'Card Card Holder',t:'`$STRING`',r:false}
   definitions.get(m).paths['/pets/{id}'].get={
     operationId:'loadPet',
     parameters:[{name:'id',in:'path',required:true,schema:{type:'integer'},description:'Pet identifier.'}],
@@ -647,7 +674,10 @@ test('the API reference is structured by entity, route and status',async()=>{
 
     // Parameters, with where each one goes.
     Assert.match(page,/Parameters/)
-    Assert.match(page,/Pet identifier/)
+    Assert.match(page,/<td>Pet identifier\.<\/td>/)
+    Assert.doesNotMatch(page,/\| Parameter \| In/)
+    // A generated label does not repeat the word its prefix shares with the name.
+    Assert.match(page,/<td>Card Holder<\/td>/)
 
     // Schemas render as property tables: nested objects flatten to dotted
     // paths, arrays name their element type, and `required` is a column.

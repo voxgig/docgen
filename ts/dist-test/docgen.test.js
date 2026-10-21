@@ -255,11 +255,32 @@ function fixture(m = model()) {
     strict_1.default.ok(checkText('Leverage the API.', 'md').includes(banned));
     strict_1.default.ok(!checkText(cell('Leverage the API.'), 'html').includes(banned));
     strict_1.default.ok(!checkText(row('Leverage the API.'), 'md').includes(banned));
+    // Tone is house style: a vendor's exclamation mark is theirs to keep.
+    const exclaim = 'Use statements without exclamation marks';
+    strict_1.default.ok(checkText('<p>Fast! Really fast!</p>', 'html').includes(exclaim));
+    strict_1.default.ok(!checkText(cell('Fast! Really fast!'), 'html').includes(exclaim));
     // A defect is a defect wherever it appears, cells included.
-    strict_1.default.ok(checkText(cell('Fast! Really fast!'), 'html').length > 0);
     strict_1.default.ok(checkText(cell('the the repeated word'), 'html').length > 0);
     strict_1.default.ok(checkText(cell('an em — dash'), 'html').length > 0);
     strict_1.default.ok(!checkText('<p>See https://docs.microsoft.com/en-us/dotnet/standard</p>', 'html').includes(voice));
+});
+(0, node_test_1.test)('a qualified name in vendor prose renders as code, so it is not linted as two sentences', () => {
+    const { cell, quoteInline, unmark } = require('../dist/content');
+    strict_1.default.equal(cell('See NoFrixion.MoneyMoov.Models.Payout.Amount.'), 'See `NoFrixion.MoneyMoov.Models.Payout.Amount`.');
+    strict_1.default.match(unmark(quoteInline('In Models.Payout.Currency, as recorded')).markdown, /In `Models\.Payout\.Currency`, as recorded/);
+    strict_1.default.equal(cell('Sorted, e.g. by date. Then paged.'), 'Sorted, for example by date. Then paged.');
+    strict_1.default.equal(cell('Version 1.2.3 of the spec.'), 'Version 1.2.3 of the spec.');
+    strict_1.default.equal(cell('Read https://docs.example.com/a.b.c now'), 'Read https://docs.example.com/a.b.c now');
+});
+(0, node_test_1.test)('Vale reads everything for defects and only docgen text for house style', () => {
+    const Fs = require('node:fs'), Path = require('node:path');
+    const { VALE_ALL, VALE_OWN } = require('../dist/qa');
+    const ini = Fs.readFileSync(Path.join(__dirname, '../qa/vale.ini'), 'utf8');
+    const section = (glob) => ini.split('\n[' + glob + ']\n')[1].split('\n[')[0];
+    strict_1.default.match(section('*' + VALE_ALL), /^BasedOnStyles = Vale$/m);
+    strict_1.default.match(section('*' + VALE_ALL), /^Vale\.Spelling = error$/m);
+    strict_1.default.match(section('*' + VALE_OWN), /^BasedOnStyles = Vale, Google, Docgen$/m);
+    strict_1.default.doesNotMatch(ini, /^\[\*\.txt\]$/m);
 });
 (0, node_test_1.test)('upstream spec prose is normalised before it reaches the gate', () => {
     const { prose } = require('../dist/content');
@@ -681,6 +702,7 @@ function fixture(m = model()) {
 });
 (0, node_test_1.test)('the API reference is structured by entity, route and status', async () => {
     const m = model();
+    m.main.kit.entity.pet.fields.Card_CardHolder = { n: 'Card_CardHolder', h: 'Card Card Holder', t: '`$STRING`', r: false };
     definitions.get(m).paths['/pets/{id}'].get = {
         operationId: 'loadPet',
         parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' }, description: 'Pet identifier.' }],
@@ -718,7 +740,10 @@ function fixture(m = model()) {
         strict_1.default.match(page, /loadPet/);
         // Parameters, with where each one goes.
         strict_1.default.match(page, /Parameters/);
-        strict_1.default.match(page, /Pet identifier/);
+        strict_1.default.match(page, /<td>Pet identifier\.<\/td>/);
+        strict_1.default.doesNotMatch(page, /\| Parameter \| In/);
+        // A generated label does not repeat the word its prefix shares with the name.
+        strict_1.default.match(page, /<td>Card Holder<\/td>/);
         // Schemas render as property tables: nested objects flatten to dotted
         // paths, arrays name their element type, and `required` is a column.
         strict_1.default.match(page, /data\.name/);

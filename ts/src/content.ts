@@ -26,10 +26,12 @@ export const code = (v: any): string => '`' + String(v ?? '').replace(/`/g, '') 
 const SLOT = /\{\{[^{}]*\}\}/
 // A word with an underscore anywhere in it; one wrapped in underscores is emphasis.
 const IDENTIFIER = /(?<!\w)(?=\w*_)(?=\w*[A-Za-z])(?!_\w*_(?!\w))\w+/
+// A qualified name such as Models.Payout.Amount. Two-letter segments keep e.g and i.e prose.
+const DOTTED = /(?<![\w.])[A-Za-z_]\w+(?:\.[A-Za-z_]\w+){2,}(?![\w])/
 // Already code, or a URL or link destination that a code span would break.
 const KEPT = /(?<kept>(?<ticks>`+)[^`]*?\k<ticks>|\b[a-z][a-z0-9+.-]*:\/\/[^\s<>"')\]]+|\]\([^()\s]*\))/
 const tokens = (...parts: RegExp[]) => new RegExp(parts.map(part => part.source).join('|'), 'gi')
-const CELL_CODE = tokens(KEPT, SLOT, IDENTIFIER), PROSE_CODE = tokens(KEPT, IDENTIFIER)
+const CELL_CODE = tokens(KEPT, SLOT, DOTTED, IDENTIFIER), PROSE_CODE = tokens(KEPT, DOTTED, IDENTIFIER)
 
 function withCode(source: string, found: RegExp): string {
   // prose() trims, which is right for a whole cell and wrong for a fragment
@@ -268,10 +270,12 @@ export function quotedSummary(v: ReturnType<typeof view>): Quoted {
     '- Check the chosen SDK or companion tool reference for its configuration and supported operations.', '')
   return unmark(lines.join('\n') + '\n')
 }
+// A generated label joins a prefix to a field name, so Card_CardHolder reads Card Card Holder.
+const label = (h: any): string => String(h ?? '').replace(/\b(\w+)(\s+\1)+\b/gi, '$1')
 function fieldsTable(fields: Record<string, any>): string {
   return ['| Field | Type | Required | Description |', '| --- | --- | --- | --- |',
     ...Object.values(fields).filter(f => f.a !== false).map(f => '| ' + code(f.n) + ' | ' + code(String(f.t || 'any').replace(/[`$]/g, '').toLowerCase()) + ' | ' +
-      (f.r ? 'Yes' : 'No') + ' | ' + cell(f.sh || f.h || '') + ' |')].join('\n')
+      (f.r ? 'Yes' : 'No') + ' | ' + cell(f.sh || label(f.h)) + ' |')].join('\n')
 }
 export function operationFacts(point: any, resolved?: any): any {
   return resolved?.operation?.(point?.m, point?.o) || {}
@@ -482,7 +486,7 @@ function entityReference(entity: any, resolved: any, examples: string): { markdo
 
       if (r.c.parameters?.length) {
         lines.push('#### Parameters', '',
-          '| Parameter | In | Type | Required | Description |', '| --- | --- | --- | --- |',
+          '| Parameter | In | Type | Required | Description |', '| --- | --- | --- | --- | --- |',
           ...r.c.parameters.map((p: any) => '| ' + code(p.name) + ' | ' + code(p.in || '') + ' | ' +
             code(typeName(p.schema)) + ' | ' + (p.required ? 'Yes' : 'No') + ' | ' +
             cell(p.description || '') + ' |'), '')
