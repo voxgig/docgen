@@ -219,6 +219,9 @@ test('house style reads docgen prose; a defect reads everything rendered', () =>
   const exclaim = 'Use statements without exclamation marks'
   Assert.ok(checkText('<p>Fast! Really fast!</p>', 'html').includes(exclaim))
   Assert.ok(!checkText(cell('Fast! Really fast!'), 'html').includes(exclaim))
+  const emoji = 'Do not use emoji in documentation'
+  Assert.ok(checkText('<p>Done ✨</p>', 'html').includes(emoji))
+  Assert.ok(!checkText(cell('Deletes every result. ⚠️'), 'html').includes(emoji))
 
   // A defect is a defect wherever it appears, cells included.
   Assert.ok(checkText(cell('the the repeated word'), 'html').length > 0)
@@ -238,6 +241,15 @@ test('a qualified name in vendor prose renders as code, so it is not linted as t
   Assert.equal(cell('Sorted, e.g. by date. Then paged.'), 'Sorted, for example by date. Then paged.')
   Assert.equal(cell('Version 1.2.3 of the spec.'), 'Version 1.2.3 of the spec.')
   Assert.equal(cell('Read https://docs.example.com/a.b.c now'), 'Read https://docs.example.com/a.b.c now')
+}, )
+
+test('a relative link in vendor text keeps its label, since it points into the vendor site', () => {
+  const { cell, quote, quoteInline, unmark } = require('../dist/content')
+
+  Assert.equal(cell('[Where to find my workspace ID?](../how-to#how-to-find-my-workspaceid)'), 'Where to find my workspace ID?')
+  Assert.equal(unmark(quoteInline('See [the guide](guide.md) and [#top](#top)')).markdown, 'See the guide and #top')
+  Assert.equal(unmark(quote('See [the guide](additional/guide.md).')).markdown, 'See [the guide](additional/guide.md).')
+  Assert.equal(cell('[Docs](https://docs.example.com/a) and [mail](mailto:a@b.c)'), '[Docs](https://docs.example.com/a) and [mail](mailto:a@b.c)')
 }, )
 
 test('Vale reads everything for defects and only docgen text for house style', () => {
@@ -318,10 +330,10 @@ test('an identifier that starts or ends with an underscore is code; emphasis, co
   Assert.equal(cell('Use `asset_id` as the key.'), 'Use `asset_id` as the key.')
   Assert.equal(cell('See https://example.test/rate_limits for limits.'), 'See https://example.test/rate_limits for limits.')
   Assert.equal(cell('Read asset_id<br>next'), 'Read `asset_id` next')
-  Assert.equal(cell('See [limits](./rate_limits.md) or [details](#rate_limits).'), 'See [limits](./rate_limits.md) or [details](#rate_limits).')
-  Assert.equal(cell('Read [rate_limits](./rate_limits.md).'), 'Read [`rate_limits`](./rate_limits.md).')
+  Assert.equal(cell('See [limits](https://example.test/rate_limits) or [details](https://example.test/#rate_limits).'), 'See [limits](https://example.test/rate_limits) or [details](https://example.test/#rate_limits).')
+  Assert.equal(cell('Read [rate_limits](https://example.test/rate_limits.md).'), 'Read [`rate_limits`](https://example.test/rate_limits.md).')
   const { quoteInline, unmark } = require('../dist/content')
-  Assert.equal(unmark(quoteInline('See [details](#rate_limits).')).markdown, 'See [details](#rate_limits).')
+  Assert.equal(unmark(quoteInline('See [details](https://example.test/#rate_limits).')).markdown, 'See [details](https://example.test/#rate_limits).')
 })
 
 test('identifiers in vendor prose outside tables are code, and slots stay out of code', async () => {

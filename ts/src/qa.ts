@@ -59,7 +59,7 @@ export function checkText(source: string, format = 'md', rejectFile = Path.join(
   if (/\b(\w+)[ \t]+\1\b/i.test(text)) errors.push('Remove the repeated word')
   if (/—/.test(text)) errors.push('Use a comma, colon, parentheses, or a new sentence instead of an em dash')
   if (FIRST_PERSON.test(own) || PLURAL_OBJECT.test(own)) errors.push('Use neutral or second-person prose')
-  if (/\p{Extended_Pictographic}/u.test(text)) errors.push('Do not use emoji in documentation')
+  if (/\p{Extended_Pictographic}/u.test(own)) errors.push('Do not use emoji in documentation')
   if (/!/.test(own)) errors.push('Use statements without exclamation marks')
   return errors
 }

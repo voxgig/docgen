@@ -50,9 +50,14 @@ function withCode(source: string, found: RegExp): string {
   parts.push(span(text.slice(at)))
   return parts.join('').trim()
 }
+// A relative link in a spec fragment points into the vendor's own site, from
+// a page docgen cannot know, so it keeps its label and loses the link. quote()
+// keeps links: its text can be the project's own, where a relative link works.
+const unlinkRelative = (text: string): string =>
+  text.replace(/\[([^\]]*)\]\((?![a-z][a-z\d+.-]*:|\/\/)[^)\s]*\)/gi, '$1')
 // GFM escapes a pipe inside an inline span the same way, so this stays
 // correct for the code spans withCode() writes.
-export const cell = (v: any): string => withCode(String(v ?? ''), CELL_CODE).replace(/\|/g, '\\|')
+export const cell = (v: any): string => withCode(unlinkRelative(String(v ?? '')), CELL_CODE).replace(/\|/g, '\\|')
 
 // Vendor text is marked where it is rendered, and the marks become the page's
 // quotes, so the house-style rules can leave it out whatever markup surrounds it.
@@ -66,7 +71,8 @@ export function unmark(text: string): Quoted {
   }).replace(MARKS, '')
   return { markdown: clean, quotes: [...quotes].sort() }
 }
-export const quoteInline = (v: any): string => mark(withCode(String(v ?? '').replace(MARKS, ''), PROSE_CODE))
+const quoteText = (v: any): string => mark(withCode(String(v ?? '').replace(MARKS, ''), PROSE_CODE))
+export const quoteInline = (v: any): string => quoteText(unlinkRelative(String(v ?? '')))
 
 // A vendor description given its own block keeps the blocks it was written in:
 // flattened, a heading runs into the paragraph under it. More than one block is
@@ -79,7 +85,7 @@ export function quote(v: any): string {
   const text = [lines[0].trim(), ...lines.slice(1).map(line => Number.isFinite(margin) ? line.slice(margin) : line)]
     .join('\n').replace(/\n{3,}/g, '\n\n').trim()
   const blocks = md.parse(text, {})
-  if (!blocks.length || (3 === blocks.length && 'paragraph_open' === blocks[0].type)) return quoteInline(text)
+  if (!blocks.length || (3 === blocks.length && 'paragraph_open' === blocks[0].type)) return quoteText(text)
   const fenced = new Set<number>()
   for (const block of blocks) if (['fence', 'code_block'].includes(block.type)) {
     for (let line = block.map[0]; line < block.map[1]; line++) fenced.add(line)
