@@ -225,6 +225,9 @@ test('house style reads docgen prose; a defect reads everything rendered', () =>
   Assert.ok(checkText(cell('an em — dash'), 'html').length > 0)
 
   Assert.ok(!checkText('<p>See https://docs.microsoft.com/en-us/dotnet/standard</p>', 'html').includes(voice))
+  // A route path is not a pronoun.
+  Assert.ok(!checkText('<h3><code>GET</code> /me</h3><p>Read /users/me/our or /us.</p>', 'html').includes(voice))
+  Assert.ok(checkText('<p>Read it for me.</p>', 'html').includes(voice))
 }, )
 
 test('a qualified name in vendor prose renders as code, so it is not linted as two sentences', () => {

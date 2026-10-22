@@ -16,9 +16,9 @@ const MarkdownIt = require('markdown-it');
 const md = new MarkdownIt({ html: false });
 const PACKAGE = node_path_1.default.resolve(__dirname, '..');
 const stripUrls = (s) => s.replace(/\b[a-z][a-z0-9+.-]*:\/\/[^\s<>"')\]]+/gi, ' ');
-// Hyphenated, these are region or locale codes; in upper case, the plural object names the country.
-const FIRST_PERSON = /(?<!-)\b(?:I|me|my|mine|we|our|ours)\b(?!-)/i;
-const PLURAL_OBJECT = /(?<!-)\bus\b(?!-)/;
+// Hyphenated, these are region or locale codes; after a slash, a route such as /me; in upper case, the plural object names the country.
+const FIRST_PERSON = /(?<![-/])\b(?:I|me|my|mine|we|our|ours)\b(?![-/])/i;
+const PLURAL_OBJECT = /(?<![-/])\bus\b(?![-/])/;
 function proseText(source, format = 'md') {
     if (format === 'html' || format === 'vue') {
         if (format === 'vue')

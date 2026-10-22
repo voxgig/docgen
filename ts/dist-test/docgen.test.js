@@ -263,6 +263,9 @@ function fixture(m = model()) {
     strict_1.default.ok(checkText(cell('the the repeated word'), 'html').length > 0);
     strict_1.default.ok(checkText(cell('an em — dash'), 'html').length > 0);
     strict_1.default.ok(!checkText('<p>See https://docs.microsoft.com/en-us/dotnet/standard</p>', 'html').includes(voice));
+    // A route path is not a pronoun.
+    strict_1.default.ok(!checkText('<h3><code>GET</code> /me</h3><p>Read /users/me/our or /us.</p>', 'html').includes(voice));
+    strict_1.default.ok(checkText('<p>Read it for me.</p>', 'html').includes(voice));
 });
 (0, node_test_1.test)('a qualified name in vendor prose renders as code, so it is not linted as two sentences', () => {
     const { cell, quoteInline, unmark } = require('../dist/content');
