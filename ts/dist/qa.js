@@ -19,17 +19,20 @@ const stripUrls = (s) => s.replace(/\b[a-z][a-z0-9+.-]*:\/\/[^\s<>"')\]]+/gi, ' 
 // Hyphenated, these are region or locale codes; after a slash, a route such as /me; in upper case, the plural object names the country.
 const FIRST_PERSON = /(?<![-/])\b(?:I|me|my|mine|we|our|ours)\b(?![-/])/i;
 const PLURAL_OBJECT = /(?<![-/])\bus\b(?![-/])/;
-function proseText(source, format = 'md') {
+// `code` stands in for removed code, so a check can tell the words around it apart.
+function proseText(source, format = 'md', code = ' ') {
     if (format === 'html' || format === 'vue') {
         if (format === 'vue')
             source = source.replace(/\{\{[^]*?\}\}/g, ' ');
-        source = source.replace(/<(script|style|pre|code)\b[^>]*>[\s\S]*?<\/\1>/gi, ' ')
+        source = source.replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi, ' ').replace(/<(pre|code)\b[^>]*>[\s\S]*?<\/\1>/gi, code)
             .replace(/<!--[^]*?-->/g, '').replace(/<\/(?:p|h[1-6]|li|tr|td|th|div|nav|header|main|summary|details|footer|aside|span)>/gi, '\n\n').replace(/<[^>]+>/g, ' ');
         return stripUrls(md.utils.unescapeAll(source)).replace(/[ \t]+/g, ' ').replace(/ *\n */g, '\n').replace(/\n{3,}/g, '\n\n').trim();
     }
     source = source.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, '').replace(/<!--[\s\S]*?-->/g, '');
     const collect = (tokens) => tokens.map(t => {
-        if (['fence', 'code_block', 'code_inline', 'html_block', 'html_inline'].includes(t.type))
+        if (['fence', 'code_block', 'code_inline'].includes(t.type))
+            return code;
+        if (['html_block', 'html_inline'].includes(t.type))
             return '';
         if (t.children)
             return collect(t.children);
@@ -68,7 +71,7 @@ function checkText(source, format = 'md', rejectFile = node_path_1.default.join(
     for (const pattern of patterns)
         if (new RegExp('\\b(?:' + pattern + ')\\b', 'i').test(own))
             errors.push('Avoid: ' + pattern);
-    if (/\b(\w+)[ \t]+\1\b/i.test(text))
+    if (/\b(\w+)[ \t]+\1\b/i.test(proseText(source, format, ' \u00b6 ')))
         errors.push('Remove the repeated word');
     if (/—/.test(text))
         errors.push('Use a comma, colon, parentheses, or a new sentence instead of an em dash');

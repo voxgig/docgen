@@ -225,6 +225,9 @@ test('house style reads docgen prose; a defect reads everything rendered', () =>
 
   // A defect is a defect wherever it appears, cells included.
   Assert.ok(checkText(cell('the the repeated word'), 'html').length > 0)
+  // Words either side of code are not repeated: "ignores the `reference_id` the SDK sends".
+  Assert.ok(!checkText('<p>ignores the <code>reference_id</code> the SDK sends</p>', 'html').includes('Remove the repeated word'))
+  Assert.ok(!checkText('ignores the `reference_id` the SDK sends', 'md').includes('Remove the repeated word'))
   Assert.ok(checkText(cell('an em — dash'), 'html').length > 0)
 
   Assert.ok(!checkText('<p>See https://docs.microsoft.com/en-us/dotnet/standard</p>', 'html').includes(voice))

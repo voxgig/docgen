@@ -11,16 +11,18 @@ const stripUrls = (s: string): string => s.replace(/\b[a-z][a-z0-9+.-]*:\/\/[^\s
 const FIRST_PERSON = /(?<![-/])\b(?:I|me|my|mine|we|our|ours)\b(?![-/])/i
 const PLURAL_OBJECT = /(?<![-/])\bus\b(?![-/])/
 
-export function proseText(source: string, format = 'md'): string {
+// `code` stands in for removed code, so a check can tell the words around it apart.
+export function proseText(source: string, format = 'md', code = ' '): string {
   if (format === 'html' || format === 'vue') {
     if (format === 'vue') source = source.replace(/\{\{[^]*?\}\}/g, ' ')
-    source = source.replace(/<(script|style|pre|code)\b[^>]*>[\s\S]*?<\/\1>/gi, ' ')
+    source = source.replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi, ' ').replace(/<(pre|code)\b[^>]*>[\s\S]*?<\/\1>/gi, code)
       .replace(/<!--[^]*?-->/g, '').replace(/<\/(?:p|h[1-6]|li|tr|td|th|div|nav|header|main|summary|details|footer|aside|span)>/gi, '\n\n').replace(/<[^>]+>/g, ' ')
     return stripUrls(md.utils.unescapeAll(source)).replace(/[ \t]+/g, ' ').replace(/ *\n */g, '\n').replace(/\n{3,}/g, '\n\n').trim()
   }
   source = source.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, '').replace(/<!--[\s\S]*?-->/g, '')
   const collect = (tokens: any[]): string => tokens.map(t => {
-    if (['fence','code_block','code_inline','html_block','html_inline'].includes(t.type)) return ''
+    if (['fence','code_block','code_inline'].includes(t.type)) return code
+    if (['html_block','html_inline'].includes(t.type)) return ''
     if (t.children) return collect(t.children)
     return t.type === 'text' ? md.utils.unescapeAll(t.content) : t.type.endsWith('_close') ? '\n\n' : ' '
   }).join(' ')
@@ -56,7 +58,7 @@ export function checkText(source: string, format = 'md', rejectFile = Path.join(
   const text = proseText(source, format), own = authored(source, format, quoted), errors: string[] = []
   const patterns = Fs.readFileSync(rejectFile, 'utf8').split('\n').map(s => s.trim()).filter(s => s && !s.startsWith('#'))
   for (const pattern of patterns) if (new RegExp('\\b(?:' + pattern + ')\\b', 'i').test(own)) errors.push('Avoid: ' + pattern)
-  if (/\b(\w+)[ \t]+\1\b/i.test(text)) errors.push('Remove the repeated word')
+  if (/\b(\w+)[ \t]+\1\b/i.test(proseText(source, format, ' \u00b6 '))) errors.push('Remove the repeated word')
   if (/—/.test(text)) errors.push('Use a comma, colon, parentheses, or a new sentence instead of an em dash')
   if (FIRST_PERSON.test(own) || PLURAL_OBJECT.test(own)) errors.push('Use neutral or second-person prose')
   if (/\p{Extended_Pictographic}/u.test(own)) errors.push('Do not use emoji in documentation')

@@ -264,6 +264,9 @@ function fixture(m = model()) {
     strict_1.default.ok(!checkText(cell('Deletes every result. ⚠️'), 'html').includes(emoji));
     // A defect is a defect wherever it appears, cells included.
     strict_1.default.ok(checkText(cell('the the repeated word'), 'html').length > 0);
+    // Words either side of code are not repeated: "ignores the `reference_id` the SDK sends".
+    strict_1.default.ok(!checkText('<p>ignores the <code>reference_id</code> the SDK sends</p>', 'html').includes('Remove the repeated word'));
+    strict_1.default.ok(!checkText('ignores the `reference_id` the SDK sends', 'md').includes('Remove the repeated word'));
     strict_1.default.ok(checkText(cell('an em — dash'), 'html').length > 0);
     strict_1.default.ok(!checkText('<p>See https://docs.microsoft.com/en-us/dotnet/standard</p>', 'html').includes(voice));
     // A route path is not a pronoun.
