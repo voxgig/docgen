@@ -74,7 +74,7 @@ function checkText(source, format = 'md', rejectFile = node_path_1.default.join(
         errors.push('Use a comma, colon, parentheses, or a new sentence instead of an em dash');
     if (FIRST_PERSON.test(own) || PLURAL_OBJECT.test(own))
         errors.push('Use neutral or second-person prose');
-    if (/\p{Extended_Pictographic}/u.test(text))
+    if (/\p{Extended_Pictographic}/u.test(own))
         errors.push('Do not use emoji in documentation');
     if (/!/.test(own))
         errors.push('Use statements without exclamation marks');

@@ -259,6 +259,9 @@ function fixture(m = model()) {
     const exclaim = 'Use statements without exclamation marks';
     strict_1.default.ok(checkText('<p>Fast! Really fast!</p>', 'html').includes(exclaim));
     strict_1.default.ok(!checkText(cell('Fast! Really fast!'), 'html').includes(exclaim));
+    const emoji = 'Do not use emoji in documentation';
+    strict_1.default.ok(checkText('<p>Done ✨</p>', 'html').includes(emoji));
+    strict_1.default.ok(!checkText(cell('Deletes every result. ⚠️'), 'html').includes(emoji));
     // A defect is a defect wherever it appears, cells included.
     strict_1.default.ok(checkText(cell('the the repeated word'), 'html').length > 0);
     strict_1.default.ok(checkText(cell('an em — dash'), 'html').length > 0);
@@ -274,6 +277,13 @@ function fixture(m = model()) {
     strict_1.default.equal(cell('Sorted, e.g. by date. Then paged.'), 'Sorted, for example by date. Then paged.');
     strict_1.default.equal(cell('Version 1.2.3 of the spec.'), 'Version 1.2.3 of the spec.');
     strict_1.default.equal(cell('Read https://docs.example.com/a.b.c now'), 'Read https://docs.example.com/a.b.c now');
+});
+(0, node_test_1.test)('a relative link in vendor text keeps its label, since it points into the vendor site', () => {
+    const { cell, quote, quoteInline, unmark } = require('../dist/content');
+    strict_1.default.equal(cell('[Where to find my workspace ID?](../how-to#how-to-find-my-workspaceid)'), 'Where to find my workspace ID?');
+    strict_1.default.equal(unmark(quoteInline('See [the guide](guide.md) and [#top](#top)')).markdown, 'See the guide and #top');
+    strict_1.default.equal(unmark(quote('See [the guide](additional/guide.md).')).markdown, 'See [the guide](additional/guide.md).');
+    strict_1.default.equal(cell('[Docs](https://docs.example.com/a) and [mail](mailto:a@b.c)'), '[Docs](https://docs.example.com/a) and [mail](mailto:a@b.c)');
 });
 (0, node_test_1.test)('Vale reads everything for defects and only docgen text for house style', () => {
     const Fs = require('node:fs'), Path = require('node:path');
@@ -338,10 +348,10 @@ function fixture(m = model()) {
     strict_1.default.equal(cell('Use `asset_id` as the key.'), 'Use `asset_id` as the key.');
     strict_1.default.equal(cell('See https://example.test/rate_limits for limits.'), 'See https://example.test/rate_limits for limits.');
     strict_1.default.equal(cell('Read asset_id<br>next'), 'Read `asset_id` next');
-    strict_1.default.equal(cell('See [limits](./rate_limits.md) or [details](#rate_limits).'), 'See [limits](./rate_limits.md) or [details](#rate_limits).');
-    strict_1.default.equal(cell('Read [rate_limits](./rate_limits.md).'), 'Read [`rate_limits`](./rate_limits.md).');
+    strict_1.default.equal(cell('See [limits](https://example.test/rate_limits) or [details](https://example.test/#rate_limits).'), 'See [limits](https://example.test/rate_limits) or [details](https://example.test/#rate_limits).');
+    strict_1.default.equal(cell('Read [rate_limits](https://example.test/rate_limits.md).'), 'Read [`rate_limits`](https://example.test/rate_limits.md).');
     const { quoteInline, unmark } = require('../dist/content');
-    strict_1.default.equal(unmark(quoteInline('See [details](#rate_limits).')).markdown, 'See [details](#rate_limits).');
+    strict_1.default.equal(unmark(quoteInline('See [details](https://example.test/#rate_limits).')).markdown, 'See [details](https://example.test/#rate_limits).');
 });
 (0, node_test_1.test)('identifiers in vendor prose outside tables are code, and slots stay out of code', async () => {
     const { quote, quoteInline } = require('../dist/content');

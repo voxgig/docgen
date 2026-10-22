@@ -70,9 +70,13 @@ function withCode(source, found) {
     parts.push(span(text.slice(at)));
     return parts.join('').trim();
 }
+// A relative link in a spec fragment points into the vendor's own site, from
+// a page docgen cannot know, so it keeps its label and loses the link. quote()
+// keeps links: its text can be the project's own, where a relative link works.
+const unlinkRelative = (text) => text.replace(/\[([^\]]*)\]\((?![a-z][a-z\d+.-]*:|\/\/)[^)\s]*\)/gi, '$1');
 // GFM escapes a pipe inside an inline span the same way, so this stays
 // correct for the code spans withCode() writes.
-const cell = (v) => withCode(String(v ?? ''), CELL_CODE).replace(/\|/g, '\\|');
+const cell = (v) => withCode(unlinkRelative(String(v ?? '')), CELL_CODE).replace(/\|/g, '\\|');
 exports.cell = cell;
 // Vendor text is marked where it is rendered, and the marks become the page's
 // quotes, so the house-style rules can leave it out whatever markup surrounds it.
@@ -86,7 +90,8 @@ function unmark(text) {
     }).replace(MARKS, '');
     return { markdown: clean, quotes: [...quotes].sort() };
 }
-const quoteInline = (v) => mark(withCode(String(v ?? '').replace(MARKS, ''), PROSE_CODE));
+const quoteText = (v) => mark(withCode(String(v ?? '').replace(MARKS, ''), PROSE_CODE));
+const quoteInline = (v) => quoteText(unlinkRelative(String(v ?? '')));
 exports.quoteInline = quoteInline;
 // A vendor description given its own block keeps the blocks it was written in:
 // flattened, a heading runs into the paragraph under it. More than one block is
@@ -100,7 +105,7 @@ function quote(v) {
         .join('\n').replace(/\n{3,}/g, '\n\n').trim();
     const blocks = md.parse(text, {});
     if (!blocks.length || (3 === blocks.length && 'paragraph_open' === blocks[0].type))
-        return (0, exports.quoteInline)(text);
+        return quoteText(text);
     const fenced = new Set();
     for (const block of blocks)
         if (['fence', 'code_block'].includes(block.type)) {
