@@ -385,6 +385,12 @@ function fixture(m = model()) {
     const quoted = ['The url to which we should POST reports.'];
     strict_1.default.match(authored(page, 'md', quoted), /Docgen wrote this/);
     strict_1.default.doesNotMatch(authored(page, 'md', quoted), /POST reports/);
+    // A vendor description with a table in it: the page drops the cells, so the
+    // quote is matched block by block and the prose after the table still goes.
+    const vendor = 'Rate limits apply.\n\n| Header | Meaning |\n| --- | --- |\n| X-Limit | The quota that binds |\n\nClients must be robust to that. We throttle.';
+    const html = '<h1>Overview</h1><blockquote><p>Rate limits apply.</p><table><tr><th>Header</th><th>Meaning</th></tr><tr><td>X-Limit</td><td>The quota that binds</td></tr></table><p>Clients must be robust to that. We throttle.</p></blockquote><p>Docgen wrote this.</p>';
+    strict_1.default.match(authored(html, 'html', [vendor]), /Docgen wrote this/);
+    strict_1.default.doesNotMatch(authored(html, 'html', [vendor]), /robust|throttle|Rate limits/);
     strict_1.default.match(authored(page, 'md'), /POST reports/);
     const { runQA } = require('../dist/docgen');
     const voice = (root) => runQA('.sdk/doc/qa-manifest.json', root, false).errors

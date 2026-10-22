@@ -35,12 +35,16 @@ export function authored(source: string, format: string, quoted: string[] = []):
     ? source.replace(/<td\b[^>]*>[\s\S]*?<\/td>/gi, ' ')
     : source.split('\n').filter(line => !/^\s*\|/.test(line)).join('\n')
   let text = proseText(stripped, format)
+  // Block by block: a quote with a table in it never matches whole, since the
+  // page has lost the cells; and a quote on a rendered page is already blocks.
   for (const quote of [...quoted].sort((a, b) => b.length - a.length)) {
-    const words = proseText(quote).split(/\s+/).filter(Boolean)
-    if (!words.length) continue
-    const edge = (word: string) => /\w/.test(word) ? '\\b' : ''
-    const pattern = words.map(word => word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('\\s+')
-    text = text.replace(new RegExp(edge(words[0][0]) + pattern + edge(words[words.length - 1].slice(-1)), 'g'), ' ')
+    for (const block of proseText(quote).split(/\n{2,}/)) {
+      const words = block.split(/\s+/).filter(Boolean)
+      if (!words.length) continue
+      const edge = (word: string) => /\w/.test(word) ? '\\b' : ''
+      const pattern = words.map(word => word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('\\s+')
+      text = text.replace(new RegExp(edge(words[0][0]) + pattern + edge(words[words.length - 1].slice(-1)), 'g'), ' ')
+    }
   }
   return text
 }
