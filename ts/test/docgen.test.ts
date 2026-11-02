@@ -417,6 +417,7 @@ test('a vendor description written in blocks keeps them, as a quotation', async 
 test('the project README wording in main.kit.text words over the spec info', async () => {
   const m: any = model()
   m.main.kit.info.entity_desc = { pet: 'Spec wording for a pet.' }
+  m.main.kit.info.description = 'Spec description of the pet service.'
   m.main.kit.text = { title: 'Quokkadex', summary: 'Catalogues zanzibarian pets.', tagline: '',
     entity_desc: { pet: 'A marsupialish pet record.' } }
   const f = fixture(m)
@@ -429,8 +430,9 @@ test('the project README wording in main.kit.text words over the spec info', asy
     Assert.match(f.read('docs/api/index.html'), /Catalogues zanzibarian pets\./)
     const entity = f.read('docs/api/pet.html')
     Assert.match(entity, /A marsupialish pet record\./)
-    for (const page of [summary, f.read('docs/api/index.html'), entity]) {
-      Assert.doesNotMatch(page, /Store and retrieve pet records|Spec wording for a pet/)
+    Assert.match(f.read('docs/index.html'), /Catalogues zanzibarian pets\./)
+    for (const page of [summary, f.read('docs/index.html'), f.read('docs/api/index.html'), entity]) {
+      Assert.doesNotMatch(page, /Store and retrieve pet records|Spec wording for a pet|Spec description of the pet service/)
     }
     const vocabulary = f.read('.sdk/doc/qa/styles/config/vocabularies/Docgen/accept.txt').split('\n')
     const accepts = (word: string) => vocabulary.some(line => line && new RegExp('^' + line + '$').test(word))

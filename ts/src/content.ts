@@ -152,8 +152,10 @@ export function view(model: any, edition: any, resolved?: any) {
   const features = pick(rows(kit.feature), edition.filter?.features)
   entities.forEach(e => names(e, e.name))
   const info = readmeText(model)
+  // A summary the project wrote in main.kit.text words over the spec's own
+  // description, as it does the README's.
   return { model, kit, edition, resolved, entities, targets, features, title: edition.title || info.title || model.name,
-    description: kit.info?.description || info.summary || '', info }
+    description: kit.text?.summary || kit.info?.description || info.summary || '', info }
 }
 export function surface(target: any, kit: any): string {
   return kit.doc?.target?.[target.name]?.kind ||

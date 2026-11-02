@@ -171,8 +171,10 @@ function view(model, edition, resolved) {
     const features = pick(rows(kit.feature), edition.filter?.features);
     entities.forEach(e => (0, jostraca_1.names)(e, e.name));
     const info = readmeText(model);
+    // A summary the project wrote in main.kit.text words over the spec's own
+    // description, as it does the README's.
     return { model, kit, edition, resolved, entities, targets, features, title: edition.title || info.title || model.name,
-        description: kit.info?.description || info.summary || '', info };
+        description: kit.text?.summary || kit.info?.description || info.summary || '', info };
 }
 function surface(target, kit) {
     return kit.doc?.target?.[target.name]?.kind ||

@@ -437,6 +437,7 @@ function fixture(m = model()) {
 (0, node_test_1.test)('the project README wording in main.kit.text words over the spec info', async () => {
     const m = model();
     m.main.kit.info.entity_desc = { pet: 'Spec wording for a pet.' };
+    m.main.kit.info.description = 'Spec description of the pet service.';
     m.main.kit.text = { title: 'Quokkadex', summary: 'Catalogues zanzibarian pets.', tagline: '',
         entity_desc: { pet: 'A marsupialish pet record.' } };
     const f = fixture(m);
@@ -449,8 +450,9 @@ function fixture(m = model()) {
         strict_1.default.match(f.read('docs/api/index.html'), /Catalogues zanzibarian pets\./);
         const entity = f.read('docs/api/pet.html');
         strict_1.default.match(entity, /A marsupialish pet record\./);
-        for (const page of [summary, f.read('docs/api/index.html'), entity]) {
-            strict_1.default.doesNotMatch(page, /Store and retrieve pet records|Spec wording for a pet/);
+        strict_1.default.match(f.read('docs/index.html'), /Catalogues zanzibarian pets\./);
+        for (const page of [summary, f.read('docs/index.html'), f.read('docs/api/index.html'), entity]) {
+            strict_1.default.doesNotMatch(page, /Store and retrieve pet records|Spec wording for a pet|Spec description of the pet service/);
         }
         const vocabulary = f.read('.sdk/doc/qa/styles/config/vocabularies/Docgen/accept.txt').split('\n');
         const accepts = (word) => vocabulary.some(line => line && new RegExp('^' + line + '$').test(word));
