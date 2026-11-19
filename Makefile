@@ -28,8 +28,13 @@ reset:
 #   make publish V=0.10.0
 #
 # Bumps ts/package.json (and its lockfile) via `npm version
-# --no-git-tag-version`, runs the full suite, commits, pushes main, and
-# dispatches publish.yml — which publishes to npm and writes the v<V> tag.
+# --no-git-tag-version`, stamps the version, commits, pushes main, and
+# dispatches publish.yml — which builds and tests on CI, publishes to npm and
+# writes the v<V> tag.
+#
+# NO SUITE RUNS HERE. The release gate is the publish workflow's own build
+# and test. The same suite runs on every push in build.yml, and on demand
+# with `gh workflow run build.yml --ref main`.
 #
 # Every guard runs BEFORE anything is written, because a release cannot be
 # taken back: npm never allows republishing a version.
@@ -71,10 +76,9 @@ publish:
 	cd ts && npm version --no-git-tag-version $(V)
 	@# `npm version` updates package.json and its lockfile ONLY. This
 	@# repo also carries the version in generated files, and the suite
-	@# asserts they agree — so without this stamp `make all` below fails
-	@# on every real bump, and the release command could never work.
+	@# asserts they agree — so without this stamp the publish workflow's
+	@# test fails on every real bump, and the release could never work.
 	cd ts && npm run embed-version
-	$(MAKE) all
 	git add ts/package.json ts/package-lock.json ts/project/sdkgen-package.json
 	git commit -m "$(V)"
 	git push origin main
