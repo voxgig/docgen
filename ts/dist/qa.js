@@ -42,7 +42,7 @@ function proseText(source, format = 'md', code = ' ') {
 }
 // Without table cells and quoted vendor text. A quote is matched by its words,
 // whatever markup surrounds it, longest first so a shorter one cannot split it.
-function authored(source, format, quoted = []) {
+function authored(source, format, quoted = [], identifiers = []) {
     const stripped = 'html' === format || 'vue' === format
         ? source.replace(/<td\b[^>]*>[\s\S]*?<\/td>/gi, ' ')
         : source.split('\n').filter(line => !/^\s*\|/.test(line)).join('\n');
@@ -59,6 +59,10 @@ function authored(source, format, quoted = []) {
             text = text.replace(new RegExp(edge(words[0][0]) + pattern + edge(words[words.length - 1].slice(-1)), 'g'), ' ');
         }
     }
+    // One pattern for every name: a page can print hundreds, so a pass per name would be quadratic.
+    const names = identifiers.filter(name => /^\w+$/.test(name)).sort((a, b) => b.length - a.length);
+    if (names.length)
+        text = text.replace(new RegExp('\\b(?:' + names.join('|') + ')\\b', 'g'), ' ');
     return text;
 }
 // The Vale defect rules read everything rendered, vendor cells included; its
@@ -69,8 +73,8 @@ exports.VALE_ALL = '.all.txt', exports.VALE_OWN = '.own.txt';
 // docgen wrote: applying it to a quoted vendor description asks an SDK author
 // to edit someone else's specification. A defect is a defect wherever it
 // appears, so those rules read everything rendered.
-function checkText(source, format = 'md', rejectFile = node_path_1.default.join(PACKAGE, 'qa/styles/config/vocabularies/Docgen/reject.txt'), quoted = []) {
-    const text = proseText(source, format), own = authored(source, format, quoted), errors = [];
+function checkText(source, format = 'md', rejectFile = node_path_1.default.join(PACKAGE, 'qa/styles/config/vocabularies/Docgen/reject.txt'), quoted = [], identifiers = []) {
+    const text = proseText(source, format), own = authored(source, format, quoted, identifiers), errors = [];
     const patterns = node_fs_1.default.readFileSync(rejectFile, 'utf8').split('\n').map(s => s.trim()).filter(s => s && !s.startsWith('#'));
     for (const pattern of patterns)
         if (new RegExp('\\b(?:' + pattern + ')\\b', 'i').test(own))
@@ -103,11 +107,12 @@ function runQA(manifestPath, root = process.cwd(), vale = true) {
         const quoted = manifest.quoted?.[file];
         return Array.isArray(quoted) ? quoted.filter((q) => 'string' === typeof q) : [];
     };
+    const identifiers = Array.isArray(manifest.identifiers) ? manifest.identifiers.filter((n) => 'string' === typeof n) : [];
     try {
         const inputs = [];
         for (const [index, file] of manifest.files.entries()) {
             const text = node_fs_1.default.readFileSync(safe(file), 'utf8'), format = file.endsWith('.html') ? 'html' : file.endsWith('.vue') ? 'vue' : 'md';
-            errors.push(...checkText(text, format, reject, quotedFor(file)).map(e => file + ': ' + e));
+            errors.push(...checkText(text, format, reject, quotedFor(file), identifiers).map(e => file + ': ' + e));
             if (format === 'html') {
                 for (const match of text.matchAll(/(?:href|src)="([^"]+)"/g)) {
                     const url = md.utils.unescapeAll(match[1]);
@@ -130,7 +135,7 @@ function runQA(manifestPath, root = process.cwd(), vale = true) {
             }
             const all = node_path_1.default.join(temp, index + exports.VALE_ALL), own = node_path_1.default.join(temp, index + exports.VALE_OWN);
             node_fs_1.default.writeFileSync(all, (0, exports.valeText)(text, format));
-            node_fs_1.default.writeFileSync(own, authored(text, format, quotedFor(file)));
+            node_fs_1.default.writeFileSync(own, authored(text, format, quotedFor(file), identifiers));
             inputs.push(all, own);
         }
         if (vale) {

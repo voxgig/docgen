@@ -420,8 +420,11 @@ async function generate(opts) {
     const routes = Object.fromEntries(editions.filter(e => e.kind === 'github-pages').flatMap(site => nestedPresentations(model, site).filter(e => e.active !== false && e.site?.active !== false)
         .map(e => [e.output.path + '/index.html', e.output.path + '/dist/index.html'])));
     const checked = [...new Set(qa)].sort();
-    // With the vendor text each page quotes, which the house-style rules leave out.
-    files['.sdk/doc/qa-manifest.json'] = JSON.stringify({ files: checked, config: '.sdk/doc/qa/vale.ini', routes,
+    // House style leaves out each page's quoted vendor text, and on every page the
+    // entity names: `Me` is the SDK's class, not the first person.
+    const identifiers = [...new Set((0, content_1.rows)(model.main.kit.entity).map(e => { (0, jostraca_1.names)(e, e.name); return e.Name; })
+            .filter((n) => 'string' === typeof n && '' !== n))].sort();
+    files['.sdk/doc/qa-manifest.json'] = JSON.stringify({ files: checked, config: '.sdk/doc/qa/vale.ini', routes, identifiers,
         quoted: Object.fromEntries(checked.filter(file => quoted[file]?.length).map(file => [file, quoted[file]])) }, null, 2) + '\n';
     if (doc.ci?.active !== false) {
         const sites = editions.filter(e => e.kind === 'github-pages');

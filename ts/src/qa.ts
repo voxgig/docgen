@@ -30,7 +30,7 @@ export function proseText(source: string, format = 'md', code = ' '): string {
 }
 // Without table cells and quoted vendor text. A quote is matched by its words,
 // whatever markup surrounds it, longest first so a shorter one cannot split it.
-export function authored(source: string, format: string, quoted: string[] = []): string {
+export function authored(source: string, format: string, quoted: string[] = [], identifiers: string[] = []): string {
   const stripped = 'html' === format || 'vue' === format
     ? source.replace(/<td\b[^>]*>[\s\S]*?<\/td>/gi, ' ')
     : source.split('\n').filter(line => !/^\s*\|/.test(line)).join('\n')
@@ -46,6 +46,9 @@ export function authored(source: string, format: string, quoted: string[] = []):
       text = text.replace(new RegExp(edge(words[0][0]) + pattern + edge(words[words.length - 1].slice(-1)), 'g'), ' ')
     }
   }
+  // One pattern for every name: a page can print hundreds, so a pass per name would be quadratic.
+  const names = identifiers.filter(name => /^\w+$/.test(name)).sort((a, b) => b.length - a.length)
+  if (names.length) text = text.replace(new RegExp('\\b(?:' + names.join('|') + ')\\b', 'g'), ' ')
   return text
 }
 
@@ -58,8 +61,8 @@ export const VALE_ALL = '.all.txt', VALE_OWN = '.own.txt'
 // docgen wrote: applying it to a quoted vendor description asks an SDK author
 // to edit someone else's specification. A defect is a defect wherever it
 // appears, so those rules read everything rendered.
-export function checkText(source: string, format = 'md', rejectFile = Path.join(PACKAGE, 'qa/styles/config/vocabularies/Docgen/reject.txt'), quoted: string[] = []): string[] {
-  const text = proseText(source, format), own = authored(source, format, quoted), errors: string[] = []
+export function checkText(source: string, format = 'md', rejectFile = Path.join(PACKAGE, 'qa/styles/config/vocabularies/Docgen/reject.txt'), quoted: string[] = [], identifiers: string[] = []): string[] {
+  const text = proseText(source, format), own = authored(source, format, quoted, identifiers), errors: string[] = []
   const patterns = Fs.readFileSync(rejectFile, 'utf8').split('\n').map(s => s.trim()).filter(s => s && !s.startsWith('#'))
   for (const pattern of patterns) if (new RegExp('\\b(?:' + pattern + ')\\b', 'i').test(own)) errors.push('Avoid: ' + pattern)
   if (/\b(\w+)[ \t]+\1\b/i.test(proseText(source, format, ' \u00b6 '))) errors.push('Remove the repeated word')
@@ -83,11 +86,12 @@ export function runQA(manifestPath: string, root = process.cwd(), vale = true): 
     const quoted = manifest.quoted?.[file]
     return Array.isArray(quoted) ? quoted.filter((q: unknown) => 'string' === typeof q) : []
   }
+  const identifiers: string[] = Array.isArray(manifest.identifiers) ? manifest.identifiers.filter((n: unknown) => 'string' === typeof n) : []
   try {
     const inputs: string[] = []
     for (const [index, file] of manifest.files.entries()) {
       const text = Fs.readFileSync(safe(file), 'utf8'), format = file.endsWith('.html') ? 'html' : file.endsWith('.vue') ? 'vue' : 'md'
-      errors.push(...checkText(text, format, reject, quotedFor(file)).map(e => file + ': ' + e))
+      errors.push(...checkText(text, format, reject, quotedFor(file), identifiers).map(e => file + ': ' + e))
       if (format === 'html') {
         for (const match of text.matchAll(/(?:href|src)="([^"]+)"/g)) {
           const url = md.utils.unescapeAll(match[1])
@@ -105,7 +109,7 @@ export function runQA(manifestPath: string, root = process.cwd(), vale = true): 
         }
       }
       const all = Path.join(temp, index + VALE_ALL), own = Path.join(temp, index + VALE_OWN)
-      Fs.writeFileSync(all, valeText(text, format)); Fs.writeFileSync(own, authored(text, format, quotedFor(file)))
+      Fs.writeFileSync(all, valeText(text, format)); Fs.writeFileSync(own, authored(text, format, quotedFor(file), identifiers))
       inputs.push(all, own)
     }
     if (vale) {

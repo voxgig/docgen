@@ -344,6 +344,31 @@ function fixture(m = model()) {
         strict_1.default.ok((0, docgen_1.checkText)(text).includes(voice), text);
     }
 });
+(0, node_test_1.test)('an entity named Me is an identifier, not the first person, on every page', async () => {
+    const voice = 'Use neutral or second-person prose';
+    const { runQA } = require('../dist/docgen');
+    const m = model();
+    m.main.kit.entity.me = { name: 'me', active: true,
+        fields: { id: { n: 'id', h: 'Id', t: 'string', r: true } },
+        op: { load: { name: 'load', points: [{ m: 'GET', o: '/me', s: [{ lit: 'me' }] }] } } };
+    definitions.get(m).paths['/me'] = { get: { responses: { '200': { description: 'Who is signed in',
+                    content: { 'application/json': { schema: { type: 'object' } } } } } } };
+    const f = fixture(m);
+    try {
+        await (0, docgen_1.generate)({ folder: f.root, model: m });
+        strict_1.default.deepEqual(JSON.parse(f.read('.sdk/doc/qa-manifest.json')).identifiers, ['Me', 'Pet']);
+        strict_1.default.match(f.read('SUMMARY.md'), /^### .*\bMe\b/m);
+        strict_1.default.match(f.read('docs/api/me.html'), /\bMe\b/);
+        strict_1.default.deepEqual(runQA('.sdk/doc/qa-manifest.json', f.root, false).errors.filter((e) => e.includes(voice)), []);
+    }
+    finally {
+        f.clean();
+    }
+    // Only the name is left out: the pronoun in prose is still caught.
+    strict_1.default.ok((0, docgen_1.checkText)('Tell me more about Me.', 'md', undefined, [], ['Me']).includes(voice));
+    strict_1.default.ok(!(0, docgen_1.checkText)('### Me\n\nThe calling token.', 'md', undefined, [], ['Me']).includes(voice));
+    strict_1.default.ok((0, docgen_1.checkText)('### Me\n\nThe calling token.', 'md').includes(voice));
+});
 (0, node_test_1.test)('an identifier that starts or ends with an underscore is code; emphasis, code and links are kept', () => {
     const { cell } = require('../dist/content');
     strict_1.default.equal(cell('Prefixed drv_ or drvrun_, keyed by _id.'), 'Prefixed `drv_` or `drvrun_`, keyed by `_id`.');

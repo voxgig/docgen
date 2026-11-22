@@ -326,6 +326,30 @@ test('the first-person rule reads the pronoun, not the country or a hyphenated c
   }
 })
 
+test('an entity named Me is an identifier, not the first person, on every page', async () => {
+  const voice = 'Use neutral or second-person prose'
+  const { runQA } = require('../dist/docgen')
+  const m: any = model()
+  m.main.kit.entity.me = { name: 'me', active: true,
+    fields: { id: { n: 'id', h: 'Id', t: 'string', r: true } },
+    op: { load: { name: 'load', points: [{ m: 'GET', o: '/me', s: [{ lit: 'me' }] }] } } }
+  definitions.get(m).paths['/me'] = { get: { responses: { '200': { description: 'Who is signed in',
+    content: { 'application/json': { schema: { type: 'object' } } } } } } }
+  const f = fixture(m)
+  try {
+    await generate({ folder: f.root, model: m })
+    Assert.deepEqual(JSON.parse(f.read('.sdk/doc/qa-manifest.json')).identifiers, ['Me', 'Pet'])
+    Assert.match(f.read('SUMMARY.md'), /^### .*\bMe\b/m)
+    Assert.match(f.read('docs/api/me.html'), /\bMe\b/)
+    Assert.deepEqual(runQA('.sdk/doc/qa-manifest.json', f.root, false).errors.filter((e: string) => e.includes(voice)), [])
+  } finally { f.clean() }
+
+  // Only the name is left out: the pronoun in prose is still caught.
+  Assert.ok(checkText('Tell me more about Me.', 'md', undefined, [], ['Me']).includes(voice))
+  Assert.ok(!checkText('### Me\n\nThe calling token.', 'md', undefined, [], ['Me']).includes(voice))
+  Assert.ok(checkText('### Me\n\nThe calling token.', 'md').includes(voice))
+})
+
 test('an identifier that starts or ends with an underscore is code; emphasis, code and links are kept', () => {
   const { cell } = require('../dist/content')
   Assert.equal(cell('Prefixed drv_ or drvrun_, keyed by _id.'), 'Prefixed `drv_` or `drvrun_`, keyed by `_id`.')
