@@ -3,6 +3,7 @@ import Fs from 'node:fs'
 import Path from 'node:path'
 import Os from 'node:os'
 import { createRequire } from 'node:module'
+import * as Sdkgen from '@voxgig/sdkgen'
 import { Jostraca, Project, Folder, File, Content, names } from 'jostraca'
 import { operationFacts, rows, view, readmeText, quotedSummary, pages, quotedSlides, html, repoLinkFor, slugFor, METHODS, type Page } from './content'
 import { relativePath, inside, within, ledgerText, readLedger, prunePlan, applyPrune, type PrunePlan } from './ledger'
@@ -314,11 +315,20 @@ async function resolveDefinition(root: string, model: any, fs: any): Promise<any
   return { version: 1, kind, def, operation: (m: string, o: string) => facts(def, { m, o }) }
 }
 
+// A recent sdkgen computes facts into the model, and its helpers read them.
+// A model read from sdk.json has none, so they are applied here first.
+export function withFacts(model: any, sdkgen: any = Sdkgen): any {
+  const apply = sdkgen?.applyFacts
+  if ('function' === typeof apply && null != model?.main?.kit && null == model.main.kit.fact) apply(model)
+  return model
+}
+
 export async function generate(opts: GenerateOptions): Promise<GenerateResult> {
   const root = Path.resolve(opts.folder), fs = typeof opts.fs === 'function' ? opts.fs() : opts.fs || Fs
   if (!fs.existsSync(Path.join(root, '.sdk'))) throw new Error('Docgen requires an existing .sdk setup')
   const model = opts.model
   if (!model?.main?.kit) throw new Error('Docgen requires the compiled apidef/sdkgen model')
+  withFacts(model)
 
   const doc = model.main.kit.doc
   if (!doc || doc.active === false) return { editions: [], files: [], prune: NOTHING }
