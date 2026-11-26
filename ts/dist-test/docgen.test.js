@@ -1449,4 +1449,16 @@ function ledgerOf(f) { return JSON.parse(f.read('.sdk/doc/generated.json')); }
         f.clean();
     }
 });
+// A recent sdkgen's helpers throw on a model whose facts were never applied,
+// as one read from sdk.json is.
+(0, node_test_1.test)('a model without facts takes them from the installed sdkgen, once', () => {
+    let calls = 0;
+    const sdkgen = { applyFacts: (m) => { calls++; m.main.kit.fact = {}; } };
+    const bare = { main: { kit: { target: {} } } };
+    strict_1.default.equal((0, docgen_1.withFacts)(bare, sdkgen), bare);
+    strict_1.default.deepEqual(bare.main.kit, { target: {}, fact: {} });
+    (0, docgen_1.withFacts)(bare, sdkgen);
+    strict_1.default.equal(calls, 1);
+    strict_1.default.doesNotThrow(() => (0, docgen_1.withFacts)({ main: { kit: {} } }, {}));
+});
 //# sourceMappingURL=docgen.test.js.map

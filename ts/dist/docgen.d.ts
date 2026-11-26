@@ -29,6 +29,7 @@ export type EditionProps = {
 };
 export declare function styleFor(model: any, edition: any): any;
 export declare function renderEdition(props: EditionProps): EditionResult;
+export declare function withFacts(model: any, sdkgen?: any): any;
 export declare function generate(opts: GenerateOptions): Promise<GenerateResult>;
 export { view, summary, pages, slides } from './content';
 export { checkText, proseText, runQA } from './qa';

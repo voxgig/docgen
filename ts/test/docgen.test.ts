@@ -4,7 +4,7 @@ import Fs from 'node:fs'
 import Os from 'node:os'
 import Path from 'node:path'
 import { spawnSync } from 'node:child_process'
-import { generate, scaffoldDefaults, checkText, proseText, prepareProject, styleFor } from '../dist/docgen'
+import { generate, scaffoldDefaults, checkText, proseText, prepareProject, styleFor, withFacts } from '../dist/docgen'
 const PACKAGE = Path.resolve(__dirname, '..')
 const definitions = new WeakMap<any, any>()
 function model() {
@@ -1341,4 +1341,18 @@ test('a shared response graph does not outgrow the QA vocabulary join', { timeou
     // Bounded: the cap is on unique words, not on how many paths reach them.
     Assert.ok(vocabulary.split('\n').length < 40000, 'vocabulary is unbounded: ' + vocabulary.split('\n').length)
   } finally { f.clean() }
+})
+
+
+// A recent sdkgen's helpers throw on a model whose facts were never applied,
+// as one read from sdk.json is.
+test('a model without facts takes them from the installed sdkgen, once', () => {
+  let calls = 0
+  const sdkgen = { applyFacts: (m: any) => { calls++; m.main.kit.fact = {} } }
+  const bare = { main: { kit: { target: {} } } }
+  Assert.equal(withFacts(bare, sdkgen), bare)
+  Assert.deepEqual(bare.main.kit, { target: {}, fact: {} })
+  withFacts(bare, sdkgen)
+  Assert.equal(calls, 1)
+  Assert.doesNotThrow(() => withFacts({ main: { kit: {} } }, {}))
 })

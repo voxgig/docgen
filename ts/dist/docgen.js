@@ -1,4 +1,37 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -6,6 +39,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ledgerText = exports.applyPrune = exports.prunePlan = exports.readLedger = exports.relativePath = exports.runQA = exports.proseText = exports.checkText = exports.slides = exports.pages = exports.summary = exports.view = void 0;
 exports.styleFor = styleFor;
 exports.renderEdition = renderEdition;
+exports.withFacts = withFacts;
 exports.generate = generate;
 exports.stageSite = stageSite;
 exports.scaffoldDefaults = scaffoldDefaults;
@@ -15,6 +49,7 @@ const node_fs_1 = __importDefault(require("node:fs"));
 const node_path_1 = __importDefault(require("node:path"));
 const node_os_1 = __importDefault(require("node:os"));
 const node_module_1 = require("node:module");
+const Sdkgen = __importStar(require("@voxgig/sdkgen"));
 const jostraca_1 = require("jostraca");
 const content_1 = require("./content");
 const ledger_1 = require("./ledger");
@@ -355,6 +390,14 @@ async function resolveDefinition(root, model, fs) {
     });
     return { version: 1, kind, def, operation: (m, o) => facts(def, { m, o }) };
 }
+// A recent sdkgen computes facts into the model, and its helpers read them.
+// A model read from sdk.json has none, so they are applied here first.
+function withFacts(model, sdkgen = Sdkgen) {
+    const apply = sdkgen?.applyFacts;
+    if ('function' === typeof apply && null != model?.main?.kit && null == model.main.kit.fact)
+        apply(model);
+    return model;
+}
 async function generate(opts) {
     const root = node_path_1.default.resolve(opts.folder), fs = typeof opts.fs === 'function' ? opts.fs() : opts.fs || node_fs_1.default;
     if (!fs.existsSync(node_path_1.default.join(root, '.sdk')))
@@ -362,6 +405,7 @@ async function generate(opts) {
     const model = opts.model;
     if (!model?.main?.kit)
         throw new Error('Docgen requires the compiled apidef/sdkgen model');
+    withFacts(model);
     const doc = model.main.kit.doc;
     if (!doc || doc.active === false)
         return { editions: [], files: [], prune: NOTHING };
